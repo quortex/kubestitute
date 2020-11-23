@@ -20,25 +20,45 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // InstanceSpec defines the desired state of Instance
 type InstanceSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Instance. Edit Instance_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// The AutoScaling Group name.
+	// +kubebuilder:validation:Required
+	ASG string `json:"asg"`
+
+	// Indicates whether Amazon EC2 Auto Scaling waits for the cooldown period to
+	// complete before initiating a scaling activity to set your Auto Scaling group
+	// to its new capacity. By default, Amazon EC2 Auto Scaling does not honor the
+	// cooldown period during manual scaling activities.
+	// +kubebuilder:validation:Optional
+	HonorCooldown bool `json:"honorCooldown"`
 }
+
+// InstanceState describes the instance state.
+type InstanceState string
+
+// All defined InstanceStates
+const (
+	InstanceStateNone           InstanceState = ""
+	InstanceStateTriggerScaling InstanceState = "Trigger Scaling"
+	InstanceStateWaitInstance   InstanceState = "Waiting Instance"
+	InstanceStateReady          InstanceState = "Ready"
+)
 
 // InstanceStatus defines the observed state of Instance
 type InstanceStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+
+	// The current state of the instance
+	State InstanceState `json:"state,omitempty"`
+
+	// The current state of the instance
+	EC2InstanceID string `json:"ec2InstanceID,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status.state",description="The Instance status"
+// +kubebuilder:printcolumn:name="EC2 INSTANCE",type="string",JSONPath=".status.ec2InstanceID",description="The EC2 Instance ID"
 
 // Instance is the Schema for the instances API
 type Instance struct {

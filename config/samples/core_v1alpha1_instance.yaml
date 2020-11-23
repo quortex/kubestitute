@@ -4,4 +4,4 @@ metadata:
   name: instance-sample
 spec:
   # Add fields here
-  foo: bar
+  asg: kubestitute
