@@ -7,6 +7,15 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - core.kubestitute.quortex.io
   resources:
   - instances

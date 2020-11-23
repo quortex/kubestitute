@@ -61,7 +61,10 @@ spec:
           description: InstanceStatus defines the observed state of Instance
           properties:
             ec2InstanceID:
-              description: The current state of the instance
+              description: The associated EC2 instance ID
+              type: string
+            node:
+              description: The associated kubernetes Node name
               type: string
             state:
               description: The current state of the instance

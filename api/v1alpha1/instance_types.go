@@ -43,6 +43,7 @@ const (
 	InstanceStateNone           InstanceState = ""
 	InstanceStateTriggerScaling InstanceState = "Trigger Scaling"
 	InstanceStateWaitInstance   InstanceState = "Waiting Instance"
+	InstanceStateWaitNode       InstanceState = "Waiting Node"
 	InstanceStateReady          InstanceState = "Ready"
 )
 
@@ -52,8 +53,11 @@ type InstanceStatus struct {
 	// The current state of the instance
 	State InstanceState `json:"state,omitempty"`
 
-	// The current state of the instance
+	// The associated EC2 instance ID
 	EC2InstanceID string `json:"ec2InstanceID,omitempty"`
+
+	// The associated kubernetes Node name
+	Node string `json:"node,omitempty"`
 }
 
 // +kubebuilder:object:root=true
