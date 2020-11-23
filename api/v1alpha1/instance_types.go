@@ -40,11 +40,13 @@ type InstanceState string
 
 // All defined InstanceStates
 const (
-	InstanceStateNone           InstanceState = ""
-	InstanceStateTriggerScaling InstanceState = "Trigger Scaling"
-	InstanceStateWaitInstance   InstanceState = "Waiting Instance"
-	InstanceStateWaitNode       InstanceState = "Waiting Node"
-	InstanceStateReady          InstanceState = "Ready"
+	InstanceStateNone              InstanceState = ""
+	InstanceStateTriggerScaling    InstanceState = "Trigger Scaling"
+	InstanceStateWaitInstance      InstanceState = "Waiting Instance"
+	InstanceStateWaitNode          InstanceState = "Waiting Node"
+	InstanceStateDetachInstance    InstanceState = "Detaching Instance"
+	InstanceStateTerminateInstance InstanceState = "Terminating Instance"
+	InstanceStateReady             InstanceState = "Ready"
 )
 
 // InstanceStatus defines the observed state of Instance
@@ -63,6 +65,7 @@ type InstanceStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status.state",description="The Instance status"
 // +kubebuilder:printcolumn:name="EC2 INSTANCE",type="string",JSONPath=".status.ec2InstanceID",description="The EC2 Instance ID"
+// +kubebuilder:printcolumn:name="NODE",type="string",JSONPath=".status.node",description="The Kubernetes Node"
 
 // Instance is the Schema for the instances API
 type Instance struct {

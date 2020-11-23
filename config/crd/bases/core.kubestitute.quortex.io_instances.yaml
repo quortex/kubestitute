@@ -17,6 +17,10 @@ spec:
     description: The EC2 Instance ID
     name: EC2 INSTANCE
     type: string
+  - JSONPath: .status.node
+    description: The Kubernetes Node
+    name: NODE
+    type: string
   group: core.kubestitute.quortex.io
   names:
     kind: Instance

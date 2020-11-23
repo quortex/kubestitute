@@ -89,7 +89,7 @@ endif
 clients:
 	@t=$$(mktemp -d) && \
 		cd $${t} && \
-		git clone -b feature/autoscaling git@github.com:quortex/aws-ec2-adapter.git && \
+		git clone -b develop git@github.com:quortex/aws-ec2-adapter.git && \
 		cd - && \
 		mkdir -p client/ec2adapter && \
 		cp $${t}/aws-ec2-adapter/docs/swagger.yaml ./client/ec2adapter && \

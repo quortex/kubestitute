@@ -46,9 +46,12 @@ type InstanceReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// instanceFinalizer is a finalizer for Instances
+const instanceFinalizer = "instance.finalizers.kubestitute.quortex.io"
+
 // +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=core,resources=nodes,verbs=list;watch;update;patch
+// +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;update;patch
 
 // Reconcile reconciles the Instance requested state with the current state.
 func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
@@ -57,16 +60,40 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	var instance corev1alpha1.Instance
 	if err := r.Get(ctx, req.NamespacedName, &instance); err != nil {
-		log.Error(err, "unable to fetch Instance")
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		err = client.IgnoreNotFound(err)
+		if err != nil {
+			log.Error(err, "unable to fetch Instance")
+		}
+
+		return ctrl.Result{}, err
 	}
 
-	// Set Instance TriggerScaling state.
+	// *********************************
+	// **** DELETION RECONCILIATION ****
+	// *********************************
+
+	// The object is being deleted, so we perform deletion tasks before removing the finalizer.
+	// Note that we can only perform deletion reconciliation if the reconciliation has been completed
+	// to the end to be able to delete the instances correctly.
+	if !instance.ObjectMeta.DeletionTimestamp.IsZero() &&
+		instance.Status.EC2InstanceID != "" {
+		return r.reconcileDeletion(ctx, instance, log)
+	}
+
+	// **********************************
+	// **** LIFECYCLE RECONCILIATION ****
+	// **********************************
+
+	// 1st STEP
+	//
+	// Initialize Instance with TriggerScaling state and add the finalizer.
 	if instance.Status.State == corev1alpha1.InstanceStateNone {
 		instance.Status.State = corev1alpha1.InstanceStateTriggerScaling
+		instance.ObjectMeta.Finalizers = append(instance.ObjectMeta.Finalizers, instanceFinalizer)
+		log.Info(fmt.Sprintf("setting status: %s, finalizer: %s", instance.Status.State, instanceFinalizer))
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
 
@@ -85,15 +112,19 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	// Retrieve AWS autoscaling group.
+	asgName := instance.Spec.ASG
 	res, err := ec2adapterCli.Operations.GetAutoscalingGroup(&operations.GetAutoscalingGroupParams{
 		Context: ctx,
-		Name:    instance.Spec.ASG,
+		Name:    asgName,
 	})
 	if err != nil {
+		log.Error(err, "failed to get autoscaling group", "name", asgName)
 		return ctrl.Result{}, err
 	}
 	asg := res.Payload
 
+	// 2nd STEP
+	//
 	// Trigger a new Instance in the ASG
 	if instance.Status.State == corev1alpha1.InstanceStateTriggerScaling {
 		capacity := asg.DesiredCapacity + 1
@@ -110,9 +141,12 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 		instance.Status.State = corev1alpha1.InstanceStateWaitInstance
+		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
 
+	// 3rd STEP
+	//
 	// Try to get a new joining instance in the ASG to associate it to our Instance.
 	if instance.Status.State == corev1alpha1.InstanceStateWaitInstance {
 		ec2Instances := asg.Instances
@@ -123,35 +157,49 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, err
 		}
 
-		// We remove EC2 instances already handled by Instance resources from slice.
-		for i, e := range ec2Instances {
+		// We select an EC2 instance to attach to our Instance resource.
+		// Seems that instances in ASG are sorted from newer to older,
+		// anyway that's not a big deal to associate an instance that has
+		// not been scheduled, by this Instance resource.
+		var instanceID string
+		for i := len(ec2Instances) - 1; i >= 0; i-- {
+			e := ec2Instances[i]
+			flag := false
 			for _, inst := range instances.Items {
+				// Exclude itself
+				if inst.Name == instance.Name {
+					continue
+				}
+				// Exclude Instances with empty IDs
 				if inst.Status.EC2InstanceID == "" {
-					break
+					continue
 				}
+				// Already attched EC2 instance
 				if e.InstanceID == inst.Status.EC2InstanceID {
-					ec2Instances = append(ec2Instances[:i], ec2Instances[i+1:]...)
+					flag = true
 					break
 				}
+			}
+			if !flag {
+				instanceID = e.InstanceID
 			}
 		}
 
 		// Seems that new instance has not joined yet the ASG, we'll try it later.
-		if len(ec2Instances) == 0 {
+		if instanceID == "" {
 			log.Info("instance has not joined yet the ASG, retry in 5 sec")
 			return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 		}
 
-		// Seems that instances in ASG are sorted from newer to older,
-		// anyway that's not a big deal to associate an instance that has
-		// not been scheduled, by this Instance resource.
-		ec2Inst := ec2Instances[len(ec2Instances)-1]
+		// Upgrade Instance with status and instanceID.
 		instance.Status.State = corev1alpha1.InstanceStateWaitNode
-		instance.Status.EC2InstanceID = ec2Inst.InstanceID
-
+		instance.Status.EC2InstanceID = instanceID
+		log.Info(fmt.Sprintf("setting status: %s, ec2InstanceID: %s", instance.Status.State, instance.Status.EC2InstanceID))
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
 
+	// 4th STEP
+	//
 	// Try to get a new joining Node to associate it to our Instance.
 	if instance.Status.State == corev1alpha1.InstanceStateWaitNode {
 		// List nodes
@@ -176,12 +224,99 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			if instance.Status.EC2InstanceID == instanceID {
 				instance.Status.State = corev1alpha1.InstanceStateReady
 				instance.Status.Node = e.GetName()
+				log.Info(fmt.Sprintf("setting status: %s, node: %s", instance.Status.State, instance.Status.Node))
 				return ctrl.Result{}, r.Update(ctx, &instance)
 			}
 		}
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// reconcileDeletion handle Instance deletion tasks
+func (r *InstanceReconciler) reconcileDeletion(
+	ctx context.Context,
+	instance corev1alpha1.Instance,
+	log logr.Logger) (ctrl.Result, error) {
+
+	// 1st STEP
+	//
+	// The instance has already scheduled a kubernetes Node.
+	// We need to properly drain this Node before deleting instance.
+	// if instance.Status.State == corev1alpha1.InstanceStateReady {
+	// 	// TODO: node drain implementation
+	// }
+
+	// Instantiate aws-ec2-adapter client requirements
+	ec2adapterCli := ec2adapter.NewHTTPClientWithConfig(nil, &ec2adapter.TransportConfig{
+		Host:    "localhost:8008",
+		Schemes: []string{"http"},
+	})
+
+	// Check readiness of the ec2 adapter service and
+	// requeue until availability.
+	_, err := ec2adapterCli.Operations.Ping(&operations.PingParams{Context: ctx})
+	if err != nil {
+		log.Info("ec2 adapter not available, retrying in 5 seconds.", "err", err)
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+	}
+
+	// 2nd STEP
+	//
+	// We detach the EC2 instance from the Autoscaling Group.
+	if instance.Status.State == corev1alpha1.InstanceStateDetachInstance ||
+		instance.Status.State == corev1alpha1.InstanceStateWaitNode {
+		// Retrieve AWS autoscaling group.
+		asgName := instance.Spec.ASG
+		res, err := ec2adapterCli.Operations.GetAutoscalingGroup(&operations.GetAutoscalingGroupParams{
+			Context: ctx,
+			Name:    asgName,
+		})
+		if err != nil {
+			log.Error(err, "failed to get autoscaling group", "name", asgName)
+			return ctrl.Result{}, err
+		}
+		asg := res.Payload
+
+		// Then, if instance is part of Autoscaling Group, we terminate it.
+		if i := instanceWithID(asg.Instances, instance.Status.EC2InstanceID); i != nil {
+			group := asgName
+			instanceID := instance.Status.EC2InstanceID
+			if _, err := ec2adapterCli.Operations.DetachAutoscalingGroupInstances(&operations.DetachAutoscalingGroupInstancesParams{
+				Context: ctx,
+				Name:    group,
+				Request: &models.DetachInstancesRequest{
+					InstanceIds:                    []string{instanceID},
+					ShouldDecrementDesiredCapacity: true,
+				},
+			}); err != nil {
+				log.Error(err, "failed to detach instance", "group", group, "instance", instanceID)
+				return ctrl.Result{}, err
+			}
+		}
+
+		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
+		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
+		return ctrl.Result{}, r.Update(ctx, &instance)
+	}
+
+	// 3rd STEP
+	//
+	// We terminate the EC2 instance.
+	if instance.Status.State == corev1alpha1.InstanceStateTerminateInstance {
+		instanceID := instance.Status.EC2InstanceID
+		if _, err := ec2adapterCli.Operations.TerminateInstance(&operations.TerminateInstanceParams{
+			Context: ctx,
+			ID:      instanceID,
+		}); err != nil {
+			log.Error(err, "failed to terminate instance", "instance", instanceID)
+			return ctrl.Result{}, err
+		}
+	}
+
+	// remove our finalizer from the list and update it.
+	instance.ObjectMeta.Finalizers = removeString(instance.ObjectMeta.Finalizers, instanceFinalizer)
+	return ctrl.Result{}, r.Update(ctx, &instance)
 }
 
 // NodeMapper is a mapper reconciling Instances for Node events
@@ -262,4 +397,25 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			&handler.EnqueueRequestsFromMapFunc{ToRequests: &NodeMapper{cli: mgr.GetClient(), log: mgr.GetLogger()}},
 		).
 		Complete(r)
+}
+
+// containsString remove given string from slice.
+func removeString(slice []string, s string) (result []string) {
+	for _, item := range slice {
+		if item == s {
+			continue
+		}
+		result = append(result, item)
+	}
+	return
+}
+
+// instanceWithID returns the instance with the given ID or nil
+func instanceWithID(slice []*models.AutoscalingGroupInstance, id string) *models.AutoscalingGroupInstance {
+	for _, e := range slice {
+		if e.InstanceID == id {
+			return e
+		}
+	}
+	return nil
 }
