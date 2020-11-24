@@ -18,15 +18,25 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path"
 	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
+	kapps_v1 "k8s.io/api/apps/v1"
 	kcore_v1 "k8s.io/api/core/v1"
+	kpolicy_v1beta1 "k8s.io/api/policy/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	kmeta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -42,16 +52,33 @@ import (
 // InstanceReconciler reconciles a Instance object
 type InstanceReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Kubernetes *kubernetes.Clientset
+	Log        logr.Logger
+	Scheme     *runtime.Scheme
 }
 
-// instanceFinalizer is a finalizer for Instances
-const instanceFinalizer = "instance.finalizers.kubestitute.quortex.io"
+const (
+	// instanceFinalizer is a finalizer for Instances
+	instanceFinalizer = "instance.finalizers.kubestitute.quortex.io"
+	// the pod's field for Node name
+	nodeNameField = "spec.nodeName"
+	// EvictionKind represents the kind of evictions object
+	EvictionKind = "Eviction"
+	// EvictionSubresource represents the kind of evictions object as pod's subresource
+	EvictionSubresource = "pods/eviction"
+	// The global timeout for pods eviction
+	evictionGlobalTimeout = time.Second * 120
+	// A timeout for delete pod polling
+	waitForDeleteTimeout = time.Second * 120
+	// The delete pod polling interval
+	pollInterval = time.Second
+)
 
 // +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;update;patch
+// +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;patch
+// +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;patch
+// +kubebuilder:rbac:groups=core,resources=pods/eviction,verbs=create
 
 // Reconcile reconciles the Instance requested state with the current state.
 func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
@@ -91,6 +118,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//
 	// Initialize Instance with TriggerScaling state and add the finalizer.
 	if instance.Status.State == corev1alpha1.InstanceStateNone {
+		// Next step, we will trigger a new EC2 instance.
 		instance.Status.State = corev1alpha1.InstanceStateTriggerScaling
 		instance.ObjectMeta.Finalizers = append(instance.ObjectMeta.Finalizers, instanceFinalizer)
 		log.Info(fmt.Sprintf("setting status: %s, finalizer: %s", instance.Status.State, instanceFinalizer))
@@ -140,6 +168,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			log.Error(err, "failed to set autoscaling group desired capacity", "name", asg.Name, "capacity", capacity)
 			return ctrl.Result{}, err
 		}
+		// Next step, we will wait for EC2 instance joining the ASG.
 		instance.Status.State = corev1alpha1.InstanceStateWaitInstance
 		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
 		return ctrl.Result{}, r.Update(ctx, &instance)
@@ -164,6 +193,17 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		var instanceID string
 		for i := len(ec2Instances) - 1; i >= 0; i-- {
 			e := ec2Instances[i]
+
+			// Select only Pending or InService Instance
+			if !containsString([]string{
+				models.AutoscalingGroupInstanceLifecycleStatePending,
+				models.AutoscalingGroupInstanceLifecycleStatePendingWait,
+				models.AutoscalingGroupInstanceLifecycleStatePendingProceed,
+				models.AutoscalingGroupInstanceLifecycleStateInService,
+			}, string(e.LifecycleState)) {
+				continue
+			}
+
 			flag := false
 			for _, inst := range instances.Items {
 				// Exclude itself
@@ -174,14 +214,15 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				if inst.Status.EC2InstanceID == "" {
 					continue
 				}
-				// Already attched EC2 instance
+				// Already attached EC2 instance
 				if e.InstanceID == inst.Status.EC2InstanceID {
 					flag = true
-					break
 				}
 			}
+
 			if !flag {
 				instanceID = e.InstanceID
+				break
 			}
 		}
 
@@ -191,7 +232,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 		}
 
-		// Upgrade Instance with status and instanceID.
+		// Next step, we will wait for Node to join the cluster.
 		instance.Status.State = corev1alpha1.InstanceStateWaitNode
 		instance.Status.EC2InstanceID = instanceID
 		log.Info(fmt.Sprintf("setting status: %s, ec2InstanceID: %s", instance.Status.State, instance.Status.EC2InstanceID))
@@ -241,11 +282,65 @@ func (r *InstanceReconciler) reconcileDeletion(
 
 	// 1st STEP
 	//
+	// Initialize Instance with the desired state.
+	// If Instance is awaiting node, we detach the instance directly.
+	// If Node already joined the cluster we drain it.
+	if instance.Status.State == corev1alpha1.InstanceStateReady {
+		// Next step, we will drain the associated Node.
+		instance.Status.State = corev1alpha1.InstanceStateDrainNode
+		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
+		return ctrl.Result{}, r.Update(ctx, &instance)
+	} else if instance.Status.State == corev1alpha1.InstanceStateWaitNode {
+		// Next step, we will detach the EC2 instance from the ASG.
+		instance.Status.State = corev1alpha1.InstanceStateDetachInstance
+		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
+		return ctrl.Result{}, r.Update(ctx, &instance)
+	}
+
+	// 2nd STEP
+	//
 	// The instance has already scheduled a kubernetes Node.
 	// We need to properly drain this Node before deleting instance.
-	// if instance.Status.State == corev1alpha1.InstanceStateReady {
-	// 	// TODO: node drain implementation
-	// }
+	if instance.Status.State == corev1alpha1.InstanceStateDrainNode {
+		// Get the Instance resource associated Node
+		nodeName := instance.Status.Node
+		var node kcore_v1.Node
+		err := r.Get(ctx, types.NamespacedName{Name: nodeName}, &node)
+		// In the case of a not found error, it seems that the node no longer exists.
+		// We can therefore consider this phase of reconciliation to be accomplished.
+		if client.IgnoreNotFound(err) != nil {
+			return ctrl.Result{}, err
+		} else if err == nil {
+
+			// First, we cordon the Node (set it as unschedulable)
+			err := r.cordonNode(ctx, &node)
+			if err != nil {
+				log.Error(err, "unable to cordon Node")
+				return ctrl.Result{}, err
+			}
+
+			// Get pods scheduled on that Node
+			pods := &kcore_v1.PodList{}
+			if err := r.List(ctx, pods, client.MatchingFieldsSelector{
+				Selector: fields.SelectorFromSet(fields.Set{nodeNameField: nodeName}),
+			}); err != nil {
+				log.Error(err, "failed to list node's pods", "node", nodeName)
+				return ctrl.Result{}, err
+			}
+
+			// Evict pods
+			// We don't care about errors here.
+			// Either we can't process them or the eviction has timeout.
+			if err := r.evictPods(ctx, log, filterPods(pods.Items, r.deletedFilter)); err != nil {
+				log.Error(err, "failed to evict pods", "node", nodeName)
+			}
+		}
+
+		// Next step, we will detach the EC2 instance from the ASG.
+		instance.Status.State = corev1alpha1.InstanceStateDetachInstance
+		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
+		return ctrl.Result{}, r.Update(ctx, &instance)
+	}
 
 	// Instantiate aws-ec2-adapter client requirements
 	ec2adapterCli := ec2adapter.NewHTTPClientWithConfig(nil, &ec2adapter.TransportConfig{
@@ -264,8 +359,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 	// 2nd STEP
 	//
 	// We detach the EC2 instance from the Autoscaling Group.
-	if instance.Status.State == corev1alpha1.InstanceStateDetachInstance ||
-		instance.Status.State == corev1alpha1.InstanceStateWaitNode {
+	if instance.Status.State == corev1alpha1.InstanceStateDetachInstance {
 		// Retrieve AWS autoscaling group.
 		asgName := instance.Spec.ASG
 		res, err := ec2adapterCli.Operations.GetAutoscalingGroup(&operations.GetAutoscalingGroupParams{
@@ -295,6 +389,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 			}
 		}
 
+		// Next step, we will terminate the EC2 instance.
 		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
 		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
 		return ctrl.Result{}, r.Update(ctx, &instance)
@@ -380,7 +475,7 @@ func (m *NodeMapper) Map(obj handler.MapObject) []reconcile.Request {
 
 // isAWSNode returns if given Node is identified as an AWS cluster Node
 func isAWSNode(node kcore_v1.Node) bool {
-	return !strings.HasPrefix(node.Spec.ProviderID, "aws://")
+	return strings.HasPrefix(node.Spec.ProviderID, "aws://")
 }
 
 // ec2InstanceID returns the EC2 instance ID from a given Node
@@ -390,6 +485,14 @@ func ec2InstanceID(node kcore_v1.Node) string {
 
 // SetupWithManager instantiates and returns the InstanceReconciler controller.
 func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// Index nodeName pod's spec field to get pods scheduled on Node
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &kcore_v1.Pod{}, nodeNameField, func(rawObj runtime.Object) []string {
+		pod := rawObj.(*kcore_v1.Pod)
+		return []string{pod.Spec.NodeName}
+	}); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.Instance{}).
 		Watches(
@@ -399,7 +502,17 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// containsString remove given string from slice.
+// containsString returns if given slice contains string.
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+// removeString remove given string from slice.
 func removeString(slice []string, s string) (result []string) {
 	for _, item := range slice {
 		if item == s {
@@ -418,4 +531,249 @@ func instanceWithID(slice []*models.AutoscalingGroupInstance, id string) *models
 		}
 	}
 	return nil
+}
+
+// cordonNode cordon the given Node (mark it as unschedulable).
+func (r *InstanceReconciler) cordonNode(
+	ctx context.Context,
+	node *kcore_v1.Node) error {
+	// To cordon a Node, patch it to set it Unschedulable.
+	old, err := json.Marshal(node)
+	if err != nil {
+		return err
+	}
+	node.Spec.Unschedulable = true
+	new, err := json.Marshal(node)
+	if err != nil {
+		return err
+	}
+
+	patch, err := strategicpatch.CreateTwoWayMergePatch(old, new, node)
+	if err != nil {
+		return err
+	}
+	if err = r.Patch(ctx, node, client.RawPatch(types.StrategicMergePatchType, patch)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// evictPods evict given pods and returns when all pods have been
+// successfully deleted, error occurred or evictionGlobalTimeout expired.
+// This code is largely inspired by kubectl cli source code.
+func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pods []kcore_v1.Pod) error {
+	returnCh := make(chan error, 1)
+	policyGroupVersion, err := CheckEvictionSupport(r.Kubernetes)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(ctx, evictionGlobalTimeout)
+	defer cancel()
+
+	for _, pod := range pods {
+		go func(pod kcore_v1.Pod, returnCh chan error) {
+			for {
+				log.Info("evicting pod", "name", pod.Name, "namespace", pod.Namespace)
+				select {
+				case <-ctx.Done():
+					// return here or we'll leak a goroutine.
+					returnCh <- fmt.Errorf("error when evicting pods/%q -n %q: global timeout reached: %v", pod.Name, pod.Namespace, evictionGlobalTimeout)
+					return
+				default:
+				}
+
+				// Create a temporary pod so we don't mutate the pod in the loop.
+				activePod := pod
+				err := r.evictPod(ctx, activePod, policyGroupVersion)
+				if err == nil {
+					break
+				} else if apierrors.IsNotFound(err) {
+					returnCh <- nil
+					return
+				} else if apierrors.IsTooManyRequests(err) {
+					log.Error(err, "failed to evict pod (will retry after 5s)", "name", pod.Name, "namespace", pod.Namespace)
+					time.Sleep(5 * time.Second)
+				} else if !activePod.ObjectMeta.DeletionTimestamp.IsZero() && apierrors.IsForbidden(err) && apierrors.HasStatusCause(err, kcore_v1.NamespaceTerminatingCause) {
+					// an eviction request in a deleting namespace will throw a forbidden error,
+					// if the pod is already marked deleted, we can ignore this error, an eviction
+					// request will never succeed, but we will waitForDelete for this pod.
+					break
+				} else if apierrors.IsForbidden(err) && apierrors.HasStatusCause(err, kcore_v1.NamespaceTerminatingCause) {
+					// an eviction request in a deleting namespace will throw a forbidden error,
+					// if the pod is not marked deleted, we retry until it is.
+					log.Error(err, "failed to evict pod (will retry after 5s)", "name", pod.Name, "namespace", pod.Namespace)
+					time.Sleep(5 * time.Second)
+				} else {
+					returnCh <- fmt.Errorf("error when evicting pods/%q -n %q: %v", activePod.Name, activePod.Namespace, err)
+					return
+				}
+			}
+			_, err := r.waitForDelete(ctx, []kcore_v1.Pod{pod})
+			if err == nil {
+				returnCh <- nil
+			} else {
+				returnCh <- fmt.Errorf("error when waiting for pod %q terminating: %v", pod.Name, err)
+			}
+		}(pod, returnCh)
+	}
+
+	doneCount := 0
+	var errors []error
+
+	numPods := len(pods)
+	for doneCount < numPods {
+		//nolint:gosimple
+		select {
+		case err := <-returnCh:
+			doneCount++
+			if err != nil {
+				errors = append(errors, err)
+			}
+		}
+	}
+
+	return utilerrors.NewAggregate(errors)
+}
+
+// evictPod will evict the given pod, or return an error if it couldn't
+// This code is largely inspired by kubectl cli source code.
+func (r *InstanceReconciler) evictPod(ctx context.Context, pod kcore_v1.Pod, policyGroupVersion string) error {
+	eviction := &kpolicy_v1beta1.Eviction{
+		TypeMeta: kmeta_v1.TypeMeta{
+			APIVersion: policyGroupVersion,
+			Kind:       EvictionKind,
+		},
+		ObjectMeta: kmeta_v1.ObjectMeta{
+			Name:      pod.Name,
+			Namespace: pod.Namespace,
+		},
+	}
+
+	// Remember to change change the URL manipulation func when Eviction's version change
+	return r.Kubernetes.PolicyV1beta1().Evictions(eviction.Namespace).Evict(ctx, eviction)
+}
+
+// CheckEvictionSupport uses Discovery API to find out if the server support
+// eviction subresource If support, it will return its groupVersion; Otherwise,
+// it will return an empty string.
+// This code is largely inspired by kubectl cli source code.
+func CheckEvictionSupport(clientset kubernetes.Interface) (string, error) {
+	discoveryClient := clientset.Discovery()
+	groupList, err := discoveryClient.ServerGroups()
+	if err != nil {
+		return "", err
+	}
+	foundPolicyGroup := false
+	var policyGroupVersion string
+	for _, group := range groupList.Groups {
+		if group.Name == "policy" {
+			foundPolicyGroup = true
+			policyGroupVersion = group.PreferredVersion.GroupVersion
+			break
+		}
+	}
+	if !foundPolicyGroup {
+		return "", nil
+	}
+	resourceList, err := discoveryClient.ServerResourcesForGroupVersion("v1")
+	if err != nil {
+		return "", err
+	}
+	for _, resource := range resourceList.APIResources {
+		if resource.Name == EvictionSubresource && resource.Kind == EvictionKind {
+			return policyGroupVersion, nil
+		}
+	}
+	return "", nil
+}
+
+// waitForDelete poll pods to check their deletion.
+// This code is largely inspired by kubectl cli source code.
+func (r *InstanceReconciler) waitForDelete(ctx context.Context, pods []kcore_v1.Pod) ([]kcore_v1.Pod, error) {
+	err := wait.PollImmediate(pollInterval, waitForDeleteTimeout, func() (bool, error) {
+		pendingPods := []kcore_v1.Pod{}
+		for i, pod := range pods {
+			var p *kcore_v1.Pod
+			err := r.Get(ctx, types.NamespacedName{
+				Namespace: pod.Namespace,
+				Name:      pod.Name,
+			}, p)
+			if apierrors.IsNotFound(err) || (p != nil && p.ObjectMeta.UID != pod.ObjectMeta.UID) {
+				continue
+			} else if err != nil {
+				return false, err
+			} else {
+				pendingPods = append(pendingPods, pods[i])
+			}
+		}
+		pods = pendingPods
+		if len(pendingPods) > 0 {
+			select {
+			case <-ctx.Done():
+				return false, fmt.Errorf("global timeout reached: %v", evictionGlobalTimeout)
+			default:
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+	return pods, err
+}
+
+// PodFilter describes functions to filter pods from slice
+type PodFilter func([]kcore_v1.Pod) []kcore_v1.Pod
+
+// filterPods filter a pod slice with given filters
+func filterPods(pods []kcore_v1.Pod, filters ...PodFilter) []kcore_v1.Pod {
+	for _, f := range filters {
+		pods = f(pods)
+	}
+	return pods
+}
+
+// daemonSetFilter filter dameonsets pods
+//nolint:unused
+func (r *InstanceReconciler) daemonSetFilter(pods []kcore_v1.Pod) []kcore_v1.Pod {
+	// Note that we return false in cases where the pod is DaemonSet managed,
+	// regardless of flags.
+	//
+	// The exception is for pods that are orphaned (the referencing
+	// management resource - including DaemonSet - is not found).
+	// Such pods will be deleted if --force is used.
+	for i, pod := range pods {
+		controllerRef := kmeta_v1.GetControllerOf(&pod)
+		if controllerRef == nil || controllerRef.Kind != kapps_v1.SchemeGroupVersion.WithKind("DaemonSet").Kind {
+			continue
+		}
+
+		// Any finished pod can be removed.
+		if pod.Status.Phase == kcore_v1.PodSucceeded || pod.Status.Phase == kcore_v1.PodFailed {
+			continue
+		}
+
+		if _, err := r.Kubernetes.AppsV1().DaemonSets(pod.Namespace).Get(context.TODO(), controllerRef.Name, kmeta_v1.GetOptions{}); err != nil {
+			// remove orphaned pods
+			if apierrors.IsNotFound(err) {
+				pods = append(pods[:i], pods[i+1:]...)
+				continue
+			}
+
+			continue
+		}
+
+		pods = append(pods[:i], pods[i+1:]...)
+	}
+
+	return pods
+}
+
+// deletedFilter filter already deleted pods
+func (r *InstanceReconciler) deletedFilter(pods []kcore_v1.Pod) []kcore_v1.Pod {
+	for i, pod := range pods {
+		if !pod.ObjectMeta.DeletionTimestamp.IsZero() {
+			pods = append(pods[:i], pods[i+1:]...)
+		}
+	}
+	return pods
 }

@@ -46,6 +46,7 @@ const (
 	InstanceStateWaitNode          InstanceState = "Waiting Node"
 	InstanceStateDetachInstance    InstanceState = "Detaching Instance"
 	InstanceStateTerminateInstance InstanceState = "Terminating Instance"
+	InstanceStateDrainNode         InstanceState = "Draining Node"
 	InstanceStateReady             InstanceState = "Ready"
 )
 
