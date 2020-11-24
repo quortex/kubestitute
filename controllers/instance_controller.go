@@ -740,8 +740,8 @@ func (r *InstanceReconciler) daemonSetFilter(pods []kcore_v1.Pod) []kcore_v1.Pod
 	//
 	// The exception is for pods that are orphaned (the referencing
 	// management resource - including DaemonSet - is not found).
-	// Such pods will be deleted if --force is used.
-	for i, pod := range pods {
+	for i := len(pods) - 1; i >= 0; i-- {
+		pod := pods[i]
 		controllerRef := kmeta_v1.GetControllerOf(&pod)
 		if controllerRef == nil || controllerRef.Kind != kapps_v1.SchemeGroupVersion.WithKind("DaemonSet").Kind {
 			continue
@@ -770,7 +770,8 @@ func (r *InstanceReconciler) daemonSetFilter(pods []kcore_v1.Pod) []kcore_v1.Pod
 
 // deletedFilter filter already deleted pods
 func (r *InstanceReconciler) deletedFilter(pods []kcore_v1.Pod) []kcore_v1.Pod {
-	for i, pod := range pods {
+	for i := len(pods) - 1; i >= 0; i-- {
+		pod := pods[i]
 		if !pod.ObjectMeta.DeletionTimestamp.IsZero() {
 			pods = append(pods[:i], pods[i+1:]...)
 		}
