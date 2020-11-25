@@ -1,6 +1,6 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= quortexio/kubestitute:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -11,7 +11,7 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: manager
+all: manager manifests
 
 # Run tests
 test: generate fmt vet manifests
@@ -37,6 +37,11 @@ uninstall: manifests
 deploy: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
 	kustomize build config/default | kubectl apply -f -
+
+# Destroy controller in the configured Kubernetes cluster in ~/.kube/config
+destroy: manifests
+	cd config/manager && kustomize edit set image controller=${IMG}
+	kustomize build config/default | kubectl delete -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
@@ -84,7 +89,7 @@ endif
 clients:
 	@t=$$(mktemp -d) && \
 		cd $${t} && \
-		git clone -b feature/autoscaling git@github.com:quortex/aws-ec2-adapter.git && \
+		git clone -b develop git@github.com:quortex/aws-ec2-adapter.git && \
 		cd - && \
 		mkdir -p client/ec2adapter && \
 		cp $${t}/aws-ec2-adapter/docs/swagger.yaml ./client/ec2adapter && \
