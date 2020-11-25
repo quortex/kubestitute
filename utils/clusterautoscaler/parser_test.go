@@ -76,6 +76,7 @@ func TestParseReadableString(t *testing.T) {
 					},
 					ScaleDown: ScaleDown{
 						Status:             ScaleDownCandidatesPresent,
+						Candidates:         1,
 						LastProbeTime:      lpt,
 						LastTransitionTime: time.Date(2020, time.November, 25, 8, 19, 34, 73648791, time.UTC),
 					},
@@ -106,6 +107,7 @@ func TestParseReadableString(t *testing.T) {
 						},
 						ScaleDown: ScaleDown{
 							Status:             ScaleDownCandidatesPresent,
+							Candidates:         1,
 							LastProbeTime:      lpt,
 							LastTransitionTime: time.Date(2020, time.November, 25, 8, 19, 34, 73648791, time.UTC),
 						},

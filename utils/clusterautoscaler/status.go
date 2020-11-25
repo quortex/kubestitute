@@ -70,6 +70,7 @@ const (
 // for Node groups ScaleDown.
 type ScaleDown struct {
 	Status             ScaleDownStatus
+	Candidates         int
 	LastProbeTime      time.Time
 	LastTransitionTime time.Time
 }

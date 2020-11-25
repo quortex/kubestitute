@@ -35,6 +35,7 @@ var (
 	regexHealthMaxSize             = regexp.MustCompile(`[\( ]maxSize=(\d*)`)
 	regexScaleUpStatus             = regexp.MustCompile(`(Needed|NotNeeded|InProgress|NoActivity|Backoff)`)
 	regexScaleDownStatus           = regexp.MustCompile(`(CandidatesPresent|NoCandidates)`)
+	regexScaleDownCandidates       = regexp.MustCompile(`[\( ]candidates=(\d*)`)
 	regexDate                      = regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(.\d*)? \+\d* [A-Z]*)`)
 )
 
@@ -103,15 +104,15 @@ func ParseReadableString(s string) *Status {
 
 		// ScaleDown status parsing
 		if regexKindScaleDown.MatchString(line) {
-			s := parseScaleDownStatus(line)
+			s := parseScaleDown(line)
 			switch reflect.TypeOf(currentMajor) {
 			case reflect.TypeOf(&ClusterWide{}):
 				h := currentMajor.(*ClusterWide)
-				h.ScaleDown.Status = s
+				h.ScaleDown = s
 				currentMinor = &h.ScaleDown
 			case reflect.TypeOf(&NodeGroup{}):
 				h := currentMajor.(*NodeGroup)
-				h.ScaleDown.Status = s
+				h.ScaleDown = s
 				currentMinor = &h.ScaleDown
 			}
 			continue
@@ -202,6 +203,14 @@ func parseScaleUpStatus(s string) ScaleUpStatus {
 // parseScaleDownStatus extract ScaleDownStatus from readable string
 func parseScaleDownStatus(s string) ScaleDownStatus {
 	return ScaleDownStatus(regexScaleDownStatus.FindStringSubmatch(s)[1])
+}
+
+// parseScaleDown extract ScaleDown data from ScaleDown readable string
+func parseScaleDown(s string) ScaleDown {
+	return ScaleDown{
+		Status:     parseScaleDownStatus(s),
+		Candidates: parseToInt(regexScaleDownCandidates, s),
+	}
 }
 
 // parseScaleDownStatus extract date from readable string
