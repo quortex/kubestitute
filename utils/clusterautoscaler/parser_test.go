@@ -10,7 +10,7 @@ import (
 const status = `
 Cluster-autoscaler status at 2020-11-25 08:19:44.090873082 +0000 UTC:
 Cluster-wide:
-	Health:      Healthy (ready=4 unready=0 notStarted=1 longNotStarted=0 registered=5 longUnregistered=0)
+	Health:      Healthy (ready=4 unready=2 notStarted=1 longNotStarted=3 registered=5 longUnregistered=5)
 								LastProbeTime:      2020-11-25 08:19:44.088071148 +0000 UTC m=+2030.020714775
 								LastTransitionTime: 2020-11-25 07:46:04.409158551 +0000 UTC m=+10.341802256
 	ScaleUp:     InProgress (ready=4 registered=5)
@@ -22,7 +22,7 @@ Cluster-wide:
 
 NodeGroups:
 	Name:        foo
-	Health:      Healthy (ready=1 unready=0 notStarted=1 longNotStarted=0 registered=2 longUnregistered=0 cloudProviderTarget=2 (minSize=1, maxSize=3))
+	Health:      Healthy (ready=1 unready=2 notStarted=3 longNotStarted=4 registered=5 longUnregistered=6 cloudProviderTarget=2 (minSize=1, maxSize=3))
 								LastProbeTime:      2020-11-25 08:19:44.088071148 +0000 UTC m=+2030.020714775
 								LastTransitionTime: 2020-11-25 07:46:04.409158551 +0000 UTC m=+10.341802256
 	ScaleUp:     InProgress (ready=1 cloudProviderTarget=2)
@@ -33,7 +33,7 @@ NodeGroups:
 								LastTransitionTime: 2020-11-25 08:19:34.073648791 +0000 UTC m=+2020.006292413
 
 	Name:        bar
-	Health:      Healthy (ready=2 unready=0 notStarted=0 longNotStarted=0 registered=2 longUnregistered=0 cloudProviderTarget=2 (minSize=0, maxSize=3))
+	Health:      Healthy (ready=2 unready=1 notStarted=2 longNotStarted=3 registered=2 longUnregistered=4 cloudProviderTarget=2 (minSize=0, maxSize=3))
 								LastProbeTime:      2020-11-25 08:19:44.088071148 +0000 UTC m=+2030.020714775
 								LastTransitionTime: 0001-01-01 00:00:00 +0000 UTC
 	ScaleUp:     NoActivity (ready=2 cloudProviderTarget=2)
@@ -65,6 +65,12 @@ func TestParseReadableString(t *testing.T) {
 				ClusterWide: ClusterWide{
 					Health: Health{
 						Status:             HealthStatusHealthy,
+						Ready:              4,
+						Unready:            2,
+						NotStarted:         1,
+						LongNotStarted:     3,
+						Registered:         5,
+						LongUnregistered:   5,
 						LastProbeTime:      lpt,
 						LastTransitionTime: time.Date(2020, time.November, 25, 7, 46, 04, 409158551, time.UTC),
 					},
@@ -82,10 +88,21 @@ func TestParseReadableString(t *testing.T) {
 				NodeGroups: []NodeGroup{
 					{
 						Name: "foo",
-						Health: Health{
-							Status:             HealthStatusHealthy,
-							LastProbeTime:      lpt,
-							LastTransitionTime: time.Date(2020, time.November, 25, 7, 46, 4, 409158551, time.UTC),
+						Health: NodeGroupHealth{
+							Health: Health{
+								Status:             HealthStatusHealthy,
+								Ready:              1,
+								Unready:            2,
+								NotStarted:         3,
+								LongNotStarted:     4,
+								Registered:         5,
+								LongUnregistered:   6,
+								LastProbeTime:      lpt,
+								LastTransitionTime: time.Date(2020, time.November, 25, 7, 46, 4, 409158551, time.UTC),
+							},
+							CloudProviderTarget: 2,
+							MinSize:             1,
+							MaxSize:             3,
 						},
 						ScaleDown: ScaleDown{
 							Status:             ScaleDownCandidatesPresent,
@@ -100,10 +117,20 @@ func TestParseReadableString(t *testing.T) {
 					},
 					{
 						Name: "bar",
-						Health: Health{
-							Status:             HealthStatusHealthy,
-							LastProbeTime:      lpt,
-							LastTransitionTime: time.Time{},
+						Health: NodeGroupHealth{
+							Health: Health{
+								Status:             HealthStatusHealthy,
+								Ready:              2,
+								Unready:            1,
+								NotStarted:         2,
+								LongNotStarted:     3,
+								Registered:         2,
+								LongUnregistered:   4,
+								LastProbeTime:      lpt,
+								LastTransitionTime: time.Time{}},
+							CloudProviderTarget: 2,
+							MinSize:             0,
+							MaxSize:             3,
 						},
 						ScaleDown: ScaleDown{
 							Status:             ScaleDownNoCandidates,

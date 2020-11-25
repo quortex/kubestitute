@@ -23,7 +23,7 @@ type ClusterWide struct {
 // by node group.
 type NodeGroup struct {
 	Name      string
-	Health    Health
+	Health    NodeGroupHealth
 	ScaleDown ScaleDown
 	ScaleUp   ScaleUp
 }
@@ -39,11 +39,20 @@ const (
 	HealthStatusUnhealthy HealthStatus = "Unhealthy"
 )
 
-// Health describes the cluster autoscaler Health condition.
+// Health describes the cluster wide cluster autoscaler
+// Health condition.
 type Health struct {
-	Status             HealthStatus
-	LastProbeTime      time.Time
-	LastTransitionTime time.Time
+	Status                                                                   HealthStatus
+	Ready, Unready, NotStarted, LongNotStarted, Registered, LongUnregistered int
+	LastProbeTime                                                            time.Time
+	LastTransitionTime                                                       time.Time
+}
+
+// NodeGroupHealth describes the individual node group cluster autoscaler
+// Health condition.
+type NodeGroupHealth struct {
+	Health
+	CloudProviderTarget, MinSize, MaxSize int
 }
 
 // ScaleDownStatus describes ClusterAutoscaler status

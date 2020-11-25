@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -15,17 +16,26 @@ const (
 
 // Some regex to extract data from readable string.
 var (
-	regexKindName               = regexp.MustCompile(`\s*Name:`)
-	regexKindHealth             = regexp.MustCompile(`\s*Health:`)
-	regexKindScaleUp            = regexp.MustCompile(`\s*ScaleUp:`)
-	regexKindScaleDown          = regexp.MustCompile(`\s*ScaleDown:`)
-	regexKindLastProbeTime      = regexp.MustCompile(`\s*LastProbeTime:`)
-	regexKindLastTransitionTime = regexp.MustCompile(`\s*LastTransitionTime:`)
-	regexName                   = regexp.MustCompile(`\s*Name:\s*(\w*)`)
-	regexHealthStatus           = regexp.MustCompile(`(Healthy|Unhealthy)`)
-	regexScaleUpStatus          = regexp.MustCompile(`(Needed|NotNeeded|InProgress|NoActivity|Backoff)`)
-	regexScaleDownStatus        = regexp.MustCompile(`(CandidatesPresent|NoCandidates)`)
-	regexDate                   = regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(.\d*)? \+\d* [A-Z]*)`)
+	regexKindName                  = regexp.MustCompile(`\s*Name:`)
+	regexKindHealth                = regexp.MustCompile(`\s*Health:`)
+	regexKindScaleUp               = regexp.MustCompile(`\s*ScaleUp:`)
+	regexKindScaleDown             = regexp.MustCompile(`\s*ScaleDown:`)
+	regexKindLastProbeTime         = regexp.MustCompile(`\s*LastProbeTime:`)
+	regexKindLastTransitionTime    = regexp.MustCompile(`\s*LastTransitionTime:`)
+	regexName                      = regexp.MustCompile(`\s*Name:\s*(\w*)`)
+	regexHealthStatus              = regexp.MustCompile(`(Healthy|Unhealthy)`)
+	regexHealthReady               = regexp.MustCompile(`[\( ]ready=(\d*)`)
+	regexHealthUnready             = regexp.MustCompile(`[\( ]unready=(\d*)`)
+	regexHealthNotStarted          = regexp.MustCompile(`[\( ]notStarted=(\d*)`)
+	regexHealthLongNotStarted      = regexp.MustCompile(`[\( ]longNotStarted=(\d*)`)
+	regexHealthRegistered          = regexp.MustCompile(`[\( ]registered=(\d*)`)
+	regexHealthLongUnregistered    = regexp.MustCompile(`[\( ]longUnregistered=(\d*)`)
+	regexHealthCloudProviderTarget = regexp.MustCompile(`[\( ]cloudProviderTarget=(\d*)`)
+	regexHealthMinSize             = regexp.MustCompile(`[\( ]minSize=(\d*)`)
+	regexHealthMaxSize             = regexp.MustCompile(`[\( ]maxSize=(\d*)`)
+	regexScaleUpStatus             = regexp.MustCompile(`(Needed|NotNeeded|InProgress|NoActivity|Backoff)`)
+	regexScaleDownStatus           = regexp.MustCompile(`(CandidatesPresent|NoCandidates)`)
+	regexDate                      = regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(.\d*)? \+\d* [A-Z]*)`)
 )
 
 // ParseReadableString parses the cluster autoscaler status
@@ -62,15 +72,14 @@ func ParseReadableString(s string) *Status {
 		}
 
 		if regexKindHealth.MatchString(line) {
-			s := parseHealthStatus(line)
 			switch reflect.TypeOf(currentMajor) {
 			case reflect.TypeOf(&ClusterWide{}):
 				h := currentMajor.(*ClusterWide)
-				h.Health.Status = s
+				h.Health = parseHealth(line)
 				currentMinor = &h.Health
 			case reflect.TypeOf(&NodeGroup{}):
 				h := currentMajor.(*NodeGroup)
-				h.Health.Status = s
+				h.Health = parseNodeGroupHealth(line)
 				currentMinor = &h.Health
 			}
 			continue
@@ -114,6 +123,9 @@ func ParseReadableString(s string) *Status {
 			case reflect.TypeOf(&Health{}):
 				h := currentMinor.(*Health)
 				h.LastProbeTime = parseDate(regexDate.FindStringSubmatch(line)[1])
+			case reflect.TypeOf(&NodeGroupHealth{}):
+				h := currentMinor.(*NodeGroupHealth)
+				h.LastProbeTime = parseDate(regexDate.FindStringSubmatch(line)[1])
 			case reflect.TypeOf(&ScaleUp{}):
 				h := currentMinor.(*ScaleUp)
 				h.LastProbeTime = parseDate(regexDate.FindStringSubmatch(line)[1])
@@ -129,6 +141,9 @@ func ParseReadableString(s string) *Status {
 			switch reflect.TypeOf(currentMinor) {
 			case reflect.TypeOf(&Health{}):
 				h := currentMinor.(*Health)
+				h.LastTransitionTime = parseDate(regexDate.FindStringSubmatch(line)[1])
+			case reflect.TypeOf(&NodeGroupHealth{}):
+				h := currentMinor.(*NodeGroupHealth)
 				h.LastTransitionTime = parseDate(regexDate.FindStringSubmatch(line)[1])
 			case reflect.TypeOf(&ScaleUp{}):
 				h := currentMinor.(*ScaleUp)
@@ -147,6 +162,36 @@ func ParseReadableString(s string) *Status {
 // parseHealthStatus extract HealthStatus from readable string
 func parseHealthStatus(s string) HealthStatus {
 	return HealthStatus(regexHealthStatus.FindStringSubmatch(s)[1])
+}
+
+// parseToInt parse a string with given regex and returns submatch
+// converted to int.
+func parseToInt(r *regexp.Regexp, s string) int {
+	i, _ := strconv.Atoi(r.FindStringSubmatch(s)[1])
+	return i
+}
+
+// parseScaleDownStatus extract Health data from Health readable string
+func parseHealth(s string) Health {
+	return Health{
+		Status:           parseHealthStatus(s),
+		Ready:            parseToInt(regexHealthReady, s),
+		Unready:          parseToInt(regexHealthUnready, s),
+		NotStarted:       parseToInt(regexHealthNotStarted, s),
+		LongNotStarted:   parseToInt(regexHealthLongNotStarted, s),
+		Registered:       parseToInt(regexHealthRegistered, s),
+		LongUnregistered: parseToInt(regexHealthLongUnregistered, s),
+	}
+}
+
+// parseNodeGroupHealth extract NodeGroupHealth data from Health readable string
+func parseNodeGroupHealth(s string) NodeGroupHealth {
+	return NodeGroupHealth{
+		Health:              parseHealth(s),
+		CloudProviderTarget: parseToInt(regexHealthCloudProviderTarget, s),
+		MinSize:             parseToInt(regexHealthMinSize, s),
+		MaxSize:             parseToInt(regexHealthMaxSize, s),
+	}
 }
 
 // parseScaleUpStatus extract ScaleUpStatus from readable string
