@@ -48,8 +48,7 @@ spec:
               properties:
                 policies:
                   description: Policies is a list of potential scaling polices which
-                    can be used during scaling. At least one policy must be specified,
-                    otherwise the HPAScalingRules will be discarded as invalid
+                    can be used during scaling. At least one policy must be specified.
                   items:
                     description: SchedulerPolicy is a single policy which must hold
                       true for a specified past interval.
@@ -73,19 +72,17 @@ spec:
                             description: An Int for value.
                             format: int32
                             type: integer
-                        required:
-                        - field
                         type: object
                       operator:
-                        description: An arithmetic operator used to apply policy between
+                        description: A comparison operator used to apply policy between
                           From and To.
                         enum:
-                        - =
-                        - '!='
-                        - '>'
-                        - '>='
-                        - <
-                        - <=
+                        - equal
+                        - notEqual
+                        - greaterThan
+                        - greaterThanOrEqual
+                        - lowerThan
+                        - lowerThanOrEqual
                         type: string
                       periodSeconds:
                         description: PeriodSeconds specifies the window of time for
@@ -111,8 +108,6 @@ spec:
                             description: An Int for value.
                             format: int32
                             type: integer
-                        required:
-                        - field
                         type: object
                     required:
                     - from
@@ -133,11 +128,10 @@ spec:
               properties:
                 policies:
                   description: Policies is a list of potential scaling polices which
-                    can be used during scaling. At least one policy must be specified,
-                    otherwise the HPAScalingRules will be discarded as invalid
+                    can be used during scaling. At least one policy must be specified.
                   items:
-                    description: SchedulerPolicy is a single policy which must hold
-                      true for a specified past interval.
+                    description: AdvancedSchedulerPolicy is a policy that allow arithmetic
+                      operation to compute replicas.
                     properties:
                       from:
                         description: From is the target ASG Health field from which
@@ -158,25 +152,88 @@ spec:
                             description: An Int for value.
                             format: int32
                             type: integer
-                        required:
-                        - field
                         type: object
                       operator:
-                        description: An arithmetic operator used to apply policy between
+                        description: A comparison operator used to apply policy between
                           From and To.
                         enum:
-                        - =
-                        - '!='
-                        - '>'
-                        - '>='
-                        - <
-                        - <=
+                        - equal
+                        - notEqual
+                        - greaterThan
+                        - greaterThanOrEqual
+                        - lowerThan
+                        - lowerThanOrEqual
                         type: string
                       periodSeconds:
                         description: PeriodSeconds specifies the window of time for
                           which the policy should hold true.
                         format: int32
                         type: integer
+                      replicas:
+                        description: Replicas specify the replicas to Scale.
+                        properties:
+                          int:
+                            description: An Int for value.
+                            format: int32
+                            type: integer
+                          operation:
+                            description: An arithmetic operation..
+                            properties:
+                              leftOperand:
+                                description: LeftOperand is the left operand of the
+                                  operation.
+                                properties:
+                                  field:
+                                    description: An Field for value.
+                                    enum:
+                                    - Ready
+                                    - Unready
+                                    - NotStarted
+                                    - LongNotStarted
+                                    - Registered
+                                    - LongUnregistered
+                                    - CloudProviderTarget
+                                    type: string
+                                  int:
+                                    description: An Int for value.
+                                    format: int32
+                                    type: integer
+                                type: object
+                              operator:
+                                description: An arithmetic operator used to apply
+                                  policy between From and To.
+                                enum:
+                                - plus
+                                - minus
+                                - multiply
+                                - divide
+                                type: string
+                              rightOperand:
+                                description: RightOperand is the right operand of
+                                  the operation.
+                                properties:
+                                  field:
+                                    description: An Field for value.
+                                    enum:
+                                    - Ready
+                                    - Unready
+                                    - NotStarted
+                                    - LongNotStarted
+                                    - Registered
+                                    - LongUnregistered
+                                    - CloudProviderTarget
+                                    type: string
+                                  int:
+                                    description: An Int for value.
+                                    format: int32
+                                    type: integer
+                                type: object
+                            required:
+                            - leftOperand
+                            - operator
+                            - rightOperand
+                            type: object
+                        type: object
                       to:
                         description: To is the target ASG Health field to which this
                           policy is applied or a fixed value.
@@ -196,12 +253,11 @@ spec:
                             description: An Int for value.
                             format: int32
                             type: integer
-                        required:
-                        - field
                         type: object
                     required:
                     - from
                     - operator
+                    - replicas
                     - to
                     type: object
                   type: array
@@ -223,6 +279,15 @@ spec:
           type: object
         status:
           description: SchedulerStatus defines the observed state of Scheduler
+          properties:
+            lastScaleDown:
+              description: The last time this scheduler has perform a scale down.
+              format: date-time
+              type: string
+            lastScaleUp:
+              description: The last time this scheduler has perform a scale up.
+              format: date-time
+              type: string
           type: object
       type: object
   version: v1alpha1

@@ -22,7 +22,7 @@ var (
 	regexKindScaleDown             = regexp.MustCompile(`\s*ScaleDown:`)
 	regexKindLastProbeTime         = regexp.MustCompile(`\s*LastProbeTime:`)
 	regexKindLastTransitionTime    = regexp.MustCompile(`\s*LastTransitionTime:`)
-	regexName                      = regexp.MustCompile(`\s*Name:\s*(\w*)`)
+	regexName                      = regexp.MustCompile(`\s*Name:\s*(\S*)`)
 	regexHealthStatus              = regexp.MustCompile(`(Healthy|Unhealthy)`)
 	regexHealthReady               = regexp.MustCompile(`[\( ]ready=(\d*)`)
 	regexHealthUnready             = regexp.MustCompile(`[\( ]unready=(\d*)`)
@@ -72,6 +72,7 @@ func ParseReadableString(s string) *Status {
 			continue
 		}
 
+		// Health line parsing
 		if regexKindHealth.MatchString(line) {
 			switch reflect.TypeOf(currentMajor) {
 			case reflect.TypeOf(&ClusterWide{}):

@@ -49,16 +49,16 @@ type SchedulerSpec struct {
 	// Scheduler rules used to match criteria on Target ASG to trigger Scale Up
 	// on Fallback ASG.
 	// +kubebuilder:validation:Optional
-	ScaleUpRules SchedulerRules `json:"scaleUpRules"`
+	ScaleUpRules ScaleUpRules `json:"scaleUpRules"`
 
 	// Scheduler rules used to match criteria on Target ASG to trigger Scale Down
 	// on Fallback ASG.
 	// +kubebuilder:validation:Optional
-	ScaleDownRules SchedulerRules `json:"scaleDownRules"`
+	ScaleDownRules ScaleDownRules `json:"scaleDownRules"`
 }
 
-// SchedulerRules configures the scaling behavior for Instance scheduling.
-type SchedulerRules struct {
+// ScaleDownRules configures the scaling behavior for Instance scale downs.
+type ScaleDownRules struct {
 	// StabilizationWindowSeconds is the number of seconds for which past recommendations should be
 	// considered while scaling up or scaling down.
 	// +kubebuilder:validation:Optional
@@ -70,16 +70,29 @@ type SchedulerRules struct {
 	Policies []SchedulerPolicy `json:"policies,omitempty"`
 }
 
+// ScaleUpRules configures the scaling behavior for Instance scale ups.
+type ScaleUpRules struct {
+	// StabilizationWindowSeconds is the number of seconds for which past recommendations should be
+	// considered while scaling up or scaling down.
+	// +kubebuilder:validation:Optional
+	StabilizationWindowSeconds int32 `json:"stabilizationWindowSeconds"`
+
+	// Policies is a list of potential scaling polices which can be used during scaling.
+	// At least one policy must be specified.
+	// +kubebuilder:validation:Required
+	Policies []AdvancedSchedulerPolicy `json:"policies,omitempty"`
+}
+
 // SchedulerPolicy is a single policy which must hold true for a specified past interval.
 type SchedulerPolicy struct {
 	// From is the target ASG Health field from which this policy is applied.
 	// +kubebuilder:validation:Required
 	From IntOrField `json:"from"`
 
-	// An arithmetic operator used to apply policy between From and To.
+	// A comparison operator used to apply policy between From and To.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum:={"=","!=",">",">=","<","<="}
-	ArithmeticOperator ArithmeticOperator `json:"operator"`
+	// +kubebuilder:validation:Enum:={"equal","notEqual","greaterThan","greaterThanOrEqual","lowerThan","lowerThanOrEqual"}
+	Operator ComparisonOperator `json:"operator"`
 
 	// To is the target ASG Health field to which this policy is applied or a fixed value.
 	// +kubebuilder:validation:Required
@@ -90,25 +103,37 @@ type SchedulerPolicy struct {
 	PeriodSeconds int32 `json:"periodSeconds"`
 }
 
-// Type represents the stored type of IntOrField.
-type Type int64
+// AdvancedSchedulerPolicy is a policy that allow arithmetic operation to compute replicas.
+type AdvancedSchedulerPolicy struct {
+	SchedulerPolicy `json:",inline"`
 
-// Type constants
-const (
-	AnInt  Type = iota // The IntOrString holds an int.
-	AField             // The IntOrString holds a Field.
-)
+	// Replicas specify the replicas to Scale.
+	// +kubebuilder:validation:Required
+	Replicas IntOrArithmeticOperation `json:"replicas"`
+}
 
 // IntOrField is a type that can hold an int32 or a Field.
 type IntOrField struct {
 	// An Int for value.
 	// +kubebuilder:validation:Optional
-	IntVal int32 `json:"int"`
+	IntVal int32 `json:"int,omitempty"`
 
 	// An Field for value.
 	// +kubebuilder:validation:Enum:={"Ready","Unready","NotStarted","LongNotStarted","Registered","LongUnregistered","CloudProviderTarget"}
 	// +kubebuilder:validation:Optional
-	FieldVal Field `json:"field"`
+	FieldVal *Field `json:"field,omitempty"`
+}
+
+// IntOrArithmeticOperation is a type that can hold an int32 or
+// an arithmetic operation.
+type IntOrArithmeticOperation struct {
+	// An Int for value.
+	// +kubebuilder:validation:Optional
+	IntVal int32 `json:"int,omitempty"`
+
+	// An arithmetic operation..
+	// +kubebuilder:validation:Optional
+	OperationVal *ArithmeticOperation `json:"operation,omitempty"`
 }
 
 // Field describes a SchedulerPolicy Field.
@@ -117,14 +142,26 @@ type Field string
 
 // All Field constants
 const (
-	FieldNone                = ""
-	FieldReady               = "Ready"
-	FieldUnready             = "Unready"
-	FieldNotStarted          = "NotStarted"
-	FieldLongNotStarted      = "LongNotStarted"
-	FieldRegistered          = "Registered"
-	FieldLongUnregistered    = "LongUnregistered"
-	FieldCloudProviderTarget = "CloudProviderTarget"
+	FieldReady               Field = "Ready"
+	FieldUnready             Field = "Unready"
+	FieldNotStarted          Field = "NotStarted"
+	FieldLongNotStarted      Field = "LongNotStarted"
+	FieldRegistered          Field = "Registered"
+	FieldLongUnregistered    Field = "LongUnregistered"
+	FieldCloudProviderTarget Field = "CloudProviderTarget"
+)
+
+// ComparisonOperator describes comparison operators
+type ComparisonOperator string
+
+// All ComparisonOperator constants
+const (
+	ComparisonOperatorEqual              = "equal"
+	ComparisonOperatorNotEqual           = "notEqual"
+	ComparisonOperatorGreaterThan        = "greaterThan"
+	ComparisonOperatorGreaterThanOrEqual = "greaterThanOrEqual"
+	ComparisonOperatorLowerThan          = "lowerThan"
+	ComparisonOperatorLowerThanOrEqual   = "lowerThanOrEqual"
 )
 
 // ArithmeticOperator describes arithmetic operators
@@ -132,18 +169,33 @@ type ArithmeticOperator string
 
 // All ArithmeticOperator constants
 const (
-	ArithmeticOperatorEqual              = "="
-	ArithmeticOperatorNotEqual           = "!="
-	ArithmeticOperatorGreaterThan        = ">"
-	ArithmeticOperatorGreaterThanOrEqual = ">="
-	ArithmeticOperatorLowerThan          = "<"
-	ArithmeticOperatorLowerThanOrEqual   = "<="
+	ArithmeticOperatorPlus     = "plus"
+	ArithmeticOperatorMinus    = "minus"
+	ArithmeticOperatorMultiply = "multiply"
+	ArithmeticOperatorDivide   = "divide"
 )
+
+type ArithmeticOperation struct {
+	// LeftOperand is the left operand of the operation.
+	// +kubebuilder:validation:Required
+	LeftOperand IntOrField `json:"leftOperand"`
+
+	// An arithmetic operator used to apply policy between From and To.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum:={"plus","minus","multiply","divide"}
+	Operator ArithmeticOperator `json:"operator"`
+
+	// RightOperand is the right operand of the operation.
+	// +kubebuilder:validation:Required
+	RightOperand IntOrField `json:"rightOperand"`
+}
 
 // SchedulerStatus defines the observed state of Scheduler
 type SchedulerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// The last time this scheduler has perform a scale up.
+	LastScaleUp *metav1.Time `json:"lastScaleUp,omitempty"`
+	// The last time this scheduler has perform a scale down.
+	LastScaleDown *metav1.Time `json:"lastScaleDown,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -99,3 +99,13 @@ type ScaleUp struct {
 	LastProbeTime      time.Time
 	LastTransitionTime time.Time
 }
+
+// GetNodeGroupWithName returns the NodeGroup in slice matching name.
+func GetNodeGroupWithName(nodeGroups []NodeGroup, name string) *NodeGroup {
+	for _, e := range nodeGroups {
+		if e.Name == name {
+			return &e
+		}
+	}
+	return nil
+}
