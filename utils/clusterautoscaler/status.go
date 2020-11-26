@@ -43,7 +43,7 @@ const (
 // Health condition.
 type Health struct {
 	Status                                                                   HealthStatus
-	Ready, Unready, NotStarted, LongNotStarted, Registered, LongUnregistered int
+	Ready, Unready, NotStarted, LongNotStarted, Registered, LongUnregistered int32
 	LastProbeTime                                                            time.Time
 	LastTransitionTime                                                       time.Time
 }
@@ -52,7 +52,7 @@ type Health struct {
 // Health condition.
 type NodeGroupHealth struct {
 	Health
-	CloudProviderTarget, MinSize, MaxSize int
+	CloudProviderTarget, MinSize, MaxSize int32
 }
 
 // ScaleDownStatus describes ClusterAutoscaler status
@@ -70,7 +70,7 @@ const (
 // for Node groups ScaleDown.
 type ScaleDown struct {
 	Status             ScaleDownStatus
-	Candidates         int
+	Candidates         int32
 	LastProbeTime      time.Time
 	LastTransitionTime time.Time
 }

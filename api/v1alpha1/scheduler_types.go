@@ -107,6 +107,7 @@ type IntOrField struct {
 
 	// An Field for value.
 	// +kubebuilder:validation:Enum:={"Ready","Unready","NotStarted","LongNotStarted","Registered","LongUnregistered","CloudProviderTarget"}
+	// +kubebuilder:validation:Optional
 	FieldVal Field `json:"field"`
 }
 
@@ -116,6 +117,7 @@ type Field string
 
 // All Field constants
 const (
+	FieldNone                = ""
 	FieldReady               = "Ready"
 	FieldUnready             = "Unready"
 	FieldNotStarted          = "NotStarted"
@@ -130,12 +132,12 @@ type ArithmeticOperator string
 
 // All ArithmeticOperator constants
 const (
-	ArithmleticOperatorEqual              = "="
-	ArithmleticOperatorNotEqual           = "!="
-	ArithmleticOperatorGreaterThan        = ">"
-	ArithmleticOperatorGreaterThanOrEqual = ">="
-	ArithmleticOperatorLowerThan          = "<"
-	ArithmleticOperatorLowerThanOrEqual   = "<="
+	ArithmeticOperatorEqual              = "="
+	ArithmeticOperatorNotEqual           = "!="
+	ArithmeticOperatorGreaterThan        = ">"
+	ArithmeticOperatorGreaterThanOrEqual = ">="
+	ArithmeticOperatorLowerThan          = "<"
+	ArithmeticOperatorLowerThanOrEqual   = "<="
 )
 
 // SchedulerStatus defines the observed state of Scheduler

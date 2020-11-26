@@ -165,23 +165,23 @@ func parseHealthStatus(s string) HealthStatus {
 	return HealthStatus(regexHealthStatus.FindStringSubmatch(s)[1])
 }
 
-// parseToInt parse a string with given regex and returns submatch
+// parseToInt32 parse a string with given regex and returns submatch
 // converted to int.
-func parseToInt(r *regexp.Regexp, s string) int {
+func parseToInt32(r *regexp.Regexp, s string) int32 {
 	i, _ := strconv.Atoi(r.FindStringSubmatch(s)[1])
-	return i
+	return int32(i)
 }
 
 // parseScaleDownStatus extract Health data from Health readable string
 func parseHealth(s string) Health {
 	return Health{
 		Status:           parseHealthStatus(s),
-		Ready:            parseToInt(regexHealthReady, s),
-		Unready:          parseToInt(regexHealthUnready, s),
-		NotStarted:       parseToInt(regexHealthNotStarted, s),
-		LongNotStarted:   parseToInt(regexHealthLongNotStarted, s),
-		Registered:       parseToInt(regexHealthRegistered, s),
-		LongUnregistered: parseToInt(regexHealthLongUnregistered, s),
+		Ready:            parseToInt32(regexHealthReady, s),
+		Unready:          parseToInt32(regexHealthUnready, s),
+		NotStarted:       parseToInt32(regexHealthNotStarted, s),
+		LongNotStarted:   parseToInt32(regexHealthLongNotStarted, s),
+		Registered:       parseToInt32(regexHealthRegistered, s),
+		LongUnregistered: parseToInt32(regexHealthLongUnregistered, s),
 	}
 }
 
@@ -189,9 +189,9 @@ func parseHealth(s string) Health {
 func parseNodeGroupHealth(s string) NodeGroupHealth {
 	return NodeGroupHealth{
 		Health:              parseHealth(s),
-		CloudProviderTarget: parseToInt(regexHealthCloudProviderTarget, s),
-		MinSize:             parseToInt(regexHealthMinSize, s),
-		MaxSize:             parseToInt(regexHealthMaxSize, s),
+		CloudProviderTarget: parseToInt32(regexHealthCloudProviderTarget, s),
+		MinSize:             parseToInt32(regexHealthMinSize, s),
+		MaxSize:             parseToInt32(regexHealthMaxSize, s),
 	}
 }
 
@@ -209,7 +209,7 @@ func parseScaleDownStatus(s string) ScaleDownStatus {
 func parseScaleDown(s string) ScaleDown {
 	return ScaleDown{
 		Status:     parseScaleDownStatus(s),
-		Candidates: parseToInt(regexScaleDownCandidates, s),
+		Candidates: parseToInt32(regexScaleDownCandidates, s),
 	}
 }
 
