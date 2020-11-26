@@ -25,7 +25,7 @@ type InstanceSpec struct {
 
 	// The AutoScaling Group name.
 	// +kubebuilder:validation:Required
-	ASG string `json:"asg"`
+	ASG string `json:"autoscalingGroup"`
 
 	// Indicates whether Amazon EC2 Auto Scaling waits for the cooldown period to
 	// complete before initiating a scaling activity to set your Auto Scaling group

@@ -4,7 +4,7 @@ metadata:
   name: instance-sample
 spec:
   # Add fields here
-  asg: kubestitute
+  autoscalingGroup: kubestitute
 ---
 apiVersion: core.kubestitute.quortex.io/v1alpha1
 kind: Instance
@@ -12,7 +12,7 @@ metadata:
   name: instance-sample2
 spec:
   # Add fields here
-  asg: kubestitute
+  autoscalingGroup: kubestitute
 ---
 apiVersion: core.kubestitute.quortex.io/v1alpha1
 kind: Instance
@@ -20,7 +20,7 @@ metadata:
   name: instance-sample3
 spec:
   # Add fields here
-  asg: kubestitute
+  autoscalingGroup: kubestitute
 ---
 apiVersion: core.kubestitute.quortex.io/v1alpha1
 kind: Instance
@@ -28,7 +28,7 @@ metadata:
   name: instance-sample4
 spec:
   # Add fields here
-  asg: kubestitute
+  autoscalingGroup: kubestitute
 ---
 apiVersion: core.kubestitute.quortex.io/v1alpha1
 kind: Instance
@@ -36,7 +36,7 @@ metadata:
   name: instance-sample5
 spec:
   # Add fields here
-  asg: kubestitute
+  autoscalingGroup: kubestitute
 ---
 apiVersion: core.kubestitute.quortex.io/v1alpha1
 kind: Instance
@@ -44,7 +44,7 @@ metadata:
   name: instance-sample6
 spec:
   # Add fields here
-  asg: kubestitute
+  autoscalingGroup: kubestitute
 ---
 apiVersion: core.kubestitute.quortex.io/v1alpha1
 kind: Instance
@@ -52,7 +52,7 @@ metadata:
   name: instance-sample7
 spec:
   # Add fields here
-  asg: kubestitute
+  autoscalingGroup: kubestitute
 ---
 apiVersion: core.kubestitute.quortex.io/v1alpha1
 kind: Instance
@@ -60,7 +60,7 @@ metadata:
   name: instance-sample8
 spec:
   # Add fields here
-  asg: kubestitute
+  autoscalingGroup: kubestitute
 ---
 apiVersion: core.kubestitute.quortex.io/v1alpha1
 kind: Instance
@@ -68,7 +68,7 @@ metadata:
   name: instance-sample9
 spec:
   # Add fields here
-  asg: kubestitute
+  autoscalingGroup: kubestitute
 ---
 apiVersion: core.kubestitute.quortex.io/v1alpha1
 kind: Instance
@@ -76,4 +76,4 @@ metadata:
   name: instance-sample10
 spec:
   # Add fields here
-  asg: kubestitute
+  autoscalingGroup: kubestitute

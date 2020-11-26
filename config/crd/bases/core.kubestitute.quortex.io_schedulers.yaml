@@ -34,10 +34,192 @@ spec:
         spec:
           description: SchedulerSpec defines the desired state of Scheduler
           properties:
-            foo:
-              description: Foo is an example field of Scheduler. Edit Scheduler_types.go
-                to remove/update
+            autoscalingGroupFallback:
+              description: The name of the autoscaling group, in which the scheduler
+                will trigger fallback instances.
               type: string
+            autoscalingGroupTarget:
+              description: The name of the autoscaling group, which the scheduler
+                will use to apply the rules.
+              type: string
+            scaleDownRules:
+              description: Scheduler rules used to match criteria on Target ASG to
+                trigger Scale Down on Fallback ASG.
+              properties:
+                policies:
+                  description: Policies is a list of potential scaling polices which
+                    can be used during scaling. At least one policy must be specified,
+                    otherwise the HPAScalingRules will be discarded as invalid
+                  items:
+                    description: SchedulerPolicy is a single policy which must hold
+                      true for a specified past interval.
+                    properties:
+                      from:
+                        description: From is the target ASG Health field from which
+                          this policy is applied.
+                        properties:
+                          field:
+                            description: An Field for value.
+                            enum:
+                            - Ready
+                            - Unready
+                            - NotStarted
+                            - LongNotStarted
+                            - Registered
+                            - LongUnregistered
+                            - CloudProviderTarget
+                            type: string
+                          int:
+                            description: An Int for value.
+                            format: int32
+                            type: integer
+                        required:
+                        - field
+                        type: object
+                      operator:
+                        description: An arithmetic operator used to apply policy between
+                          From and To.
+                        enum:
+                        - =
+                        - '!='
+                        - '>'
+                        - '>='
+                        - <
+                        - <=
+                        type: string
+                      periodSeconds:
+                        description: PeriodSeconds specifies the window of time for
+                          which the policy should hold true.
+                        format: int32
+                        type: integer
+                      to:
+                        description: To is the target ASG Health field to which this
+                          policy is applied or a fixed value.
+                        properties:
+                          field:
+                            description: An Field for value.
+                            enum:
+                            - Ready
+                            - Unready
+                            - NotStarted
+                            - LongNotStarted
+                            - Registered
+                            - LongUnregistered
+                            - CloudProviderTarget
+                            type: string
+                          int:
+                            description: An Int for value.
+                            format: int32
+                            type: integer
+                        required:
+                        - field
+                        type: object
+                    required:
+                    - from
+                    - operator
+                    - to
+                    type: object
+                  type: array
+                stabilizationWindowSeconds:
+                  description: StabilizationWindowSeconds is the number of seconds
+                    for which past recommendations should be considered while scaling
+                    up or scaling down.
+                  format: int32
+                  type: integer
+              type: object
+            scaleUpRules:
+              description: Scheduler rules used to match criteria on Target ASG to
+                trigger Scale Up on Fallback ASG.
+              properties:
+                policies:
+                  description: Policies is a list of potential scaling polices which
+                    can be used during scaling. At least one policy must be specified,
+                    otherwise the HPAScalingRules will be discarded as invalid
+                  items:
+                    description: SchedulerPolicy is a single policy which must hold
+                      true for a specified past interval.
+                    properties:
+                      from:
+                        description: From is the target ASG Health field from which
+                          this policy is applied.
+                        properties:
+                          field:
+                            description: An Field for value.
+                            enum:
+                            - Ready
+                            - Unready
+                            - NotStarted
+                            - LongNotStarted
+                            - Registered
+                            - LongUnregistered
+                            - CloudProviderTarget
+                            type: string
+                          int:
+                            description: An Int for value.
+                            format: int32
+                            type: integer
+                        required:
+                        - field
+                        type: object
+                      operator:
+                        description: An arithmetic operator used to apply policy between
+                          From and To.
+                        enum:
+                        - =
+                        - '!='
+                        - '>'
+                        - '>='
+                        - <
+                        - <=
+                        type: string
+                      periodSeconds:
+                        description: PeriodSeconds specifies the window of time for
+                          which the policy should hold true.
+                        format: int32
+                        type: integer
+                      to:
+                        description: To is the target ASG Health field to which this
+                          policy is applied or a fixed value.
+                        properties:
+                          field:
+                            description: An Field for value.
+                            enum:
+                            - Ready
+                            - Unready
+                            - NotStarted
+                            - LongNotStarted
+                            - Registered
+                            - LongUnregistered
+                            - CloudProviderTarget
+                            type: string
+                          int:
+                            description: An Int for value.
+                            format: int32
+                            type: integer
+                        required:
+                        - field
+                        type: object
+                    required:
+                    - from
+                    - operator
+                    - to
+                    type: object
+                  type: array
+                stabilizationWindowSeconds:
+                  description: StabilizationWindowSeconds is the number of seconds
+                    for which past recommendations should be considered while scaling
+                    up or scaling down.
+                  format: int32
+                  type: integer
+              type: object
+            trigger:
+              description: The Scheduler Trigger
+              enum:
+              - ClusterAutoscaler
+              type: string
+          required:
+          - autoscalingGroupFallback
+          - autoscalingGroupTarget
           type: object
         status:
           description: SchedulerStatus defines the observed state of Scheduler
