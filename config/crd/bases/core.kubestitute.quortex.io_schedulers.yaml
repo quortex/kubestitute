@@ -53,9 +53,10 @@ spec:
                     description: SchedulerPolicy is a single policy which must hold
                       true for a specified past interval.
                     properties:
-                      from:
-                        description: From is the target ASG Health field from which
-                          this policy is applied.
+                      leftOperand:
+                        description: LeftOperand is the left operand of the comparison.
+                          It could be the target ASG Health field from which this
+                          policy is applied or an integer.
                         properties:
                           field:
                             description: An Field for value.
@@ -89,9 +90,10 @@ spec:
                           which the policy should hold true.
                         format: int32
                         type: integer
-                      to:
-                        description: To is the target ASG Health field to which this
-                          policy is applied or a fixed value.
+                      rightOperand:
+                        description: RightOperand is the left operand of the comparison.
+                          It could be the target ASG Health field from which this
+                          policy is applied or an integer.
                         properties:
                           field:
                             description: An Field for value.
@@ -110,9 +112,9 @@ spec:
                             type: integer
                         type: object
                     required:
-                    - from
+                    - leftOperand
                     - operator
-                    - to
+                    - rightOperand
                     type: object
                   type: array
                 stabilizationWindowSeconds:
@@ -133,9 +135,10 @@ spec:
                     description: AdvancedSchedulerPolicy is a policy that allow arithmetic
                       operation to compute replicas.
                     properties:
-                      from:
-                        description: From is the target ASG Health field from which
-                          this policy is applied.
+                      leftOperand:
+                        description: LeftOperand is the left operand of the comparison.
+                          It could be the target ASG Health field from which this
+                          policy is applied or an integer.
                         properties:
                           field:
                             description: An Field for value.
@@ -234,9 +237,10 @@ spec:
                             - rightOperand
                             type: object
                         type: object
-                      to:
-                        description: To is the target ASG Health field to which this
-                          policy is applied or a fixed value.
+                      rightOperand:
+                        description: RightOperand is the left operand of the comparison.
+                          It could be the target ASG Health field from which this
+                          policy is applied or an integer.
                         properties:
                           field:
                             description: An Field for value.
@@ -255,10 +259,10 @@ spec:
                             type: integer
                         type: object
                     required:
-                    - from
+                    - leftOperand
                     - operator
                     - replicas
-                    - to
+                    - rightOperand
                     type: object
                   type: array
                 stabilizationWindowSeconds:

@@ -85,18 +85,20 @@ type ScaleUpRules struct {
 
 // SchedulerPolicy is a single policy which must hold true for a specified past interval.
 type SchedulerPolicy struct {
-	// From is the target ASG Health field from which this policy is applied.
+	// LeftOperand is the left operand of the comparison. It could be the target ASG Health field from
+	// which this policy is applied or an integer.
 	// +kubebuilder:validation:Required
-	From IntOrField `json:"from"`
+	LeftOperand IntOrField `json:"leftOperand"`
 
 	// A comparison operator used to apply policy between From and To.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum:={"equal","notEqual","greaterThan","greaterThanOrEqual","lowerThan","lowerThanOrEqual"}
 	Operator ComparisonOperator `json:"operator"`
 
-	// To is the target ASG Health field to which this policy is applied or a fixed value.
+	// RightOperand is the left operand of the comparison. It could be the target ASG Health field from
+	// which this policy is applied or an integer.
 	// +kubebuilder:validation:Required
-	To IntOrField `json:"to"`
+	RightOperand IntOrField `json:"rightOperand"`
 
 	// PeriodSeconds specifies the window of time for which the policy should hold true.
 	// +kubebuilder:validation:Optional

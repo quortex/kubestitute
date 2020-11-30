@@ -9,10 +9,10 @@ spec:
   scaleUpRules:
     stabilizationWindowSeconds: 120
     policies:
-      - from:
+      - leftOperand:
           field: Ready
         operator: lowerThan
-        to:
+        rightOperand:
           field: CloudProviderTarget
         periodSeconds: 120
         replicas:

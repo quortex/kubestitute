@@ -43,8 +43,8 @@ import (
 )
 
 const (
-	annScaleUp   = "scaleup-policies"
-	annScaleDown = "scaledown-policies"
+	annScaleUp   = "kubestitute.quortex.io/scaleup-policies"
+	annScaleDown = "kubestitute.quortex.io/scaledown-policies"
 	lblScheduler = "kubestitute.quortex.io/scheduler"
 )
 
@@ -226,6 +226,12 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		up = 0
 	}
 
+	// Rationalization of additions and deletions
+	if up > down && down > 0 {
+		up = up - down
+		down = 0
+	}
+
 	// No need to Up/Down scale.
 	if up-down == 0 {
 		log.Info(fmt.Sprintf("nothing to do: %d instances to add / %d instances to remove", up, down))
@@ -316,7 +322,7 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 // endReconciliation applies the scheduler state changes at the end of the scheduler reconciliation.
-// scaleDownPolicies is last matched scaleDown policies, must be empty if scaleUp happened in this reconciliation.
+// scaleDownPolicies is last matched scaleUp policies, must be empty if scaleUp happened in this reconciliation.
 // scaleUpPolicies is last matched scaleUp policies, must be empty if scaleUp happened in this reconciliation.
 // scaleDownTime scaleUpTime, are the dates of the last scaling events, they must be changed if one of these events took place during reconciliation.
 func (r *SchedulerReconciler) endReconciliation(
@@ -339,7 +345,7 @@ func (r *SchedulerReconciler) endReconciliation(
 		log.Error(err, "failed to marshal scale down policies")
 		return ctrl.Result{}, err
 	}
-	// ... and scaleDownPolicies.
+	// ... and scaleUpPolicies.
 	up, err := json.Marshal(scaleUpPolicies)
 	if err != nil {
 		log.Error(err, "failed to marshal scale up policies")
@@ -413,23 +419,23 @@ func nodeGroupIntOrFieldValue(ng clusterautoscaler.NodeGroup, iof corev1alpha1.I
 
 // matchPolicy returns if given NodeGroup match desired Scheduler policy.
 func matchPolicy(ng clusterautoscaler.NodeGroup, policy corev1alpha1.SchedulerPolicy) bool {
-	from := nodeGroupIntOrFieldValue(ng, policy.From)
-	to := nodeGroupIntOrFieldValue(ng, policy.To)
+	left := nodeGroupIntOrFieldValue(ng, policy.LeftOperand)
+	right := nodeGroupIntOrFieldValue(ng, policy.RightOperand)
 
 	// Perform comparison to compute Scheduler policy.
 	switch policy.Operator {
 	case corev1alpha1.ComparisonOperatorEqual:
-		return from == to
+		return left == right
 	case corev1alpha1.ComparisonOperatorNotEqual:
-		return from != to
+		return left != right
 	case corev1alpha1.ComparisonOperatorGreaterThan:
-		return from > to
+		return left > right
 	case corev1alpha1.ComparisonOperatorGreaterThanOrEqual:
-		return from >= to
+		return left >= right
 	case corev1alpha1.ComparisonOperatorLowerThan:
-		return from < to
+		return left < right
 	case corev1alpha1.ComparisonOperatorLowerThanOrEqual:
-		return from <= to
+		return left <= right
 	}
 
 	return false

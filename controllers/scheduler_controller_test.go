@@ -58,11 +58,11 @@ func Test_getMatchedPolicy(t *testing.T) {
 			args: args{
 				m: nil,
 				p: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						IntVal: 1,
 					},
 					Operator: corev1alpha1.ComparisonOperatorGreaterThan,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						IntVal: 2,
 					},
 					PeriodSeconds: 120,
@@ -76,11 +76,11 @@ func Test_getMatchedPolicy(t *testing.T) {
 				m: []matchedPolicy{
 					{
 						Policy: corev1alpha1.SchedulerPolicy{
-							From: corev1alpha1.IntOrField{
+							LeftOperand: corev1alpha1.IntOrField{
 								IntVal: 1,
 							},
 							Operator: corev1alpha1.ComparisonOperatorEqual,
-							To: corev1alpha1.IntOrField{
+							RightOperand: corev1alpha1.IntOrField{
 								IntVal: 2,
 							},
 							PeriodSeconds: 60,
@@ -88,11 +88,11 @@ func Test_getMatchedPolicy(t *testing.T) {
 					},
 					{
 						Policy: corev1alpha1.SchedulerPolicy{
-							From: corev1alpha1.IntOrField{
+							LeftOperand: corev1alpha1.IntOrField{
 								FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
 							},
 							Operator: corev1alpha1.ComparisonOperatorGreaterThan,
-							To: corev1alpha1.IntOrField{
+							RightOperand: corev1alpha1.IntOrField{
 								FieldVal: fieldPointer(corev1alpha1.FieldReady),
 							},
 							PeriodSeconds: 120,
@@ -100,11 +100,11 @@ func Test_getMatchedPolicy(t *testing.T) {
 					},
 				},
 				p: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						IntVal: 2,
 					},
 					Operator: corev1alpha1.ComparisonOperatorGreaterThan,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
 					},
 					PeriodSeconds: 120,
@@ -118,11 +118,11 @@ func Test_getMatchedPolicy(t *testing.T) {
 				m: []matchedPolicy{
 					{
 						Policy: corev1alpha1.SchedulerPolicy{
-							From: corev1alpha1.IntOrField{
+							LeftOperand: corev1alpha1.IntOrField{
 								IntVal: 1,
 							},
 							Operator: corev1alpha1.ComparisonOperatorEqual,
-							To: corev1alpha1.IntOrField{
+							RightOperand: corev1alpha1.IntOrField{
 								IntVal: 2,
 							},
 							PeriodSeconds: 60,
@@ -130,11 +130,11 @@ func Test_getMatchedPolicy(t *testing.T) {
 					},
 					{
 						Policy: corev1alpha1.SchedulerPolicy{
-							From: corev1alpha1.IntOrField{
+							LeftOperand: corev1alpha1.IntOrField{
 								FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
 							},
 							Operator: corev1alpha1.ComparisonOperatorGreaterThan,
-							To: corev1alpha1.IntOrField{
+							RightOperand: corev1alpha1.IntOrField{
 								FieldVal: fieldPointer(corev1alpha1.FieldReady),
 							},
 							PeriodSeconds: 120,
@@ -143,11 +143,11 @@ func Test_getMatchedPolicy(t *testing.T) {
 					},
 				},
 				p: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
 					},
 					Operator: corev1alpha1.ComparisonOperatorGreaterThan,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
 					},
 					PeriodSeconds: 120,
@@ -155,11 +155,11 @@ func Test_getMatchedPolicy(t *testing.T) {
 			},
 			want: &matchedPolicy{
 				Policy: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
 					},
 					Operator: corev1alpha1.ComparisonOperatorGreaterThan,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
 					},
 					PeriodSeconds: 120,
@@ -307,11 +307,11 @@ func Test_matchPolicy(t *testing.T) {
 			args: args{
 				ng: ng,
 				policy: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						IntVal: 1,
 					},
 					Operator: corev1alpha1.ComparisonOperator("foo"),
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
 					},
 				},
@@ -323,11 +323,11 @@ func Test_matchPolicy(t *testing.T) {
 			args: args{
 				ng: ng,
 				policy: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						IntVal: 1,
 					},
 					Operator: corev1alpha1.ComparisonOperatorEqual,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
 					},
 				},
@@ -339,11 +339,11 @@ func Test_matchPolicy(t *testing.T) {
 			args: args{
 				ng: ng,
 				policy: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
 					},
 					Operator: corev1alpha1.ComparisonOperatorGreaterThanOrEqual,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
 					},
 				},
@@ -355,11 +355,11 @@ func Test_matchPolicy(t *testing.T) {
 			args: args{
 				ng: ng,
 				policy: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
 					},
 					Operator: corev1alpha1.ComparisonOperatorGreaterThanOrEqual,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldUnready),
 					},
 				},
@@ -371,11 +371,11 @@ func Test_matchPolicy(t *testing.T) {
 			args: args{
 				ng: ng,
 				policy: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldUnready),
 					},
 					Operator: corev1alpha1.ComparisonOperatorGreaterThan,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldNotStarted),
 					},
 				},
@@ -387,11 +387,11 @@ func Test_matchPolicy(t *testing.T) {
 			args: args{
 				ng: ng,
 				policy: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldNotStarted),
 					},
 					Operator: corev1alpha1.ComparisonOperatorGreaterThan,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldNotStarted),
 					},
 				},
@@ -403,11 +403,11 @@ func Test_matchPolicy(t *testing.T) {
 			args: args{
 				ng: ng,
 				policy: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
 					},
 					Operator: corev1alpha1.ComparisonOperatorLowerThanOrEqual,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
 					},
 				},
@@ -419,11 +419,11 @@ func Test_matchPolicy(t *testing.T) {
 			args: args{
 				ng: ng,
 				policy: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
 					},
 					Operator: corev1alpha1.ComparisonOperatorGreaterThan,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
 					},
 				},
@@ -435,11 +435,11 @@ func Test_matchPolicy(t *testing.T) {
 			args: args{
 				ng: ng,
 				policy: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
 					},
 					Operator: corev1alpha1.ComparisonOperatorNotEqual,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
 					},
 				},
@@ -451,11 +451,11 @@ func Test_matchPolicy(t *testing.T) {
 			args: args{
 				ng: ng,
 				policy: corev1alpha1.SchedulerPolicy{
-					From: corev1alpha1.IntOrField{
+					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldLongUnregistered),
 					},
 					Operator: corev1alpha1.ComparisonOperatorLowerThan,
-					To: corev1alpha1.IntOrField{
+					RightOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
 					},
 				},
