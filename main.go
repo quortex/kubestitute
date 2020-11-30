@@ -20,6 +20,7 @@ import (
 	"flag"
 	"os"
 
+	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -49,17 +50,20 @@ func main() {
 	var enableLeaderElection bool
 	var clusterAutoscalerStatusNamespace string
 	var clusterAutoscalerStatusName string
+	var enableDevLogs bool
+	var logVerbosity int
 
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-
 	flag.StringVar(&clusterAutoscalerStatusNamespace, "clusterautoscaler-status-namespace", "kube-system", "The namespace the clusterautoscaler status configmap belongs to.")
 	flag.StringVar(&clusterAutoscalerStatusName, "clusterautoscaler-status-name", "cluster-autoscaler-status", "The name of the clusterautoscaler status configmap.")
+	flag.BoolVar(&enableDevLogs, "dev", false, "Enable dev mode for logging.")
+	flag.IntVar(&logVerbosity, "v", 3, "Logs verbosity.")
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	ctrl.SetLogger(zap.New(zap.UseDevMode(enableDevLogs), zap.Level(zapcore.Level(int8(zapcore.DPanicLevel)-int8(logVerbosity)))))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
