@@ -47,10 +47,16 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var clusterAutoscalerStatusNamespace string
+	var clusterAutoscalerStatusName string
+
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+
+	flag.StringVar(&clusterAutoscalerStatusNamespace, "clusterautoscaler-status-namespace", "kube-system", "The namespace the clusterautoscaler status configmap belongs to.")
+	flag.StringVar(&clusterAutoscalerStatusName, "clusterautoscaler-status-name", "cluster-autoscaler-status", "The name of the clusterautoscaler status configmap.")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
@@ -80,6 +86,18 @@ func main() {
 		Kubernetes: kubeClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Instance")
+		os.Exit(1)
+	}
+	if err = (&controllers.SchedulerReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Scheduler"),
+		Scheme: mgr.GetScheme(),
+		Conf: controllers.SchedulerReconcilerConfiguration{
+			ClusterAutoscalerStatusNamespace: clusterAutoscalerStatusNamespace,
+			ClusterAutoscalerStatusName:      clusterAutoscalerStatusName,
+		},
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Scheduler")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

@@ -1,0 +1,33 @@
+apiVersion: core.kubestitute.quortex.io/v1alpha1
+kind: Scheduler
+metadata:
+  name: scheduler-sample
+spec:
+  trigger: ClusterAutoscaler
+  autoscalingGroupTarget: robert-normal_workflow-preemptive-group
+  autoscalingGroupFallback: robert-normal_workflow-fallback-group
+  scaleUpRules:
+    stabilizationWindowSeconds: 120
+    policies:
+      - leftOperand:
+          field: Ready
+        operator: lowerThan
+        rightOperand:
+          field: CloudProviderTarget
+        periodSeconds: 120
+        replicas:
+          operation:
+            leftOperand:
+              field: CloudProviderTarget
+            operator: minus
+            rightOperand:
+              field: Ready
+  scaleDownRules:
+    stabilizationWindowSeconds: 60
+    policies:
+      - from:
+          field: Ready
+        operator: equal
+        to:
+          field: CloudProviderTarget
+        periodSeconds: 120

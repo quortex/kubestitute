@@ -9,6 +9,14 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - nodes
   verbs:
   - get
@@ -46,6 +54,26 @@ rules:
   - core.kubestitute.quortex.io
   resources:
   - instances/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - core.kubestitute.quortex.io
+  resources:
+  - schedulers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - core.kubestitute.quortex.io
+  resources:
+  - schedulers/status
   verbs:
   - get
   - patch
