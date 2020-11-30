@@ -229,7 +229,8 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// No need to Up/Down scale.
 	if up-down == 0 {
 		log.Info(fmt.Sprintf("nothing to do: %d instances to add / %d instances to remove", up, down))
-		return ctrl.Result{}, nil
+		// We update all policies annotations.
+		return r.endReconciliation(ctx, log, scheduler, newScaleDownPolicies, newScaleUpPolicies, scheduler.Status.LastScaleDown, scheduler.Status.LastScaleUp)
 	}
 
 	// Scaling up required
@@ -311,7 +312,7 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return r.endReconciliation(ctx, log, scheduler, []matchedPolicy{}, newScaleUpPolicies, &kmeta_v1.Time{Time: now}, scheduler.Status.LastScaleUp)
 	}
 
-	return ctrl.Result{}, nil
+	return r.endReconciliation(ctx, log, scheduler, newScaleDownPolicies, newScaleUpPolicies, scheduler.Status.LastScaleDown, scheduler.Status.LastScaleUp)
 }
 
 // endReconciliation applies the scheduler state changes at the end of the scheduler reconciliation.
