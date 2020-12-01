@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	kcore_v1 "k8s.io/api/core/v1"
 	kmeta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -77,7 +78,10 @@ type matchedPolicy struct {
 // Reconcile reconciles the requested state with the current state.
 func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("scheduler", req.NamespacedName)
+	log := r.Log.WithValues("scheduler", req.NamespacedName, "reconciliationID", uuid.New().String())
+
+	log.V(1).Info("Scheduler reconciliation started")
+	defer log.V(1).Info("Scheduler reconciliation done")
 
 	var scheduler corev1alpha1.Scheduler
 	if err := r.Get(ctx, req.NamespacedName, &scheduler); err != nil {
@@ -86,7 +90,7 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		// on deleted requests.
 		err = client.IgnoreNotFound(err)
 		if err != nil {
-			log.Error(err, "unable to fetch Scheduler")
+			log.Error(err, "Unable to fetch Scheduler")
 		}
 
 		return ctrl.Result{}, err
@@ -95,7 +99,7 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Check if Trigger is valid (only ClusterAutoscaler trigger supported atm).
 	if scheduler.Spec.Trigger != corev1alpha1.SchedulerTriggerClusterAutoscaler {
 		err := fmt.Errorf("invalid Trigger: %s", scheduler.Spec.Trigger)
-		log.Error(err, "unable to fetch Scheduler", "namespace", scheduler.Namespace, "name", scheduler.Name)
+		log.Error(err, "Invalid Scheduler")
 		return ctrl.Result{}, err
 	}
 
@@ -107,7 +111,7 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}, &cm); err != nil {
 		log.Error(
 			err,
-			"unable to fetch ClusterAutoscaler status configmap",
+			"Unable to fetch ClusterAutoscaler status configmap",
 			"namespace", r.Conf.ClusterAutoscalerStatusNamespace,
 			"name", r.Conf.ClusterAutoscalerStatusName,
 		)
@@ -118,7 +122,7 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Get human readable status from configmap...
 	readableStatus, ok := cm.Data["status"]
 	if !ok {
-		err := fmt.Errorf("invalid configmap: no status")
+		err := fmt.Errorf("Invalid configmap: no status")
 		log.Error(
 			err,
 			"unable to parse ClusterAutoscaler status",
@@ -132,14 +136,14 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	targetStatus := clusterautoscaler.GetNodeGroupWithName(status.NodeGroups, scheduler.Spec.ASGTarget)
 	if targetStatus == nil {
 		err := fmt.Errorf("node group not in cluster autoscaler status: %s", scheduler.Spec.ASGTarget)
-		log.Error(err, "invalid NodeGroup", "namespace", scheduler.Namespace, "name", scheduler.Name)
+		log.Error(err, "Invalid autoscalingGroupTarget", "autoscalingGroupTarget", scheduler.Spec.ASGTarget)
 	}
 
 	// Get last ScaleUp policies that matched.
 	var lastScaleUpPolicies []matchedPolicy
 	if ann, ok := scheduler.Annotations[annScaleUp]; ok {
 		if err := json.Unmarshal([]byte(ann), &lastScaleUpPolicies); err != nil {
-			log.Error(err, fmt.Sprintf("unable to unmarshal %s annotation", annScaleUp), "scheduler", scheduler.Name)
+			log.Error(err, "Unable to unmarshal scaleUp annotation", "annotation", annScaleUp)
 			return ctrl.Result{}, err
 		}
 	}
@@ -149,11 +153,14 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	var newScaleUpPolicies []matchedPolicy
 	var replicas int32
+	if len(scheduler.Spec.ScaleUpRules.Policies) != 0 {
+		log.V(1).Info("Evaluating scaleup policies")
+	}
 	for _, e := range scheduler.Spec.ScaleUpRules.Policies {
 		// Here, we control that NodeGroup match desired Scheduler policy.
 		match := matchPolicy(*targetStatus, e.SchedulerPolicy)
 		if !match {
-			log.Info("scaleUp policy did not match: comparison did not match")
+			log.V(1).Info("ScaleUp policy did not match", "policy", e.SchedulerPolicy)
 			continue
 		}
 
@@ -168,7 +175,10 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		newScaleUpPolicies = append(newScaleUpPolicies, *policy)
 
 		// Check periodSeconds and set desired replica count accordingly.
-		if now.Sub(policy.Match) >= time.Duration(e.PeriodSeconds)*time.Second {
+		since := now.Sub(policy.Match)
+		period := time.Duration(e.PeriodSeconds) * time.Second
+		log.V(1).Info("ScaleUp policy matched", "policy", policy, "since", since, "period", period)
+		if since >= period {
 			r := nodeGroupReplicas(*targetStatus, e.Replicas)
 			// The desired replicas is the highest replicas of a matching policy.
 			if replicas < r {
@@ -181,18 +191,21 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	var lastScaleDownPolicies []matchedPolicy
 	if ann, ok := scheduler.Annotations[annScaleDown]; ok {
 		if err := json.Unmarshal([]byte(ann), &lastScaleDownPolicies); err != nil {
-			log.Error(err, fmt.Sprintf("unable to unmarshal %s annotation", annScaleDown), "scheduler", scheduler.Name)
+			log.Error(err, "Unable to unmarshal scaleDown annotation", "annotation", annScaleDown)
 			return ctrl.Result{}, err
 		}
 	}
 
 	var newScaleDownPolicies []matchedPolicy
 	var down int32
+	if len(scheduler.Spec.ScaleDownRules.Policies) != 0 {
+		log.V(1).Info("Evaluating scaledown policies")
+	}
 	for _, e := range scheduler.Spec.ScaleDownRules.Policies {
 		// Here, we control that NodeGroup match desired Scheduler policy.
 		match := matchPolicy(*targetStatus, e)
 		if !match {
-			log.Info("scaleDown policy did not match: comparison did not match")
+			log.V(1).Info("ScaleDown policy did not match", "policy", e)
 			continue
 		}
 
@@ -207,6 +220,9 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		newScaleDownPolicies = append(newScaleDownPolicies, *policy)
 
 		// Check periodSeconds and set scale down count accordingly.
+		since := now.Sub(policy.Match)
+		period := time.Duration(e.PeriodSeconds) * time.Second
+		log.V(1).Info("ScaleDown policy matched", "policy", policy, "since", since, "period", period)
 		if now.Sub(policy.Match) >= time.Duration(e.PeriodSeconds)*time.Second {
 			// Currently, we scale down 1 by 1.
 			down = 1
@@ -216,7 +232,7 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// List instances already deployed by this scheduler
 	instances := &corev1alpha1.InstanceList{}
 	if err := r.List(ctx, instances, client.InNamespace(req.Namespace), client.MatchingLabels(map[string]string{lblScheduler: req.Name})); err != nil {
-		log.Error(err, "unable to list Instances", "scheduler", req.Name)
+		log.Error(err, "Unable to list Instances")
 		return ctrl.Result{}, err
 	}
 
@@ -232,9 +248,10 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		down = 0
 	}
 
+	log.Info("Policies evaluation done", "scaleUp", up, "scaleDown", down)
+
 	// No need to Up/Down scale.
 	if up-down == 0 {
-		log.Info(fmt.Sprintf("nothing to do: %d instances to add / %d instances to remove", up, down))
 		// We update all policies annotations.
 		return r.endReconciliation(ctx, log, scheduler, newScaleDownPolicies, newScaleUpPolicies, scheduler.Status.LastScaleDown, scheduler.Status.LastScaleUp)
 	}
@@ -242,15 +259,20 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Scaling up required
 	if up > 0 {
 		// Check StabilizationWindowSeconds
-		if scheduler.Status.LastScaleUp != nil &&
-			now.Sub(scheduler.Status.LastScaleUp.Time) < time.Duration(scheduler.Spec.ScaleUpRules.StabilizationWindowSeconds)*time.Second {
-			// Scheduler Status for scaling up :
-			// - we update all policies annotations.
-			return r.endReconciliation(ctx, log, scheduler, newScaleDownPolicies, newScaleUpPolicies, scheduler.Status.LastScaleDown, scheduler.Status.LastScaleUp)
+		if scheduler.Status.LastScaleUp != nil {
+			since := now.Sub(scheduler.Status.LastScaleUp.Time)
+			stabilization := time.Duration(scheduler.Spec.ScaleUpRules.StabilizationWindowSeconds) * time.Second
+			if since < stabilization {
+				// Scheduler Status for scaling up :
+				// - we update all policies annotations.
+				log.V(1).Info("Waiting stabilization window for scaleUp", "since", since, "stabilizationWindow", stabilization)
+				return r.endReconciliation(ctx, log, scheduler, newScaleDownPolicies, newScaleUpPolicies, scheduler.Status.LastScaleDown, scheduler.Status.LastScaleUp)
+			}
 		}
 
 		// For each new replica, we create an instance.
-		log.Info(fmt.Sprintf("scheduler will scale up: %d instances to add", up), "scheduler", scheduler.Name)
+		asg := scheduler.Spec.ASGFallback
+		log.Info("Scaling up", "autoscalingGroup", asg, "count", up)
 		for i := 0; i < int(up); i++ {
 			if err := r.Create(ctx, &corev1alpha1.Instance{
 				ObjectMeta: kmeta_v1.ObjectMeta{
@@ -259,10 +281,10 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 					Labels:       map[string]string{lblScheduler: scheduler.Name},
 				},
 				Spec: corev1alpha1.InstanceSpec{
-					ASG: scheduler.Spec.ASGFallback,
+					ASG: asg,
 				},
 			}); err != nil {
-				log.Error(err, "unable to create Instance", "scheduler", req.Name)
+				log.Error(err, "Unable to create Instance", "autoscalingGroup", asg)
 				return ctrl.Result{}, err
 			}
 		}
@@ -275,12 +297,15 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	// Scaling down required
 	if down > 0 {
-		// Check StabilizationWindowSeconds
-		if scheduler.Status.LastScaleDown != nil &&
-			now.Sub(scheduler.Status.LastScaleDown.Time) < time.Duration(scheduler.Spec.ScaleDownRules.StabilizationWindowSeconds)*time.Second {
-			// Scheduler Status for scaling down :
-			// - we update all policies annotations.
-			return r.endReconciliation(ctx, log, scheduler, newScaleDownPolicies, newScaleUpPolicies, scheduler.Status.LastScaleDown, scheduler.Status.LastScaleUp)
+		if scheduler.Status.LastScaleDown != nil {
+			since := now.Sub(scheduler.Status.LastScaleDown.Time)
+			stabilization := time.Duration(scheduler.Spec.ScaleDownRules.StabilizationWindowSeconds) * time.Second
+			if since < stabilization {
+				// Scheduler Status for scaling down :
+				// - we update all policies annotations.
+				log.V(1).Info("Waiting stabilization window for scaleDown", "since", since, "stabilizationWindow", stabilization)
+				return r.endReconciliation(ctx, log, scheduler, newScaleDownPolicies, newScaleUpPolicies, scheduler.Status.LastScaleDown, scheduler.Status.LastScaleUp)
+			}
 		}
 
 		// Get the older, non destroying instance
@@ -302,12 +327,12 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 		// No instance to delete, reconciliation done !
 		if instance == nil {
-			log.Info("no instance to delete", "scheduler", scheduler.Name)
+			log.Info("No instance to delete")
 		} else {
 			// Instance deletion
-			log.Info(fmt.Sprintf("scheduler will scale down: %d instances to remove", down), "scheduler", scheduler.Name)
+			log.Info("Scaling down", "autoscalingGroup", scheduler.Spec.ASGFallback, "count", down)
 			if err := r.Delete(ctx, instance); err != nil {
-				log.Error(err, "unable to delete Instance", "scheduler", req.Name)
+				log.Error(err, "Unable to delete Instance")
 				return ctrl.Result{}, err
 			}
 		}
@@ -335,20 +360,20 @@ func (r *SchedulerReconciler) endReconciliation(
 	// Marshal scheduler, ...
 	old, err := json.Marshal(scheduler)
 	if err != nil {
-		log.Error(err, "failed to marshal scheduler")
+		log.Error(err, "Failed to marshal scheduler")
 		return ctrl.Result{}, err
 	}
 
 	// ... scaleDownPolicies ...
 	down, err := json.Marshal(scaleDownPolicies)
 	if err != nil {
-		log.Error(err, "failed to marshal scale down policies")
+		log.Error(err, "Failed to marshal scale down policies")
 		return ctrl.Result{}, err
 	}
 	// ... and scaleUpPolicies.
 	up, err := json.Marshal(scaleUpPolicies)
 	if err != nil {
-		log.Error(err, "failed to marshal scale up policies")
+		log.Error(err, "Failed to marshal scale up policies")
 		return ctrl.Result{}, err
 	}
 
@@ -359,20 +384,20 @@ func (r *SchedulerReconciler) endReconciliation(
 	scheduler.Annotations[annScaleUp] = string(up)
 	new, err := json.Marshal(scheduler)
 	if err != nil {
-		log.Error(err, "failed to marshal new scheduler")
+		log.Error(err, "Failed to marshal new scheduler")
 		return ctrl.Result{}, err
 	}
 
 	// ... and create a patch.
 	patch, err := strategicpatch.CreateTwoWayMergePatch(old, new, scheduler)
 	if err != nil {
-		log.Error(err, "failed to create patch for scheduler")
+		log.Error(err, "Failed to create patch for scheduler")
 		return ctrl.Result{}, err
 	}
 
 	// Apply patch to set scheduler's wanted status.
 	if err = r.Patch(ctx, &scheduler, client.RawPatch(types.MergePatchType, patch)); err != nil {
-		log.Error(err, "failed to patch scheduler")
+		log.Error(err, "Failed to patch scheduler")
 		return ctrl.Result{}, err
 	}
 

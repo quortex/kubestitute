@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	kapps_v1 "k8s.io/api/apps/v1"
 	kcore_v1 "k8s.io/api/core/v1"
 	kpolicy_v1beta1 "k8s.io/api/policy/v1beta1"
@@ -62,10 +63,10 @@ const (
 	instanceFinalizer = "instance.finalizers.kubestitute.quortex.io"
 	// the pod's field for Node name
 	nodeNameField = "spec.nodeName"
-	// EvictionKind represents the kind of evictions object
-	EvictionKind = "Eviction"
-	// EvictionSubresource represents the kind of evictions object as pod's subresource
-	EvictionSubresource = "pods/eviction"
+	// evictionKind represents the kind of evictions object
+	evictionKind = "Eviction"
+	// evictionSubresource represents the kind of evictions object as pod's subresource
+	evictionSubresource = "pods/eviction"
 	// The global timeout for pods eviction
 	evictionGlobalTimeout = time.Second * 120
 	// A timeout for delete pod polling
@@ -83,7 +84,10 @@ const (
 // Reconcile reconciles the Instance requested state with the current state.
 func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	log := r.Log.WithValues("instance", req.NamespacedName)
+	log := r.Log.WithValues("instance", req.NamespacedName, "reconciliationID", uuid.New().String())
+
+	log.V(1).Info("Instance reconciliation started")
+	defer log.V(1).Info("Instance reconciliation done")
 
 	var instance corev1alpha1.Instance
 	if err := r.Get(ctx, req.NamespacedName, &instance); err != nil {
@@ -92,7 +96,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		// on deleted requests.
 		err = client.IgnoreNotFound(err)
 		if err != nil {
-			log.Error(err, "unable to fetch Instance")
+			log.Error(err, "Unable to fetch Instance")
 		}
 
 		return ctrl.Result{}, err
@@ -121,7 +125,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		// Next step, we will trigger a new EC2 instance.
 		instance.Status.State = corev1alpha1.InstanceStateTriggerScaling
 		instance.ObjectMeta.Finalizers = append(instance.ObjectMeta.Finalizers, instanceFinalizer)
-		log.Info(fmt.Sprintf("setting status: %s, finalizer: %s", instance.Status.State, instanceFinalizer))
+		log.V(1).Info("Updating Instance", "state", instance.Status.State, "finalizer", instanceFinalizer)
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
 
@@ -135,7 +139,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// requeue until availability.
 	_, err := ec2adapterCli.Operations.Ping(&operations.PingParams{Context: ctx})
 	if err != nil {
-		log.Info("ec2 adapter not available, retrying in 5 seconds.", "err", err)
+		log.Error(err, "EC2 adapter not available, retrying in 5 seconds")
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
@@ -146,7 +150,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		Name:    asgName,
 	})
 	if err != nil {
-		log.Error(err, "failed to get autoscaling group", "name", asgName)
+		log.Error(err, "Failed to get autoscaling group", "name", asgName)
 		return ctrl.Result{}, err
 	}
 	asg := res.Payload
@@ -156,6 +160,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Trigger a new Instance in the ASG
 	if instance.Status.State == corev1alpha1.InstanceStateTriggerScaling {
 		capacity := asg.DesiredCapacity + 1
+		log.Info("Incrementing autoscaling group desired capacity", "name", asgName, "capacity", capacity)
 		_, err := ec2adapterCli.Operations.SetAutoscalingGroupDesiredCapacity(&operations.SetAutoscalingGroupDesiredCapacityParams{
 			Context: ctx,
 			Name:    asg.Name,
@@ -165,12 +170,12 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			},
 		})
 		if err != nil {
-			log.Error(err, "failed to set autoscaling group desired capacity", "name", asg.Name, "capacity", capacity)
+			log.Error(err, "Failed to set autoscaling group desired capacity", "name", asg.Name, "capacity", capacity)
 			return ctrl.Result{}, err
 		}
 		// Next step, we will wait for EC2 instance joining the ASG.
 		instance.Status.State = corev1alpha1.InstanceStateWaitInstance
-		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
+		log.V(1).Info("Updating Instance", "state", instance.Status.State)
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
 
@@ -178,11 +183,12 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//
 	// Try to get a new joining instance in the ASG to associate it to our Instance.
 	if instance.Status.State == corev1alpha1.InstanceStateWaitInstance {
+		log.Info("Waiting for ec2 instance")
 		ec2Instances := asg.Instances
 		// List all instances
 		instances := &corev1alpha1.InstanceList{}
 		if err := r.List(ctx, instances); err != nil {
-			log.Error(err, "failed to list instances")
+			log.Error(err, "Failed to list instances")
 			return ctrl.Result{}, err
 		}
 
@@ -204,7 +210,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				continue
 			}
 
-			flag := false
+			alreadyUsed := false
 			for _, inst := range instances.Items {
 				// Exclude itself
 				if inst.Name == instance.Name {
@@ -216,11 +222,11 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				}
 				// Already attached EC2 instance
 				if e.InstanceID == inst.Status.EC2InstanceID {
-					flag = true
+					alreadyUsed = true
 				}
 			}
 
-			if !flag {
+			if !alreadyUsed {
 				instanceID = e.InstanceID
 				break
 			}
@@ -228,14 +234,15 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 		// Seems that new instance has not joined yet the ASG, we'll try it later.
 		if instanceID == "" {
-			log.Info("instance has not joined yet the ASG, retry in 5 sec")
+			log.Info("Instance has not joined yet the ASG, retry in 5 sec")
 			return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 		}
 
 		// Next step, we will wait for Node to join the cluster.
 		instance.Status.State = corev1alpha1.InstanceStateWaitNode
 		instance.Status.EC2InstanceID = instanceID
-		log.Info(fmt.Sprintf("setting status: %s, ec2InstanceID: %s", instance.Status.State, instance.Status.EC2InstanceID))
+		log.Info("EC2 instance retrieved", "ec2InstanceID", instance.Status.EC2InstanceID)
+		log.V(1).Info("Updating Instance", "state", instance.Status.State, "ec2InstanceID", instance.Status.EC2InstanceID)
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
 
@@ -243,10 +250,11 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//
 	// Try to get a new joining Node to associate it to our Instance.
 	if instance.Status.State == corev1alpha1.InstanceStateWaitNode {
+		log.Info("Waiting for node")
 		// List nodes
 		nodes := &kcore_v1.NodeList{}
 		if err := r.List(ctx, nodes); err != nil {
-			log.Error(err, "unable to list Nodes")
+			log.Error(err, "Unable to list Nodes")
 			return ctrl.Result{}, err
 		}
 
@@ -265,7 +273,8 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			if instance.Status.EC2InstanceID == instanceID {
 				instance.Status.State = corev1alpha1.InstanceStateReady
 				instance.Status.Node = e.GetName()
-				log.Info(fmt.Sprintf("setting status: %s, node: %s", instance.Status.State, instance.Status.Node))
+				log.Info("Node retrieved", "node", instance.Status.Node)
+				log.V(1).Info("Updating Instance", "state", instance.Status.State, "node", instance.Status.Node)
 				return ctrl.Result{}, r.Update(ctx, &instance)
 			}
 		}
@@ -288,12 +297,12 @@ func (r *InstanceReconciler) reconcileDeletion(
 	if instance.Status.State == corev1alpha1.InstanceStateReady {
 		// Next step, we will drain the associated Node.
 		instance.Status.State = corev1alpha1.InstanceStateDrainNode
-		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
+		log.V(1).Info("Updating Instance", "state", instance.Status.State)
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	} else if instance.Status.State == corev1alpha1.InstanceStateWaitNode {
 		// Next step, we will detach the EC2 instance from the ASG.
 		instance.Status.State = corev1alpha1.InstanceStateDetachInstance
-		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
+		log.V(1).Info("Updating Instance", "state", instance.Status.State)
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
 
@@ -304,18 +313,21 @@ func (r *InstanceReconciler) reconcileDeletion(
 	if instance.Status.State == corev1alpha1.InstanceStateDrainNode {
 		// Get the Instance resource associated Node
 		nodeName := instance.Status.Node
+		log.Info("Draining node", "node", nodeName)
 		var node kcore_v1.Node
 		err := r.Get(ctx, types.NamespacedName{Name: nodeName}, &node)
 		// In the case of a not found error, it seems that the node no longer exists.
 		// We can therefore consider this phase of reconciliation to be accomplished.
 		if client.IgnoreNotFound(err) != nil {
+			log.Info("Node no longer exist", "node", nodeName)
 			return ctrl.Result{}, err
 		} else if err == nil {
 
 			// First, we cordon the Node (set it as unschedulable)
+			log.Info("Cordon node", "node", nodeName)
 			err := r.cordonNode(ctx, &node)
 			if err != nil {
-				log.Error(err, "unable to cordon Node")
+				log.Error(err, "Unable to cordon Node", "node", nodeName)
 				return ctrl.Result{}, err
 			}
 
@@ -324,21 +336,22 @@ func (r *InstanceReconciler) reconcileDeletion(
 			if err := r.List(ctx, pods, client.MatchingFieldsSelector{
 				Selector: fields.SelectorFromSet(fields.Set{nodeNameField: nodeName}),
 			}); err != nil {
-				log.Error(err, "failed to list node's pods", "node", nodeName)
+				log.Error(err, "Failed to list node's pods", "node", nodeName)
 				return ctrl.Result{}, err
 			}
 
 			// Evict pods
 			// We don't care about errors here.
 			// Either we can't process them or the eviction has timeout.
+			log.Info("Evicting pods", "node", nodeName)
 			if err := r.evictPods(ctx, log, filterPods(pods.Items, r.deletedFilter)); err != nil {
-				log.Error(err, "failed to evict pods", "node", nodeName)
+				log.Error(err, "Failed to evict pods", "node", nodeName)
 			}
 		}
 
 		// Next step, we will detach the EC2 instance from the ASG.
 		instance.Status.State = corev1alpha1.InstanceStateDetachInstance
-		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
+		log.V(1).Info("Updating Instance", "state", instance.Status.State)
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
 
@@ -352,7 +365,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 	// requeue until availability.
 	_, err := ec2adapterCli.Operations.Ping(&operations.PingParams{Context: ctx})
 	if err != nil {
-		log.Info("ec2 adapter not available, retrying in 5 seconds.", "err", err)
+		log.Error(err, "EC2 adapter not available, retrying in 5 seconds")
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
@@ -367,7 +380,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 			Name:    asgName,
 		})
 		if err != nil {
-			log.Error(err, "failed to get autoscaling group", "name", asgName)
+			log.Error(err, "Failed to get autoscaling group", "name", asgName)
 			return ctrl.Result{}, err
 		}
 		asg := res.Payload
@@ -384,14 +397,14 @@ func (r *InstanceReconciler) reconcileDeletion(
 					ShouldDecrementDesiredCapacity: true,
 				},
 			}); err != nil {
-				log.Error(err, "failed to detach instance", "group", group, "instance", instanceID)
+				log.Error(err, "Failed to detach instance", "group", group, "instance", instanceID)
 				return ctrl.Result{}, err
 			}
 		}
 
 		// Next step, we will terminate the EC2 instance.
 		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
-		log.Info(fmt.Sprintf("setting status: %s", instance.Status.State))
+		log.V(1).Info("Updating Instance", "state", instance.Status.State)
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
 
@@ -404,7 +417,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 			Context: ctx,
 			ID:      instanceID,
 		}); err != nil {
-			log.Error(err, "failed to terminate instance", "instance", instanceID)
+			log.Error(err, "Failed to terminate instance", "instance", instanceID)
 			return ctrl.Result{}, err
 		}
 	}
@@ -429,13 +442,13 @@ func (m *NodeMapper) Map(obj handler.MapObject) []reconcile.Request {
 	node, ok := obj.Object.(*kcore_v1.Node)
 	if !ok {
 		log.Error(fmt.Errorf("fail to cast object %s into Node", obj.Meta.GetName()),
-			"fail to cast object into Node", "kind", obj.Object.GetObjectKind().GroupVersionKind, "obj", obj)
+			"Fail to cast object into Node", "kind", obj.Object.GetObjectKind().GroupVersionKind, "obj", obj)
 		return []reconcile.Request{}
 	}
 
 	// Node is not managed by AWS, the reconciler does not support it.
 	if !isAWSNode(*node) {
-		log.Info("node is not managed by AWS, the reconciler does not support it.")
+		log.Info("Node is not managed by AWS, the reconciler does not support it", "node", node.Name)
 		return []reconcile.Request{}
 	}
 
@@ -444,14 +457,14 @@ func (m *NodeMapper) Map(obj handler.MapObject) []reconcile.Request {
 	// providerID: aws:///eu-west-1b/i-0d0b3844fcfb3c137
 	ec2InstanceID := ec2InstanceID(*node)
 	if ec2InstanceID == "" {
-		log.Error(fmt.Errorf("node has no valid ProviderID"), "name", node.Name)
+		log.Error(fmt.Errorf("Node has no valid ProviderID"), "name", node.Name)
 		return []reconcile.Request{}
 	}
 
 	// List instances
 	instances := &corev1alpha1.InstanceList{}
 	if err := m.cli.List(ctx, instances); err != nil {
-		log.Error(err, "unable to list Instances")
+		log.Error(err, "Unable to list Instances")
 		return []reconcile.Request{}
 	}
 
@@ -574,7 +587,7 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pod
 	for _, pod := range pods {
 		go func(pod kcore_v1.Pod, returnCh chan error) {
 			for {
-				log.Info("evicting pod", "name", pod.Name, "namespace", pod.Namespace)
+				log.Info("Evicting pod", "name", pod.Name, "namespace", pod.Namespace)
 				select {
 				case <-ctx.Done():
 					// return here or we'll leak a goroutine.
@@ -592,7 +605,7 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pod
 					returnCh <- nil
 					return
 				} else if apierrors.IsTooManyRequests(err) {
-					log.Error(err, "failed to evict pod (will retry after 5s)", "name", pod.Name, "namespace", pod.Namespace)
+					log.Error(err, "Failed to evict pod (will retry after 5s)", "name", pod.Name, "namespace", pod.Namespace)
 					time.Sleep(5 * time.Second)
 				} else if !activePod.ObjectMeta.DeletionTimestamp.IsZero() && apierrors.IsForbidden(err) && apierrors.HasStatusCause(err, kcore_v1.NamespaceTerminatingCause) {
 					// an eviction request in a deleting namespace will throw a forbidden error,
@@ -602,7 +615,7 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pod
 				} else if apierrors.IsForbidden(err) && apierrors.HasStatusCause(err, kcore_v1.NamespaceTerminatingCause) {
 					// an eviction request in a deleting namespace will throw a forbidden error,
 					// if the pod is not marked deleted, we retry until it is.
-					log.Error(err, "failed to evict pod (will retry after 5s)", "name", pod.Name, "namespace", pod.Namespace)
+					log.Error(err, "Failed to evict pod (will retry after 5s)", "name", pod.Name, "namespace", pod.Namespace)
 					time.Sleep(5 * time.Second)
 				} else {
 					returnCh <- fmt.Errorf("error when evicting pods/%q -n %q: %v", activePod.Name, activePod.Namespace, err)
@@ -642,7 +655,7 @@ func (r *InstanceReconciler) evictPod(ctx context.Context, pod kcore_v1.Pod, pol
 	eviction := &kpolicy_v1beta1.Eviction{
 		TypeMeta: kmeta_v1.TypeMeta{
 			APIVersion: policyGroupVersion,
-			Kind:       EvictionKind,
+			Kind:       evictionKind,
 		},
 		ObjectMeta: kmeta_v1.ObjectMeta{
 			Name:      pod.Name,
@@ -681,7 +694,7 @@ func CheckEvictionSupport(clientset kubernetes.Interface) (string, error) {
 		return "", err
 	}
 	for _, resource := range resourceList.APIResources {
-		if resource.Name == EvictionSubresource && resource.Kind == EvictionKind {
+		if resource.Name == evictionSubresource && resource.Kind == evictionKind {
 			return policyGroupVersion, nil
 		}
 	}
