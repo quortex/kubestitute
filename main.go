@@ -79,7 +79,7 @@ func main() {
 
 	kubeClient, err := kubernetes.NewForConfig(ctrl.GetConfigOrDie())
 	if err != nil {
-		setupLog.Error(err, "unable to instanciat kubernetes client")
+		setupLog.Error(err, "unable to instanciate kubernetes client")
 		os.Exit(1)
 	}
 
