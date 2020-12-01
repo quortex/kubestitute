@@ -6,8 +6,14 @@
 *.dylib
 bin
 
+# Folder in which make test download envtest 
+testbin/
+
 # Test binary, built with `go test -c`
 *.test
+
+# Debug binary made by vscode
+__debug_bin
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
