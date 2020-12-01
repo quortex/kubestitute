@@ -86,12 +86,11 @@ endif
 
 # Generate clients
 ## Generates client from swagger documentation.
+.PHONY: clients
 clients:
 	@t=$$(mktemp -d) && \
 		cd $${t} && \
 		git clone -b develop git@github.com:quortex/aws-ec2-adapter.git && \
 		cd - && \
-		mkdir -p client/ec2adapter && \
-		cp $${t}/aws-ec2-adapter/docs/swagger.yaml ./client/ec2adapter && \
-		cd ./client/ec2adapter && \
-		docker run --rm -v ${PWD}:/app -w /app quay.io/goswagger/swagger:v0.25.0 generate client -f ./client/ec2adapter/swagger.yaml -A aws-ec2-adapter -t ./client/ec2adapter
+		cp $${t}/aws-ec2-adapter/docs/swagger.yaml ./clients/ec2adapter && \
+		go generate ./...

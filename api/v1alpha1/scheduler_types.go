@@ -177,6 +177,7 @@ const (
 	ArithmeticOperatorDivide   = "divide"
 )
 
+// ArithmeticOperation describes an arithmetic operation.
 type ArithmeticOperation struct {
 	// LeftOperand is the left operand of the operation.
 	// +kubebuilder:validation:Required

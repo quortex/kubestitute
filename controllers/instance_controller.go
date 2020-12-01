@@ -45,9 +45,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
-	ec2adapter "quortex.io/kubestitute/client/ec2adapter/client"
-	"quortex.io/kubestitute/client/ec2adapter/client/operations"
-	"quortex.io/kubestitute/client/ec2adapter/models"
+	ec2adapter "quortex.io/kubestitute/clients/ec2adapter/client"
+	"quortex.io/kubestitute/clients/ec2adapter/client/operations"
+	"quortex.io/kubestitute/clients/ec2adapter/models"
 	"quortex.io/kubestitute/metrics"
 )
 

@@ -1,0 +1,1292 @@
+basePath: /
+definitions:
+  Address:
+    properties:
+      allocation_id:
+        description: AllocationId is the ID representing the allocation of the address
+          for use with EC2-VPC.
+        type: string
+      association_id:
+        description: AssociationId is the ID representing the association of the address
+          with an instance in a VPC.
+        type: string
+      instance_id:
+        description: InstanceId is the ID of the instance that the address is associated
+          with (if any).
+        type: string
+      network_interface_id:
+        description: NetworkInterfaceId is the ID of the network interface.
+        type: string
+      public_ip:
+        description: PublicIp is the Elastic IP address.
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        description: Tags is any tags assigned to the Elastic IP address.
+        type: object
+    type: object
+  AutoscalingGroup:
+    properties:
+      arn:
+        description: The Amazon Resource Name (ARN) of the Auto Scaling group.
+        type: string
+      availability_zones:
+        description: One or more Availability Zones for the group.
+        items:
+          type: string
+        type: array
+      created_time:
+        description: The date and time the group was created.
+        type: string
+      desired_capacity:
+        description: The desired size of the group.
+        type: integer
+      instances:
+        description: The EC2 instances associated with the group.
+        items:
+          $ref: '#/definitions/AutoscalingGroupInstance'
+        type: array
+      max_size:
+        description: |-
+          The maximum size of the group.
+
+          MaxSize is a required field
+        type: integer
+      min_size:
+        description: The minimum size of the group.
+        type: integer
+      name:
+        description: The name of the Auto Scaling group.
+        type: string
+      status:
+        description: |-
+          The current state of the group when the DeleteAutoScalingGroup operation
+          is in progress.
+        type: string
+    type: object
+  AutoscalingGroupInstance:
+    properties:
+      availability_zone:
+        description: The Availability Zone in which the instance is running.
+        type: string
+      health_status:
+        description: |-
+          The last reported health status of the instance. "Healthy" means that the
+          instance is healthy and should remain in service. "Unhealthy" means that
+          the instance is unhealthy and that Amazon EC2 Auto Scaling should terminate
+          and replace it.
+        enum:
+        - Healthy
+        - Unhealthy
+        type: string
+      instance_id:
+        description: The ID of the instance.
+        type: string
+      instance_type:
+        description: The instance type of the EC2 instance.
+        type: string
+      lifecycle_state:
+        description: |-
+          A description of the current lifecycle state. The Quarantined state is not
+          used.
+        enum:
+        - Pending
+        - Pending:Wait
+        - Pending:Proceed
+        - Quarantined
+        - InService
+        - Terminating
+        - Terminating:Wait
+        - Terminating:Proceed
+        - Terminated
+        - Detaching
+        - Detached
+        - EnteringStandby
+        - Standby
+        type: string
+      protected_from_scale_in:
+        description: |-
+          Indicates whether the instance is protected from termination by Amazon EC2
+          Auto Scaling when scaling in.
+        type: boolean
+      weighted_capacity:
+        description: |-
+          The number of capacity units contributed by the instance based on its instance
+          type.
+        type: string
+    type: object
+  CreateSecurityGroupRequest:
+    properties:
+      description:
+        description: A description for the security group. This is informational only.
+        type: string
+      name:
+        description: The name of the security group.
+        type: string
+      vpc_id:
+        description: The ID of the VPC. Required for EC2-VPC.
+        type: string
+    type: object
+  DetachInstancesRequest:
+    properties:
+      instance_ids:
+        description: The IDs of the instances. You can specify up to 20 instances.
+        items:
+          type: string
+        type: array
+      should_decrement_desired_capacity:
+        description: |-
+          Indicates whether the Auto Scaling group decrements the desired capacity
+          value by the number of instances detached.
+        type: boolean
+    type: object
+  ErrorData:
+    properties:
+      error:
+        type: string
+    type: object
+  ErrorResponse:
+    properties:
+      data:
+        $ref: '#/definitions/ErrorData'
+    type: object
+  GroupIdentifier:
+    properties:
+      group_id:
+        description: The ID of the security group.
+        type: string
+      group_name:
+        description: The name of the security group.
+        type: string
+    type: object
+  IPRange:
+    properties:
+      cidr:
+        description: |-
+          The IPv4 CIDR range. You can either specify a CIDR range or a source security
+          group, not both. To specify a single IPv4 address, use the /32 prefix length.
+        type: string
+      description:
+        description: |-
+          A description for the security group rule that references this IPv4 address
+          range.
+
+          Constraints: Up to 255 characters in length. Allowed characters are a-z,
+          A-Z, 0-9, spaces, and ._-:/()#,@[]+=&;{}!$*
+        type: string
+    type: object
+  Instance:
+    properties:
+      availability_zone:
+        description: The Availability Zone of the instance.
+        type: string
+      ena_support:
+        description: Specifies whether enhanced networking with ENA is enabled.
+        type: boolean
+      image_id:
+        description: The ID of the AMI used to launch the instance.
+        type: string
+      instance_id:
+        description: The ID of the instance.
+        type: string
+      instance_lifecycle:
+        description: Indicates whether this is a Spot Instance or a Scheduled Instance.
+        type: string
+      instance_type:
+        description: The instance type.
+        type: string
+      launch_time:
+        description: The time the instance was launched.
+        type: string
+      network_interfaces:
+        description: '[EC2-VPC] The network interfaces for the instance.'
+        items:
+          $ref: '#/definitions/InstanceNetworkInterface'
+        type: array
+      private_dns_name:
+        description: |-
+          (IPv4 only) The private DNS hostname name assigned to the instance. This
+          DNS hostname can only be used inside the Amazon EC2 network. This name is
+          not available until the instance enters the running state.
+
+          [EC2-VPC] The Amazon-provided DNS server resolves Amazon-provided private
+          DNS hostnames if you've enabled DNS resolution and DNS hostnames in your
+          VPC. If you are not using the Amazon-provided DNS server in your VPC, your
+          custom domain name servers must resolve the hostname as appropriate.
+        type: string
+      private_ip_address:
+        description: The private IPv4 address assigned to the instance.
+        type: string
+      public_dns_name:
+        description: |-
+          (IPv4 only) The public DNS name assigned to the instance. This name is not
+          available until the instance enters the running state. For EC2-VPC, this
+          name is only available if you've enabled DNS hostnames for your VPC.
+        type: string
+      public_ip_address:
+        description: |-
+          The public IPv4 address, or the Carrier IP address assigned to the instance,
+          if applicable.
+
+          A Carrier IP address only applies to an instance launched in a subnet associated
+          with a Wavelength Zone.
+        type: string
+      root_device_type:
+        description: |-
+          The root device type used by the AMI. The AMI can use an EBS volume or an
+          instance store volume.
+        type: string
+      security_groups:
+        description: The security groups for the instance.
+        items:
+          $ref: '#/definitions/GroupIdentifier'
+        type: array
+      state:
+        description: |-
+          The current state of the instance.
+          pending
+          running
+          shutting-down
+          terminated
+          stopping
+          stopped
+        type: string
+      subnet_id:
+        description: '[EC2-VPC] The ID of the subnet in which the instance is running.'
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        description: Any tags assigned to the instance.
+        type: object
+      virtualization_type:
+        description: The virtualization type of the instance.
+        type: string
+      vpc_id:
+        description: '[EC2-VPC] The ID of the VPC in which the instance is running.'
+        type: string
+    type: object
+  InstanceNetworkInterface:
+    properties:
+      interface_type:
+        description: |-
+          Describes the type of network interface.
+
+          Valid values: interface | efa
+        type: string
+      network_interface_id:
+        description: The ID of the network interface.
+        type: string
+      private_dns_name:
+        description: The private DNS name.
+        type: string
+      private_ip:
+        description: The IPv4 address of the network interface within the subnet.
+        type: string
+      public_dns_name:
+        description: The public DNS name.
+        type: string
+      public_ip:
+        description: The public IP address or Elastic IP address bound to the network
+          interface.
+        type: string
+      security_groups:
+        description: One or more security groups.
+        items:
+          $ref: '#/definitions/GroupIdentifier'
+        type: array
+      state:
+        description: |-
+          The status of the network interface.
+          available
+          associated
+          attaching
+          in-use
+          detaching
+        type: string
+      subnet_id:
+        description: The ID of the subnet.
+        type: string
+      vpc_id:
+        description: The ID of the VPC.
+        type: string
+    type: object
+  Permission:
+    properties:
+      from_port:
+        description: |-
+          The start of port range for the TCP and UDP protocols, or an ICMP/ICMPv6
+          type number. A value of -1 indicates all ICMP/ICMPv6 types. If you specify
+          all ICMP/ICMPv6 types, you must specify all codes.
+        type: integer
+      ip_ranges:
+        description: The IPv4 ranges.
+        items:
+          $ref: '#/definitions/IPRange'
+        type: array
+      protocol:
+        description: |-
+          The IP protocol name (tcp, udp, icmp, icmpv6) or number (see Protocol Numbers
+          (http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml)).
+
+          [VPC only] Use -1 to specify all protocols. When authorizing security group
+          rules, specifying -1 or a protocol number other than tcp, udp, icmp, or icmpv6
+          allows traffic on all ports, regardless of any port range you specify. For
+          tcp, udp, and icmp, you must specify a port range. For icmpv6, the port range
+          is optional; if you omit the port range, traffic for all types and codes
+          is allowed.
+        type: string
+      to_port:
+        description: |-
+          The end of port range for the TCP and UDP protocols, or an ICMP/ICMPv6 code.
+          A value of -1 indicates all ICMP/ICMPv6 codes. If you specify all ICMP/ICMPv6
+          types, you must specify all codes.
+        type: integer
+    type: object
+  SecurityGroup:
+    properties:
+      description:
+        description: A description of the security group.
+        type: string
+      egress_permissions:
+        description: The outbound rules associated with the security group.
+        items:
+          $ref: '#/definitions/Permission'
+        type: array
+      group_id:
+        description: The ID of the security group.
+        type: string
+      ingress_permissions:
+        description: The inbound rules associated with the security group.
+        items:
+          $ref: '#/definitions/Permission'
+        type: array
+      name:
+        description: The name of the security group.
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        description: Tags is any tags assigned to the Security Group.
+        type: object
+      vpc_id:
+        description: '[VPC only] The ID of the VPC for the security group.'
+        type: string
+    type: object
+  SecurityGroupPermissionRequest:
+    properties:
+      from_port:
+        description: |-
+          The start of port range for the TCP and UDP protocols, or an ICMP/ICMPv6
+          type number. A value of -1 indicates all ICMP/ICMPv6 types. If you specify
+          all ICMP/ICMPv6 types, you must specify all codes.
+        type: integer
+      ip_ranges:
+        description: The IPv4 CIDR ranges.
+        items:
+          $ref: '#/definitions/IPRange'
+        type: array
+      protocol:
+        description: |-
+          The IP protocol name (tcp, udp, icmp, icmpv6) or number (see Protocol Numbers
+          (http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml)).
+
+          [VPC only] Use -1 to specify all protocols. When authorizing security group
+          rules, specifying -1 or a protocol number other than tcp, udp, icmp, or icmpv6
+          allows traffic on all ports, regardless of any port range you specify. For
+          tcp, udp, and icmp, you must specify a port range. For icmpv6, the port range
+          is optional; if you omit the port range, traffic for all types and codes
+          is allowed.
+        type: string
+      to_port:
+        description: |-
+          The end of port range for the TCP and UDP protocols, or an ICMP/ICMPv6 code.
+          A value of -1 indicates all ICMP/ICMPv6 codes. If you specify all ICMP/ICMPv6
+          types, you must specify all codes.
+        type: integer
+    type: object
+  SetDesiredCapacityRequest:
+    properties:
+      desired_capacity:
+        description: |-
+          The desired capacity is the initial capacity of the Auto Scaling group after
+          this operation completes and the capacity it attempts to maintain.
+        type: integer
+      honor_cooldown:
+        description: |-
+          Indicates whether Amazon EC2 Auto Scaling waits for the cooldown period to
+          complete before initiating a scaling activity to set your Auto Scaling group
+          to its new capacity. By default, Amazon EC2 Auto Scaling does not honor the
+          cooldown period during manual scaling activities.
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: The purpose of this application is to provide an adapter to handle
+    requests on AWS EC2 service.
+  termsOfService: there are no TOS at this moment, use at your own risk we take no
+    responsibility
+  title: aws-ec2-adapter
+  version: "1.0"
+paths:
+  /addresses:
+    delete:
+      consumes:
+      - application/json
+      description: Delete all Elastic IP addresses.
+      operationId: deleteAddresses
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete Addresses
+    get:
+      consumes:
+      - application/json
+      description: Get all Elastic IP addresses.
+      operationId: listAddresses
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Address'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get Addresses
+    post:
+      consumes:
+      - application/json
+      description: Create an Elastic IP address.
+      operationId: createAddress
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Address'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Create Address
+  /addresses/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an Elastic IP address by ID.
+      operationId: deleteAddress
+      parameters:
+      - description: The ElasticIP Allocation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete Address
+    get:
+      consumes:
+      - application/json
+      description: Get an Elastic IP address by ID.
+      operationId: getAddress
+      parameters:
+      - description: The ElasticIP Allocation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Address'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get Address
+  /addresses/{id}/associate:
+    delete:
+      consumes:
+      - application/json
+      description: Disassociate an Elastic IP from an instance or network interface.
+      operationId: disassociateAddress
+      parameters:
+      - description: The ElasticIP Allocation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: The ElasticIP Association ID
+        in: query
+        name: association_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Disassociate Address
+    post:
+      consumes:
+      - application/json
+      description: Associate an Elastic IP to an instance or network interface.
+      operationId: associateAddress
+      parameters:
+      - description: The ElasticIP Allocation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: The EC2 Instance ID
+        in: query
+        name: instance_id
+        type: string
+      - description: The EC2 Network Interface ID
+        in: query
+        name: network_interface_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Associate Address
+  /autoscaling-groups/{name}:
+    get:
+      consumes:
+      - application/json
+      description: Get an AutoscalingGroup by its name.
+      operationId: getAutoscalingGroup
+      parameters:
+      - description: The AutoscalingGroup name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/AutoscalingGroup'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get AutoscalingGroup by name.
+  /autoscaling-groups/{name}/desired-capacity:
+    put:
+      consumes:
+      - application/json
+      description: Set an autoscaling group desired capacity.
+      operationId: setAutoscalingGroupDesiredCapacity
+      parameters:
+      - description: The AutoscalingGroup name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: The AutoscalingGroup SetDesiredCapacity request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/SetDesiredCapacityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SecurityGroup'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Set desired capacity.
+  /autoscaling-groups/{name}/instances:
+    delete:
+      consumes:
+      - application/json
+      description: Detach instances from an autoscaling group.
+      operationId: detachAutoscalingGroupInstances
+      parameters:
+      - description: The AutoscalingGroup name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: The AutoscalingGroup DetachInstances request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/DetachInstancesRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Detach instance.
+  /instances/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Terminates an EC2 instance by ID.
+      operationId: terminateInstance
+      parameters:
+      - description: The EC2 instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Terminate Instance
+    get:
+      consumes:
+      - application/json
+      description: Get an AWS EC2 Instance by its ID.
+      operationId: getInstance
+      parameters:
+      - description: The EC2 Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Instance'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get EC2 Instance
+  /ping:
+    get:
+      consumes:
+      - application/json
+      description: Ping the server.
+      operationId: ping
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Ping
+  /security-groups:
+    delete:
+      consumes:
+      - application/json
+      description: Delete all SecurityGroups.
+      operationId: deleteSecurityGroups
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete SecurityGroups
+    get:
+      consumes:
+      - application/json
+      description: Get all Security Groups manage by this service.
+      operationId: listSecurityGroups
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/SecurityGroup'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get SecurityGroups
+    post:
+      consumes:
+      - application/json
+      description: Create a SecurityGroup.
+      operationId: createSecurityGroup
+      parameters:
+      - description: The SecurityGroup request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateSecurityGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/SecurityGroup'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Create SecurityGroup
+  /security-groups/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a SecurityGroup by ID.
+      operationId: deleteSecurityGroup
+      parameters:
+      - description: The SecurityGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete SecurityGroup
+    get:
+      consumes:
+      - application/json
+      description: Get a SecurityGroup by its ID.
+      operationId: getSecurityGroup
+      parameters:
+      - description: The SecurityGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SecurityGroup'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get SecurityGroup by ID.
+  /security-groups/{id}/associate:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a SecurityGroup from an EC2 Instance.
+      operationId: removeSecurityGroup
+      parameters:
+      - description: The SecurityGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: The EC2 Instance ID
+        in: query
+        name: instance_id
+        type: string
+      - description: The EC2 Network Interface ID
+        in: query
+        name: network_interface_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Remove SecurityGroup
+    post:
+      consumes:
+      - application/json
+      description: Add a SecurityGroup to an EC2 Instance.
+      operationId: addSecurityGroup
+      parameters:
+      - description: The SecurityGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: The EC2 Instance ID
+        in: query
+        name: instance_id
+        type: string
+      - description: The EC2 Network Interface ID
+        in: query
+        name: network_interface_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Add SecurityGroup
+  /security-groups/{id}/egress:
+    delete:
+      consumes:
+      - application/json
+      description: Remove an Egress permission from a security group.
+      operationId: revokeSecurityGroupEgress
+      parameters:
+      - description: The SecurityGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: The SecurityGroup Permission request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/SecurityGroupPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Remove Egress permission
+    post:
+      consumes:
+      - application/json
+      description: Add an Egress permission to a security group.
+      operationId: authorizeSecurityGroupEgress
+      parameters:
+      - description: The SecurityGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: The SecurityGroup Permission request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/SecurityGroupPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/SecurityGroup'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Create Egress permission
+  /security-groups/{id}/ingress:
+    delete:
+      consumes:
+      - application/json
+      description: Remove an Ingress permission from a security group.
+      operationId: revokeSecurityGroupIngress
+      parameters:
+      - description: The SecurityGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: The SecurityGroup Permission request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/SecurityGroupPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Remove Ingress permission
+    post:
+      consumes:
+      - application/json
+      description: Add an Ingress permission to a security group.
+      operationId: authorizeSecurityGroupIngress
+      parameters:
+      - description: The SecurityGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: The SecurityGroup Permission request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/SecurityGroupPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/SecurityGroup'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Create Ingress permission
+swagger: "2.0"

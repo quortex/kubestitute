@@ -560,7 +560,7 @@ func (r *SchedulerReconciler) clusterAutoscalerStatusConfigmapPredicates() build
 	})
 }
 
-// shouldReconcileConfigmap returns if given ConfigMap is teh clusterautoscaler status
+// shouldReconcileConfigmap returns if given ConfigMap is the clusterautoscaler status
 // Configmap and should be reconciled by the controller.
 func (r *SchedulerReconciler) shouldReconcileConfigmap(obj *kcore_v1.ConfigMap) bool {
 	// We should only consider reconciliation for clusterautoscaler status
