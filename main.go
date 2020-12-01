@@ -30,6 +30,7 @@ import (
 
 	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
 	"quortex.io/kubestitute/controllers"
+	_ "quortex.io/kubestitute/metrics"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -79,7 +80,7 @@ func main() {
 
 	kubeClient, err := kubernetes.NewForConfig(ctrl.GetConfigOrDie())
 	if err != nil {
-		setupLog.Error(err, "unable to instanciate kubernetes client")
+		setupLog.Error(err, "unable to instantiate kubernetes client")
 		os.Exit(1)
 	}
 
