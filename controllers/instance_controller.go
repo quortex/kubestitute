@@ -48,6 +48,7 @@ import (
 	ec2adapter "quortex.io/kubestitute/client/ec2adapter/client"
 	"quortex.io/kubestitute/client/ec2adapter/client/operations"
 	"quortex.io/kubestitute/client/ec2adapter/models"
+	"quortex.io/kubestitute/metrics"
 )
 
 // InstanceReconciler reconciles a Instance object
@@ -154,6 +155,20 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 	asg := res.Payload
+
+	// Set ASG capacity metrics.
+	metrics.AutoscalingGroupDesiredCapacity.WithLabelValues(asgName).Set(float64(asg.DesiredCapacity))
+	metrics.AutoscalingGroupMinSize.WithLabelValues(asgName).Set(float64(asg.MinSize))
+	metrics.AutoscalingGroupMaxSize.WithLabelValues(asgName).Set(float64(asg.MaxSize))
+	metrics.AutoscalingGroupCapacity.WithLabelValues(asgName).Set(float64(len(
+		filterInstancesWithLifecycleStates(
+			asg.Instances,
+			models.AutoscalingGroupInstanceLifecycleStatePending,
+			models.AutoscalingGroupInstanceLifecycleStatePendingWait,
+			models.AutoscalingGroupInstanceLifecycleStatePendingProceed,
+			models.AutoscalingGroupInstanceLifecycleStateInService,
+		),
+	)))
 
 	// 2nd STEP
 	//
@@ -271,9 +286,14 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 			// Final reconciliation step, the node matching instanceID has been identified.
 			if instance.Status.EC2InstanceID == instanceID {
+				log.Info("Node retrieved", "node", instance.Status.Node)
+
+				// Increment scaled_up_nodes_total metric.
+				metrics.ScaledUpNodesTotal.WithLabelValues(asgName, instance.Labels[lblScheduler]).Add(float64(1))
+
+				// Instance ready, reconciliation done.
 				instance.Status.State = corev1alpha1.InstanceStateReady
 				instance.Status.Node = e.GetName()
-				log.Info("Node retrieved", "node", instance.Status.Node)
 				log.V(1).Info("Updating Instance", "state", instance.Status.State, "node", instance.Status.Node)
 				return ctrl.Result{}, r.Update(ctx, &instance)
 			}
@@ -402,6 +422,9 @@ func (r *InstanceReconciler) reconcileDeletion(
 			}
 		}
 
+		// Increment scaled_down_nodes_total metric.
+		metrics.ScaledDownNodesTotal.WithLabelValues(asgName, instance.Labels[lblScheduler]).Add(float64(1))
+
 		// Next step, we will terminate the EC2 instance.
 		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
 		log.V(1).Info("Updating Instance", "state", instance.Status.State)
@@ -486,16 +509,6 @@ func (m *NodeMapper) Map(obj handler.MapObject) []reconcile.Request {
 	return []reconcile.Request{}
 }
 
-// isAWSNode returns if given Node is identified as an AWS cluster Node
-func isAWSNode(node kcore_v1.Node) bool {
-	return strings.HasPrefix(node.Spec.ProviderID, "aws://")
-}
-
-// ec2InstanceID returns the EC2 instance ID from a given Node
-func ec2InstanceID(node kcore_v1.Node) string {
-	return path.Base(node.Spec.ProviderID)
-}
-
 // SetupWithManager instantiates and returns the InstanceReconciler controller.
 func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Index nodeName pod's spec field to get pods scheduled on Node
@@ -513,6 +526,27 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			&handler.EnqueueRequestsFromMapFunc{ToRequests: &NodeMapper{cli: mgr.GetClient(), log: mgr.GetLogger()}},
 		).
 		Complete(r)
+}
+
+// isAWSNode returns if given Node is identified as an AWS cluster Node
+func isAWSNode(node kcore_v1.Node) bool {
+	return strings.HasPrefix(node.Spec.ProviderID, "aws://")
+}
+
+// ec2InstanceID returns the EC2 instance ID from a given Node
+func ec2InstanceID(node kcore_v1.Node) string {
+	return path.Base(node.Spec.ProviderID)
+}
+
+// filterInstancesWithLifecycleStates returns a filtered slice of AutoscalingGroupInstance with given lifecycleStates.
+func filterInstancesWithLifecycleStates(inst []*models.AutoscalingGroupInstance, lifecycleStates ...string) []*models.AutoscalingGroupInstance {
+	res := []*models.AutoscalingGroupInstance{}
+	for _, e := range inst {
+		if containsString(lifecycleStates, e.LifecycleState) {
+			res = append(res, e)
+		}
+	}
+	return res
 }
 
 // containsString returns if given slice contains string.
