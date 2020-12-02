@@ -4,6 +4,12 @@ IMG ?= quortexio/kubestitute:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
+# Shell used by default (usefull for CI)
+SHELL := /bin/bash
+
+# Test binaries repo
+ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -15,6 +21,12 @@ all: manager manifests
 
 # Run tests
 test: generate fmt vet manifests
+	mkdir -p "${ENVTEST_ASSETS_DIR}/" > /dev/null
+		test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || \
+			curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/master/hack/setup-envtest.sh
+		source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; \
+			fetch_envtest_tools $(ENVTEST_ASSETS_DIR); \
+			setup_envtest_env $(ENVTEST_ASSETS_DIR); \
 	go test ./... -coverprofile cover.out
 
 # Build manager binary
@@ -86,12 +98,11 @@ endif
 
 # Generate clients
 ## Generates client from swagger documentation.
+.PHONY: clients
 clients:
 	@t=$$(mktemp -d) && \
 		cd $${t} && \
 		git clone -b develop git@github.com:quortex/aws-ec2-adapter.git && \
 		cd - && \
-		mkdir -p client/ec2adapter && \
-		cp $${t}/aws-ec2-adapter/docs/swagger.yaml ./client/ec2adapter && \
-		cd ./client/ec2adapter && \
-		docker run --rm -v ${PWD}:/app -w /app quay.io/goswagger/swagger:v0.25.0 generate client -f ./client/ec2adapter/swagger.yaml -A aws-ec2-adapter -t ./client/ec2adapter
+		cp $${t}/aws-ec2-adapter/docs/swagger.yaml ./clients/ec2adapter && \
+		go generate ./...
