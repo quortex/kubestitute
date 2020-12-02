@@ -36,7 +36,8 @@ spec:
           properties:
             autoscalingGroupFallback:
               description: The name of the autoscaling group, in which the scheduler
-                will trigger fallback instances.
+                will trigger fallback instances. This autoscaling group must not be
+                managed by the cluster-autoscaler !!!
               type: string
             autoscalingGroupTarget:
               description: The name of the autoscaling group, which the scheduler
@@ -48,7 +49,8 @@ spec:
               properties:
                 policies:
                   description: Policies is a list of potential scaling polices which
-                    can be used during scaling. At least one policy must be specified.
+                    can be evaluated for scaling decisions. At least one policy must
+                    be specified. Instances will be scaled down one by one.
                   items:
                     description: SchedulerPolicy is a single policy which must hold
                       true for a specified past interval.
@@ -118,9 +120,7 @@ spec:
                     type: object
                   type: array
                 stabilizationWindowSeconds:
-                  description: StabilizationWindowSeconds is the number of seconds
-                    for which past recommendations should be considered while scaling
-                    up or scaling down.
+                  description: A cooldown for consecutive scale down operations.
                   format: int32
                   type: integer
               type: object
@@ -130,7 +130,9 @@ spec:
               properties:
                 policies:
                   description: Policies is a list of potential scaling polices which
-                    can be used during scaling. At least one policy must be specified.
+                    can be evaluated for scaling decisions. At least one policy must
+                    be specified. For scale ups the matching policy which triggers
+                    the highest number of replicas will be used.
                   items:
                     description: AdvancedSchedulerPolicy is a policy that allow arithmetic
                       operation to compute replicas.
@@ -266,9 +268,7 @@ spec:
                     type: object
                   type: array
                 stabilizationWindowSeconds:
-                  description: StabilizationWindowSeconds is the number of seconds
-                    for which past recommendations should be considered while scaling
-                    up or scaling down.
+                  description: A cooldown for consecutive scale up operations.
                   format: int32
                   type: integer
               type: object

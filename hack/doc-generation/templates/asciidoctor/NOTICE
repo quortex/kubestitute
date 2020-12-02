@@ -1,0 +1,5 @@
+templates/asciidoctor
+Copyright 2020 Elasticsearch B.V.
+
+templates/asciidoctor/gv_list.tpl was modified to remove elastic mentions and to improve package summary
+Modifications copyright 2020 Quortex

@@ -43,6 +43,7 @@ type SchedulerSpec struct {
 
 	// The name of the autoscaling group, in which the scheduler will trigger
 	// fallback instances.
+	// This autoscaling group must not be managed by the cluster-autoscaler !!!
 	// +kubebuilder:validation:Required
 	ASGFallback string `json:"autoscalingGroupFallback"`
 
@@ -59,26 +60,27 @@ type SchedulerSpec struct {
 
 // ScaleDownRules configures the scaling behavior for Instance scale downs.
 type ScaleDownRules struct {
-	// StabilizationWindowSeconds is the number of seconds for which past recommendations should be
-	// considered while scaling up or scaling down.
+	// A cooldown for consecutive scale down operations.
 	// +kubebuilder:validation:Optional
 	StabilizationWindowSeconds int32 `json:"stabilizationWindowSeconds"`
 
-	// Policies is a list of potential scaling polices which can be used during scaling.
+	// Policies is a list of potential scaling polices which can be evaluated for scaling decisions.
 	// At least one policy must be specified.
+	// Instances will be scaled down one by one.
 	// +kubebuilder:validation:Required
 	Policies []SchedulerPolicy `json:"policies,omitempty"`
 }
 
 // ScaleUpRules configures the scaling behavior for Instance scale ups.
 type ScaleUpRules struct {
-	// StabilizationWindowSeconds is the number of seconds for which past recommendations should be
-	// considered while scaling up or scaling down.
+	// A cooldown for consecutive scale up operations.
 	// +kubebuilder:validation:Optional
 	StabilizationWindowSeconds int32 `json:"stabilizationWindowSeconds"`
 
-	// Policies is a list of potential scaling polices which can be used during scaling.
+	// Policies is a list of potential scaling polices which can be evaluated for scaling decisions.
 	// At least one policy must be specified.
+	// For scale ups the matching policy which triggers the highest number of replicas
+	// will be used.
 	// +kubebuilder:validation:Required
 	Policies []AdvancedSchedulerPolicy `json:"policies,omitempty"`
 }
