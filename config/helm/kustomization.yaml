@@ -3,7 +3,7 @@
 namePrefix: kubestitute-
 
 bases:
-  - ../../../config/rbac
+  - ../rbac
 
 patches:
   - target:

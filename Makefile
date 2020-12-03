@@ -17,7 +17,7 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: manager manifests
+all: manager manifests docs charts
 
 # find or download controller-gen
 # download controller-gen if necessary
@@ -149,3 +149,16 @@ docs: crd-ref-docs
 		--config=hack/doc-generation/config.yaml \
 		--templates-dir=hack/doc-generation/templates/asciidoctor \
 		--output-path=docs/api-docs.asciidoc
+
+# unescape tpl capture text inside <tpl tpl> tag
+# used to escape invalid yaml syntax for helm through kustomize
+define unescape-tpl
+sed 's/<tpl \(.*\) tpl>/\1/'
+endef
+
+# Build helm chart templates from config
+.PHONY: charts
+charts:
+	@$(KUSTOMIZE) build config/crd | $(call unescape-tpl) > ./helm/kubestitute/crds/crds.yaml
+	@$(KUSTOMIZE) build config/helm | $(call unescape-tpl) > ./helm/kubestitute/templates/rbac.yaml
+	@docker run --rm --volume "$$(pwd)/kubestitute:/helm-docs" jnorwood/helm-docs:latest -s file
