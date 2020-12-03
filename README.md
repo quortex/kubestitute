@@ -18,7 +18,7 @@ It will also drain fallback instances and detach them from the Auto Scaling Grou
 ## Prerequisites
 
 ### Kubernetes
-A Kubernetes cluster of version >=1.16.0 is required. If you are just starting out with Kubestitute, it is highly recommended to use the latest version.
+A Kubernetes cluster of version v1.11.3+ is required. If you are just starting out with Kubestitute, it is highly recommended to use the latest version.
 
 ### <a id="Prerequisites_AWS"></a>AWS
 To be used with AWS and interact with Auto Scaling Groups, an AWS service account with the following permissions on Auto Scaling Groups managed by Kubestitute is required:
@@ -43,6 +43,11 @@ To be used with AWS and interact with Auto Scaling Groups, an AWS service accoun
 
 ## Installation
 
+### Helm
+
+Follow Kubestitute documentation for Helm deployment [here](./helm/kubestitute).
+
+### Kubebuilder (development)
 Only the Kubebuilder bootstrap deployment is available at the moment. A Helm deployment is coming soon...
 
 1. Create a namespace for Kubestitute

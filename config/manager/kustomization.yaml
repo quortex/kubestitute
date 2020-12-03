@@ -1,5 +1,10 @@
 resources:
 - manager.yaml
+# Comment the following line if you want to disable
+# the auth proxy (https://github.com/brancz/kube-rbac-proxy)
+# which protects your /metrics endpoint.
+- auth_proxy_service.yaml
+
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:

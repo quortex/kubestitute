@@ -1,0 +1,39 @@
+name: Release Charts
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      # This step uses Github's checkout-action: https://github.com/actions/checkout
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      # Configure Git for release.
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      # Install Helm.
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+        with:
+          version: v3.4.0
+
+      # Run chart-releaser action (https://github.com/helm/chart-releaser-action).
+      - name: Run chart-releaser
+        # charts discovery is broken in v1.1.0 so we keep v1.0.0 atm
+        uses: helm/chart-releaser-action@v1.0.0
+        with:
+          charts_dir: ./helm
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          # release name is available since v1.1.0... which is broken
+          # CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-chart-{{ .Version }}"

@@ -1,0 +1,91 @@
+# Default values for kubestitute.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+manager:
+  clusterAutoscaler:
+    # -- The Cluster Autoscaler namespace.
+    namespace: kube-system
+    # -- The Cluster Autoscaler status configmap name.
+    name: cluster-autoscaler-status
+  logs:
+    # -- Logs verbosity:
+    #
+    #  0 => panic
+    #  1 => error
+    #  2 => warning
+    #  3 => info
+    #  4 => debug
+    verbosity: 3
+    enableDevLogs: false
+
+  image:
+    # -- Kubestitute manager image repository.
+    repository: quortexio/kubestitute
+    # -- Kubestitute manager image tag.
+    tag: latest
+    # -- Kubestitute manager image pull policy.
+    pullPolicy: IfNotPresent
+  # -- Kubestitute manager container required resources.
+  resources: {}
+
+awsEC2Plugin:
+  # -- Wether to enable AWS EC2 plugin.
+  enabled: true
+  # -- A reference to a secret wit AWS credentials for AWS EC2 plugin.
+  secret: aws-ec2-plugin
+  # -- The AWS region.
+  region: ""
+  # -- Tags for AWS EC2 plugin scope management.
+  tags: {}
+  image:
+    # -- AWS EC2 plugin image pull policy.
+    repository: quortexio/aws-ec2-adapter
+    # -- AWS EC2 plugin image pull policy.
+    tag: develop
+    # -- AWS EC2 plugin image pull policy.
+    pullPolicy: IfNotPresent
+  # --  AWS EC2 plugin container required resources.
+  resources: {}
+
+kubeRBACProxy:
+  enabled: true
+  image:
+    # -- kube-rbac-proxy image repository.
+    repository: gcr.io/kubebuilder/kube-rbac-proxy
+    # -- kube-rbac-proxy image tag.
+    tag: v0.5.0
+    # -- kube-rbac-proxy image pull policy.
+    pullPolicy: IfNotPresent
+  # --  kube-rbac-proxy container required resources.
+  resources: {}
+
+# -- Number of desired pods.
+replicaCount: 1
+
+# --  A list of secrets used to pull containers images.
+imagePullSecrets: []
+
+# --  Helm's name computing override.
+nameOverride: ""
+
+# --  Helm's fullname computing override.
+fullnameOverride: ""
+
+# --  Annotations to be added to pods.
+podAnnotations: {}
+
+# --  Annotations to be added to deployment.
+deploymentAnnotations: {}
+
+# --  How long to wait for pods to stop gracefully.
+terminationGracePeriod: 30
+
+# --  Node labels for Kubestitute pod assignment.
+nodeSelector: {}
+
+# --  Node tolerations for Kubestitute scheduling to nodes with taints.
+tolerations: []
+
+# --  Affinity for Kubestitute pod assignment.
+affinity: {}

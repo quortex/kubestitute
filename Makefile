@@ -17,7 +17,58 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: manager manifests
+all: manager manifests docs charts
+
+# find or download controller-gen
+# download controller-gen if necessary
+controller-gen:
+ifeq (, $(shell which controller-gen))
+	@{ \
+	set -e ;\
+	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$CONTROLLER_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.5 ;\
+	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
+	}
+CONTROLLER_GEN=$(GOBIN)/controller-gen
+else
+CONTROLLER_GEN=$(shell which controller-gen)
+endif
+
+# find or download kustomize
+# download kustomize if necessary
+kustomize:
+ifeq (, $(shell which kustomize))
+	@{ \
+	set -e ;\
+	KUSTOMIZE_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$KUSTOMIZE_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get sigs.k8s.io/kustomize/kustomize/v3@v3.5.4 ;\
+	rm -rf $$KUSTOMIZE_GEN_TMP_DIR ;\
+	}
+KUSTOMIZE=$(GOBIN)/kustomize
+else
+KUSTOMIZE=$(shell which kustomize)
+endif
+
+# find or download crd-ref-docs
+# download crd-ref-docs if necessary
+crd-ref-docs:
+ifeq (, $(shell which crd-ref-docs))
+	@{ \
+	set -e ;\
+	CRDREFDOCS_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$CRDREFDOCS_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get github.com/elastic/crd-ref-docs@v0.0.5 ;\
+	rm -rf $$CRDREFDOCS_GEN_TMP_DIR ;\
+	}
+CRD_REF_DOCS=$(GOBIN)/crd-ref-docs
+else
+CRD_REF_DOCS=$(shell which crd-ref-docs)
+endif
 
 # Run tests
 test: generate fmt vet manifests
@@ -38,22 +89,22 @@ run: generate fmt vet manifests
 	go run ./main.go
 
 # Install CRDs into a cluster
-install: manifests
-	kustomize build config/crd | kubectl apply -f -
+install: manifests kustomize
+	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
 # Uninstall CRDs from a cluster
-uninstall: manifests
-	kustomize build config/crd | kubectl delete -f -
+uninstall: manifests kustomize
+	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests
-	cd config/manager && kustomize edit set image controller=${IMG}
-	kustomize build config/default | kubectl apply -f -
+deploy: manifests kustomize
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 # Destroy controller in the configured Kubernetes cluster in ~/.kube/config
-destroy: manifests
-	cd config/manager && kustomize edit set image controller=${IMG}
-	kustomize build config/default | kubectl delete -f -
+destroy: manifests kustomize
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default | kubectl delete -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
@@ -79,42 +130,8 @@ docker-build: test
 docker-push:
 	docker push ${IMG}
 
-# find or download controller-gen
-# download controller-gen if necessary
-controller-gen:
-ifeq (, $(shell which controller-gen))
-	@{ \
-	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.5 ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
-	}
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
-
-# find or download crd-ref-docs
-# download crd-ref-docs if necessary
-crd-ref-docs:
-ifeq (, $(shell which crd-ref-docs))
-	@{ \
-	set -e ;\
-	CRDREFDOCS_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CRDREFDOCS_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get github.com/elastic/crd-ref-docs@v0.0.5 ;\
-	rm -rf $$CRDREFDOCS_GEN_TMP_DIR ;\
-	}
-CRD_REF_DOCS=$(GOBIN)/crd-ref-docs
-else
-CRD_REF_DOCS=$(shell which crd-ref-docs)
-endif
-
 # Generate clients
-## Generates client from swagger documentation.
+# Generates client from swagger documentation.
 .PHONY: clients
 clients:
 	@t=$$(mktemp -d) && \
@@ -132,3 +149,16 @@ docs: crd-ref-docs
 		--config=hack/doc-generation/config.yaml \
 		--templates-dir=hack/doc-generation/templates/asciidoctor \
 		--output-path=docs/api-docs.asciidoc
+
+# unescape tpl capture text inside <tpl tpl> tag
+# used to escape invalid yaml syntax for helm through kustomize
+define unescape-tpl
+sed 's/<tpl \(.*\) tpl>/\1/'
+endef
+
+# Build helm chart templates from config
+.PHONY: charts
+charts:
+	@$(KUSTOMIZE) build config/crd | $(call unescape-tpl) > ./helm/kubestitute/crds/crds.yaml
+	@$(KUSTOMIZE) build config/helm | $(call unescape-tpl) > ./helm/kubestitute/templates/rbac.yaml
+	@docker run --rm --volume "$$(pwd)/helm/kubestitute:/helm-docs" jnorwood/helm-docs:latest -s file
