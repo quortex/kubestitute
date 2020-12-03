@@ -1,27 +1,27 @@
-# kubestitute
+# Kubestitute
 
 ## Overview
 This project is an operator allowing Kubernetes to automatically manage the lifecycle of instances within a cluster based on specific events.
 
-This tool is not intended to replace existing tools such as the [cluster-autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler) but rather to supplement them in order to have more control and responsiveness over the provisioning of instances in a cluster.
+This tool is not intended to replace existing tools such as the [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler) but rather to supplement them in order to have more control and responsiveness over the provisioning of instances in a cluster.
 
-kubestitute only works with clusters deployed on AWS, supporting Autoscaling Groups at the moment.
+Kubestitute only works with clusters deployed on AWS using Auto Scaling Groups at the moment.
 
 ## Usage
-The standard use case for this tool is to provision on-demand fallback instances in case we cannot get spot instances.
+The standard use case for this tool is to provision on-demand fallback instances in case Spot instances cannot be scheduled.
 
-To do this, you must configure an autoscaling group of spot instances managed by the cluster-autoscaler and an autoscaling group of on-demand fallback instances managed by kubestitute.
+To do so, configure an Auto Scaling Group of Spot instances managed by the Cluster Autoscaler and another one of on-demand fallback instances managed by Kubestitute.
 
-kubestitute will allow us to scale up the on-demand autoscaling group according to events on the spot instances autoscaling group retrieved from the cluster-autoscaler status.
-It will also allow us to drain fallback instances and detach them from the autoscaling group according to events (typically when the spot instances have finally been scheduled).
+Kubestitute will scale up the on-demand Auto Scaling Group according to events on the Spot instances Auto Scaling Group retrieved from the cluster-autoscaler status.
+It will also drain fallback instances and detach them from the Auto Scaling Group according to events (typically when the Spot instances have finally been scheduled).
 
 ## Prerequisites
 
 ### Kubernetes
-A Kubernetes cluster of version >=1.16.0 is required. If you are just starting out with kubestitute, it is highly recommended to use the latest version.
+A Kubernetes cluster of version >=1.16.0 is required. If you are just starting out with Kubestitute, it is highly recommended to use the latest version.
 
 ### <a id="Prerequisites_AWS"></a>AWS
-To be used with AWS and interact with autoscaling groups, an AWS service account with the following permissions on Autoscaling groups managed by kubestitute is required:
+To be used with AWS and interact with Auto Scaling Groups, an AWS service account with the following permissions on Auto Scaling Groups managed by Kubestitute is required:
 ```json
 {
     "Version": "2012-10-17",
@@ -43,9 +43,9 @@ To be used with AWS and interact with autoscaling groups, an AWS service account
 
 ## Installation
 
-Only the kubebuilder bootstrap deployment is available at the moment. A helm deployment is coming soon...
+Only the Kubebuilder bootstrap deployment is available at the moment. A Helm deployment is coming soon...
 
-1. Create a namespace for kubestitute
+1. Create a namespace for Kubestitute
 
 ```sh
 kubectl create ns kubestitute-system
@@ -73,7 +73,7 @@ make deploy IMG=quortexio/quortex-operator:$RELEASE
 ## Configuration
 
 ### <a id="Configuration_AWS_plugin"></a>AWS plugin
-kubestitute deploy a sidecar to interact with AWS. To configure this plugin, a configmap must be deployed with the desired configuration into `kubestitute-system` namespace.
+Kubestitute deploy a sidecar to interact with AWS. To configure this plugin, a configmap must be deployed with the desired configuration into `kubestitute-system` namespace.
 
 ```yml
 apiVersion: v1
@@ -107,26 +107,26 @@ The kubestitute container takes as argument the parameters below.
 
 
 ## CustomResourceDefinitions
-A core feature of kubestitute is to monitor the Kubernetes API server for changes to specific objects and ensure that the current cluster infrastructure match these objects.
+A core feature of Kubestitute is to monitor the Kubernetes API server for changes to specific objects and ensure that the current cluster infrastructure match these objects.
 
 The Operator acts on the following [custom resource definitions (CRDs)](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/):
 
-**`Instance`** defines a desired Instance (only AWS EC2 instances in Autoscaling Groups supported at the moment).
+**`Instance`** defines a desired Instance (only AWS EC2 instances in Auto Scaling Groups supported at the moment).
 
-**`Scheduler`** defines a scheduler for Instances (only AWS EC2 instances in Autoscaling Groups supported at the moment). This resource is used to configure advanced instances scheduling based on node groups events.
+**`Scheduler`** defines a scheduler for Instances (only AWS EC2 instances in Auto Scaling Groups supported at the moment). This resource is used to configure advanced instances scheduling based on node groups events.
 
-You can find examples of CRDs defined by kubestitute [here](https://github.com/quortex/kubestitute/tree/feature/documentation/config/samples).
+You can find examples of CRDs defined by Kubestitute [here](https://github.com/quortex/kubestitute/tree/feature/documentation/config/samples).
 
 Full API documentation is available [here](./docs/api-docs.asciidoc).
 
 ## Supervision
 
 ### Logs
-By default, kubestitute produces structured logs, with "Info" verbosity. These settings can be configured as described [here](#Configuration_Optional_args).
+By default, Kubestitute produces structured logs, with "Info" verbosity. These settings can be configured as described [here](#Configuration_Optional_args).
 
 ### Metrics
-kubestitute being built from kubebuilder, this one natively exposes a collection of performance metrics for each controller.
-kubebuilder documentation about metrics [here](https://book.kubebuilder.io/reference/metrics.html).
+Kubestitute being built from Kubebuilder, it natively exposes a collection of performance metrics for each controller. 
+Kubebuilder documentation about metrics can be found [here](https://book.kubebuilder.io/reference/metrics.html).
 
 We also expose custom metrics as described here:
 
