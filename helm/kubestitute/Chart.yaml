@@ -6,7 +6,7 @@ appVersion: 0.1.0
 description: Kubestitute is an event based instances lifecycle manager for Kubernetes.
 home: https://github.com/quortex/kubestitute
 sources:
-  - https://github.com/quortex/kubestitute/helm/kubestitute
+  - https://github.com/quortex/kubestitute/helm
 maintainers:
   - name: vincentmrg
     url: https://github.com/vincentmrg

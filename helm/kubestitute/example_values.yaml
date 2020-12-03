@@ -23,8 +23,15 @@ awsEC2Plugin:
       cpu: 100m
       memory: 20Mi
   secret: aws-ec2-plugin
-  region: "eu-west-1"
+  region: eu-west-1
   tags:
     quortex.io/owner/environment: development
     quortex.io/owner/service: kubestitute
     quortex.io/owner/identifier: kindcluster
+
+kubeRBACProxy:
+  enabled: false
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: metrics
