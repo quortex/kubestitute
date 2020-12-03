@@ -14,4 +14,4 @@ helm repo add kubestitute https://quortex.github.io/kubestitute
 You can then run `helm search repo kubestitute` to see the charts.
 
 ## Contributing
-Source code of Kubestitute is available [here](https://github.com/quortex/kubestitute), charts are available [here](https://github.com/quortex/kubestitute/tree/feature/helm/helm).
+Source code of Kubestitute is available [here](https://github.com/quortex/kubestitute), charts are available [here](https://github.com/quortex/kubestitute/tree/main/helm).
