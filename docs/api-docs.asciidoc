@@ -1,0 +1,267 @@
+// Generated documentation. Please do not edit.
+:page_id: api-reference
+:anchor_prefix: k8s-api
+
+[id="{p}-{page_id}"]
+= API Reference
+
+.Packages
+* xref:{anchor_prefix}-core-kubestitute-quortex-io-v1alpha1[$$core.kubestitute.quortex.io/v1alpha1$$]
+** xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-instance[$$Instance$$]
+** xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scheduler[$$Scheduler$$]
+
+
+
+[id="{anchor_prefix}-core-kubestitute-quortex-io-v1alpha1"]
+== core.kubestitute.quortex.io/v1alpha1
+
+Package v1alpha1 contains API Schema definitions for the core v1alpha1 API group
+
+.Resource Types
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-instance[$$Instance$$]
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scheduler[$$Scheduler$$]
+
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-advancedschedulerpolicy"]
+=== AdvancedSchedulerPolicy
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaleuprules[$$ScaleUpRules$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`SchedulerPolicy`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy[$$SchedulerPolicy$$]__ | 
+| *`replicas`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorarithmeticoperation[$$IntOrArithmeticOperation$$]__ | Replicas specify the replicas to Scale.
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-arithmeticoperation"]
+=== ArithmeticOperation
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorarithmeticoperation[$$IntOrArithmeticOperation$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`leftOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | LeftOperand is the left operand of the operation.
+| *`operator`* __ArithmeticOperator__ | An arithmetic operator used to apply policy between From and To.
+| *`rightOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | RightOperand is the right operand of the operation.
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-arithmeticoperator"]
+=== ArithmeticOperator(string)
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-arithmeticoperation[$$ArithmeticOperation$$]
+****
+
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-comparisonoperator"]
+=== ComparisonOperator(string)
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy[$$SchedulerPolicy$$]
+****
+
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-field"]
+=== Field
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]
+****
+
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-instance"]
+=== Instance
+
+Instance is the Schema for the instances API
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `core.kubestitute.quortex.io/v1alpha1`
+| *`kind`* __string__ | `Instance`
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-instancespec[$$InstanceSpec$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-instancespec"]
+=== InstanceSpec
+
+InstanceSpec defines the desired state of Instance
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-instance[$$Instance$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`autoscalingGroup`* __string__ | The AutoScaling Group name.
+| *`honorCooldown`* __boolean__ | Indicates whether Amazon EC2 Auto Scaling waits for the cooldown period to complete before initiating a scaling activity to set your Auto Scaling group to its new capacity. By default, Amazon EC2 Auto Scaling does not honor the cooldown period during manual scaling activities.
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorarithmeticoperation"]
+=== IntOrArithmeticOperation
+
+IntOrArithmeticOperation is a type that can hold an int32 or an arithmetic operation.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-advancedschedulerpolicy[$$AdvancedSchedulerPolicy$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`int`* __integer__ | An Int for value.
+| *`operation`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-arithmeticoperation[$$ArithmeticOperation$$]__ | An arithmetic operation..
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield"]
+=== IntOrField
+
+IntOrField is a type that can hold an int32 or a Field.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-arithmeticoperation[$$ArithmeticOperation$$]
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy[$$SchedulerPolicy$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`int`* __integer__ | An Int for value.
+| *`field`* __Field__ | An Field for value.
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaledownrules"]
+=== ScaleDownRules
+
+ScaleDownRules configures the scaling behavior for Instance scale downs.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerspec[$$SchedulerSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`stabilizationWindowSeconds`* __integer__ | A cooldown for consecutive scale down operations.
+| *`policies`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy[$$SchedulerPolicy$$]__ | Policies is a list of potential scaling polices which can be evaluated for scaling decisions. At least one policy must be specified. Instances will be scaled down one by one.
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaleuprules"]
+=== ScaleUpRules
+
+ScaleUpRules configures the scaling behavior for Instance scale ups.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerspec[$$SchedulerSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`stabilizationWindowSeconds`* __integer__ | A cooldown for consecutive scale up operations.
+| *`policies`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-advancedschedulerpolicy[$$AdvancedSchedulerPolicy$$] array__ | Policies is a list of potential scaling polices which can be evaluated for scaling decisions. At least one policy must be specified. For scale ups the matching policy which triggers the highest number of replicas will be used.
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scheduler"]
+=== Scheduler
+
+Scheduler is the Schema for the schedulers API
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `core.kubestitute.quortex.io/v1alpha1`
+| *`kind`* __string__ | `Scheduler`
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerspec[$$SchedulerSpec$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy"]
+=== SchedulerPolicy
+
+SchedulerPolicy is a single policy which must hold true for a specified past interval.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-advancedschedulerpolicy[$$AdvancedSchedulerPolicy$$]
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaledownrules[$$ScaleDownRules$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`leftOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | LeftOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
+| *`operator`* __ComparisonOperator__ | A comparison operator used to apply policy between From and To.
+| *`rightOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | RightOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
+| *`periodSeconds`* __integer__ | PeriodSeconds specifies the window of time for which the policy should hold true.
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerspec"]
+=== SchedulerSpec
+
+SchedulerSpec defines the desired state of Scheduler
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scheduler[$$Scheduler$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`trigger`* __SchedulerTrigger__ | The Scheduler Trigger
+| *`autoscalingGroupTarget`* __string__ | The name of the autoscaling group, which the scheduler will use to apply the rules.
+| *`autoscalingGroupFallback`* __string__ | The name of the autoscaling group, in which the scheduler will trigger fallback instances. This autoscaling group must not be managed by the cluster-autoscaler !!!
+| *`scaleUpRules`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaleuprules[$$ScaleUpRules$$]__ | Scheduler rules used to match criteria on Target ASG to trigger Scale Up on Fallback ASG.
+| *`scaleDownRules`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaledownrules[$$ScaleDownRules$$]__ | Scheduler rules used to match criteria on Target ASG to trigger Scale Down on Fallback ASG.
+|===
+
+

@@ -96,6 +96,23 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
+# find or download crd-ref-docs
+# download crd-ref-docs if necessary
+crd-ref-docs:
+ifeq (, $(shell which crd-ref-docs))
+	@{ \
+	set -e ;\
+	CRDREFDOCS_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$CRDREFDOCS_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get github.com/elastic/crd-ref-docs@v0.0.5 ;\
+	rm -rf $$CRDREFDOCS_GEN_TMP_DIR ;\
+	}
+CRD_REF_DOCS=$(GOBIN)/crd-ref-docs
+else
+CRD_REF_DOCS=$(shell which crd-ref-docs)
+endif
+
 # Generate clients
 ## Generates client from swagger documentation.
 .PHONY: clients
@@ -106,3 +123,12 @@ clients:
 		cd - && \
 		cp $${t}/aws-ec2-adapter/docs/swagger.yaml ./clients/ec2adapter && \
 		go generate ./...
+
+# Build documentation
+.PHONY: docs
+docs: crd-ref-docs
+	$(CRD_REF_DOCS) --source-path=api \
+		--renderer=asciidoctor \
+		--config=hack/doc-generation/config.yaml \
+		--templates-dir=hack/doc-generation/templates/asciidoctor \
+		--output-path=docs/api-docs.asciidoc
