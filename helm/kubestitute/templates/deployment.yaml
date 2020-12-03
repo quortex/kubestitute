@@ -1,0 +1,117 @@
+{{- $fullName := include "kubestitute.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "kubestitute.labels" . | nindent 4 }}
+{{- with .Values.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubestitute.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kubestitute.selectorLabels" . | nindent 8 }}
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      containers:
+      {{- with .Values.manager }}
+        - name: manager
+          image: "{{ .image.repository }}:{{ .image.tag }}"
+          command:
+            - /manager
+          args:
+            - --metrics-addr={{ ternary "127.0.0.1:8080" "0.0.0.0:8080" $.Values.kubeRBACProxy.enabled }}
+            - --enable-leader-election
+            - --clusterautoscaler-status-namespace={{ .clusterAutoscaler.namespace }}
+            - --clusterautoscaler-status-name={{ .clusterAutoscaler.name }}
+            - --dev={{ .logs.enableDevLogs }}
+            - --v={{ .logs.verbosity }}
+          imagePullPolicy: {{ .image.pullPolicy }}
+          {{- if not $.Values.kubeRBACProxy.enabled }}
+          ports:
+            - containerPort: 8080
+              name: metrics
+          {{- end }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+      {{- end }}
+      {{- with .Values.awsEC2Plugin }}
+        {{- if .enabled }}
+        - name: aws-ec2-adapter
+          image: "{{ .image.repository }}:{{ .image.tag }}"
+          args:
+            - --addr=127.0.0.1:8008
+          env:
+            - name: QX_CONFIGURATION_PATH
+              value: /config/config.yaml
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  key: awsKeyId
+                  name: {{ .secret }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: awsSecretKey
+                  name: {{ .secret }}
+          imagePullPolicy: {{ .image.pullPolicy }}
+          ports:
+            - containerPort: 8008
+              name: http
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: /config/config.yaml
+              name: config
+              subPath: ec2Adapter.yaml
+        {{- end }}
+      {{- end }}
+      {{- with .Values.kubeRBACProxy }}
+        {{- if .enabled }}
+        - name: kube-rbac-proxy
+          image: "{{ .image.repository }}:{{ .image.tag }}"
+          args:
+            - --secure-listen-address=0.0.0.0:8443
+            - --upstream=http://127.0.0.1:8080/
+            - --logtostderr=true
+            - --v=10
+          imagePullPolicy: {{ .image.pullPolicy }}
+          ports:
+            - containerPort: 8443
+              name: https
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+        {{- end }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriod }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: {{ $fullName }}
+        name: config

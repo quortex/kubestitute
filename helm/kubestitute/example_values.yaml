@@ -1,0 +1,30 @@
+manager:
+  logs:
+    verbosity: 4
+  image:
+    tag: develop
+  resources:
+    limits:
+      cpu: 100m
+      memory: 30Mi
+    requests:
+      cpu: 100m
+      memory: 20Mi
+
+awsEC2Plugin:
+  enabled: true
+  image:
+    tag: develop
+  resources:
+    limits:
+      cpu: 100m
+      memory: 30Mi
+    requests:
+      cpu: 100m
+      memory: 20Mi
+  secret: aws-ec2-plugin
+  region: "eu-west-1"
+  tags:
+    quortex.io/owner/environment: development
+    quortex.io/owner/service: kubestitute
+    quortex.io/owner/identifier: kindcluster
