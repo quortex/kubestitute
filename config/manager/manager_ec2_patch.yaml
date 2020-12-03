@@ -10,7 +10,7 @@ spec:
     spec:
       containers:
         - name: aws-ec2-adapter
-          image: quortexio/aws-ec2-adapter:develop
+          image: quortexio/aws-ec2-adapter:1.0.0
           args:
             - -addr
             - ":8008"

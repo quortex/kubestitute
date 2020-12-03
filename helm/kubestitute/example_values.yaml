@@ -2,7 +2,7 @@ manager:
   logs:
     verbosity: 4
   image:
-    tag: develop
+    tag: latest
   resources:
     limits:
       cpu: 100m
@@ -14,7 +14,7 @@ manager:
 awsEC2Plugin:
   enabled: true
   image:
-    tag: develop
+    tag: latest
   resources:
     limits:
       cpu: 100m
