@@ -1,0 +1,5 @@
+# Ignore everything but swagger spec
+*
+!*.gitignore
+!*gen.go
+!*swagger.yaml

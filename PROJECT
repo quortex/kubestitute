@@ -1,0 +1,10 @@
+domain: kubestitute.quortex.io
+repo: quortex.io/kubestitute
+resources:
+- group: core
+  kind: Instance
+  version: v1alpha1
+- group: core
+  kind: Scheduler
+  version: v1alpha1
+version: "2"

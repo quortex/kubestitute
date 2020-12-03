@@ -1,0 +1,392 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: instances.core.kubestitute.quortex.io
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.state
+    description: The Instance status
+    name: STATUS
+    type: string
+  - JSONPath: .status.ec2InstanceID
+    description: The EC2 Instance ID
+    name: EC2 INSTANCE
+    type: string
+  - JSONPath: .status.node
+    description: The Kubernetes Node
+    name: NODE
+    type: string
+  group: core.kubestitute.quortex.io
+  names:
+    kind: Instance
+    listKind: InstanceList
+    plural: instances
+    singular: instance
+  scope: Namespaced
+  subresources: {}
+  validation:
+    openAPIV3Schema:
+      description: Instance is the Schema for the instances API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: InstanceSpec defines the desired state of Instance
+          properties:
+            autoscalingGroup:
+              description: The AutoScaling Group name.
+              type: string
+            honorCooldown:
+              description: Indicates whether Amazon EC2 Auto Scaling waits for the
+                cooldown period to complete before initiating a scaling activity to
+                set your Auto Scaling group to its new capacity. By default, Amazon
+                EC2 Auto Scaling does not honor the cooldown period during manual
+                scaling activities.
+              type: boolean
+          required:
+          - autoscalingGroup
+          type: object
+        status:
+          description: InstanceStatus defines the observed state of Instance
+          properties:
+            ec2InstanceID:
+              description: The associated EC2 instance ID
+              type: string
+            node:
+              description: The associated kubernetes Node name
+              type: string
+            state:
+              description: The current state of the instance
+              type: string
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: schedulers.core.kubestitute.quortex.io
+spec:
+  group: core.kubestitute.quortex.io
+  names:
+    kind: Scheduler
+    listKind: SchedulerList
+    plural: schedulers
+    singular: scheduler
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      description: Scheduler is the Schema for the schedulers API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: SchedulerSpec defines the desired state of Scheduler
+          properties:
+            autoscalingGroupFallback:
+              description: The name of the autoscaling group, in which the scheduler
+                will trigger fallback instances. This autoscaling group must not be
+                managed by the cluster-autoscaler !!!
+              type: string
+            autoscalingGroupTarget:
+              description: The name of the autoscaling group, which the scheduler
+                will use to apply the rules.
+              type: string
+            scaleDownRules:
+              description: Scheduler rules used to match criteria on Target ASG to
+                trigger Scale Down on Fallback ASG.
+              properties:
+                policies:
+                  description: Policies is a list of potential scaling polices which
+                    can be evaluated for scaling decisions. At least one policy must
+                    be specified. Instances will be scaled down one by one.
+                  items:
+                    description: SchedulerPolicy is a single policy which must hold
+                      true for a specified past interval.
+                    properties:
+                      leftOperand:
+                        description: LeftOperand is the left operand of the comparison.
+                          It could be the target ASG Health field from which this
+                          policy is applied or an integer.
+                        properties:
+                          field:
+                            description: An Field for value.
+                            enum:
+                            - Ready
+                            - Unready
+                            - NotStarted
+                            - LongNotStarted
+                            - Registered
+                            - LongUnregistered
+                            - CloudProviderTarget
+                            type: string
+                          int:
+                            description: An Int for value.
+                            format: int32
+                            type: integer
+                        type: object
+                      operator:
+                        description: A comparison operator used to apply policy between
+                          From and To.
+                        enum:
+                        - equal
+                        - notEqual
+                        - greaterThan
+                        - greaterThanOrEqual
+                        - lowerThan
+                        - lowerThanOrEqual
+                        type: string
+                      periodSeconds:
+                        description: PeriodSeconds specifies the window of time for
+                          which the policy should hold true.
+                        format: int32
+                        type: integer
+                      rightOperand:
+                        description: RightOperand is the left operand of the comparison.
+                          It could be the target ASG Health field from which this
+                          policy is applied or an integer.
+                        properties:
+                          field:
+                            description: An Field for value.
+                            enum:
+                            - Ready
+                            - Unready
+                            - NotStarted
+                            - LongNotStarted
+                            - Registered
+                            - LongUnregistered
+                            - CloudProviderTarget
+                            type: string
+                          int:
+                            description: An Int for value.
+                            format: int32
+                            type: integer
+                        type: object
+                    required:
+                    - leftOperand
+                    - operator
+                    - rightOperand
+                    type: object
+                  type: array
+                stabilizationWindowSeconds:
+                  description: A cooldown for consecutive scale down operations.
+                  format: int32
+                  type: integer
+              type: object
+            scaleUpRules:
+              description: Scheduler rules used to match criteria on Target ASG to
+                trigger Scale Up on Fallback ASG.
+              properties:
+                policies:
+                  description: Policies is a list of potential scaling polices which
+                    can be evaluated for scaling decisions. At least one policy must
+                    be specified. For scale ups the matching policy which triggers
+                    the highest number of replicas will be used.
+                  items:
+                    description: AdvancedSchedulerPolicy is a policy that allow arithmetic
+                      operation to compute replicas.
+                    properties:
+                      leftOperand:
+                        description: LeftOperand is the left operand of the comparison.
+                          It could be the target ASG Health field from which this
+                          policy is applied or an integer.
+                        properties:
+                          field:
+                            description: An Field for value.
+                            enum:
+                            - Ready
+                            - Unready
+                            - NotStarted
+                            - LongNotStarted
+                            - Registered
+                            - LongUnregistered
+                            - CloudProviderTarget
+                            type: string
+                          int:
+                            description: An Int for value.
+                            format: int32
+                            type: integer
+                        type: object
+                      operator:
+                        description: A comparison operator used to apply policy between
+                          From and To.
+                        enum:
+                        - equal
+                        - notEqual
+                        - greaterThan
+                        - greaterThanOrEqual
+                        - lowerThan
+                        - lowerThanOrEqual
+                        type: string
+                      periodSeconds:
+                        description: PeriodSeconds specifies the window of time for
+                          which the policy should hold true.
+                        format: int32
+                        type: integer
+                      replicas:
+                        description: Replicas specify the replicas to Scale.
+                        properties:
+                          int:
+                            description: An Int for value.
+                            format: int32
+                            type: integer
+                          operation:
+                            description: An arithmetic operation..
+                            properties:
+                              leftOperand:
+                                description: LeftOperand is the left operand of the
+                                  operation.
+                                properties:
+                                  field:
+                                    description: An Field for value.
+                                    enum:
+                                    - Ready
+                                    - Unready
+                                    - NotStarted
+                                    - LongNotStarted
+                                    - Registered
+                                    - LongUnregistered
+                                    - CloudProviderTarget
+                                    type: string
+                                  int:
+                                    description: An Int for value.
+                                    format: int32
+                                    type: integer
+                                type: object
+                              operator:
+                                description: An arithmetic operator used to apply
+                                  policy between From and To.
+                                enum:
+                                - plus
+                                - minus
+                                - multiply
+                                - divide
+                                type: string
+                              rightOperand:
+                                description: RightOperand is the right operand of
+                                  the operation.
+                                properties:
+                                  field:
+                                    description: An Field for value.
+                                    enum:
+                                    - Ready
+                                    - Unready
+                                    - NotStarted
+                                    - LongNotStarted
+                                    - Registered
+                                    - LongUnregistered
+                                    - CloudProviderTarget
+                                    type: string
+                                  int:
+                                    description: An Int for value.
+                                    format: int32
+                                    type: integer
+                                type: object
+                            required:
+                            - leftOperand
+                            - operator
+                            - rightOperand
+                            type: object
+                        type: object
+                      rightOperand:
+                        description: RightOperand is the left operand of the comparison.
+                          It could be the target ASG Health field from which this
+                          policy is applied or an integer.
+                        properties:
+                          field:
+                            description: An Field for value.
+                            enum:
+                            - Ready
+                            - Unready
+                            - NotStarted
+                            - LongNotStarted
+                            - Registered
+                            - LongUnregistered
+                            - CloudProviderTarget
+                            type: string
+                          int:
+                            description: An Int for value.
+                            format: int32
+                            type: integer
+                        type: object
+                    required:
+                    - leftOperand
+                    - operator
+                    - replicas
+                    - rightOperand
+                    type: object
+                  type: array
+                stabilizationWindowSeconds:
+                  description: A cooldown for consecutive scale up operations.
+                  format: int32
+                  type: integer
+              type: object
+            trigger:
+              description: The Scheduler Trigger
+              enum:
+              - ClusterAutoscaler
+              type: string
+          required:
+          - autoscalingGroupFallback
+          - autoscalingGroupTarget
+          type: object
+        status:
+          description: SchedulerStatus defines the observed state of Scheduler
+          properties:
+            lastScaleDown:
+              description: The last time this scheduler has perform a scale down.
+              format: date-time
+              type: string
+            lastScaleUp:
+              description: The last time this scheduler has perform a scale up.
+              format: date-time
+              type: string
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

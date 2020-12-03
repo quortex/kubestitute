@@ -1,0 +1,22 @@
+# namePrefix for resources
+# CRD resources should be unique for a cluster.
+namePrefix: kubestitute-
+
+bases:
+  - ../rbac
+
+patches:
+  - target:
+      kind: ClusterRoleBinding
+      name: .*
+    patch: |-
+      - op: replace
+        path: /subjects/0/namespace
+        value: "<tpl {{ $.Release.Namespace }} tpl>"
+  - target:
+      kind: RoleBinding
+      name: .*
+    patch: |-
+      - op: replace
+        path: /subjects/0/namespace
+        value: "<tpl {{ $.Release.Namespace }} tpl>"

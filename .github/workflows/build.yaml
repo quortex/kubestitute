@@ -1,0 +1,48 @@
+# Build and push Docker image to docker hub
+
+name: Build
+
+on:
+  push:
+    # Sequence of patterns matched against refs/heads
+    branches:
+      - develop
+      - master
+    tags:
+      - "*"
+
+jobs:
+  build-and-push:
+    name: BuildAndPush
+    runs-on: ubuntu-latest
+    steps:
+      # This step uses Github's checkout-action: https://github.com/actions/checkout
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      # Render generated code
+      - name: Generate code
+        run: go generate ./...
+
+      # This step uses action-hub docker action: https://github.com/actions-hub/docker
+      - name: Login to docker hub
+        if: success()
+        uses: actions-hub/docker/login@v1.0.2
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Build docker image
+      - name: Build docker image
+        if: success()
+        run: make docker-build
+        shell: bash
+        env:
+          IMG: quortexio/kubestitute:${IMAGE_TAG}
+
+      # Push docker image to docker hub
+      - name: Push docker image
+        if: success()
+        uses: actions-hub/docker@v1.0.2
+        with:
+          args: push quortexio/kubestitute:${IMAGE_TAG}

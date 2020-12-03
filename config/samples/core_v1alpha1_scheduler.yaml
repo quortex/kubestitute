@@ -1,0 +1,66 @@
+apiVersion: core.kubestitute.quortex.io/v1alpha1
+kind: Scheduler
+metadata:
+  name: scheduler-sample
+spec:
+  # The Scheduler Trigger (only ClusterAutoscaler supported at the moment)
+  trigger: ClusterAutoscaler
+
+  # The name of the autoscaling group, which the scheduler will use to
+  # apply the rules.
+  autoscalingGroupTarget: my-spot-asg
+
+  # The name of the autoscaling group, in which the scheduler will trigger
+  # fallback instances.
+  # This autoscaling group must not be managed by the cluster-autoscaler !!!
+  autoscalingGroupFallback: my-fallback-asg
+
+  # Scheduler rules used to match criteria on Target ASG to trigger Scale Up
+  # on Fallback ASG.
+  # In this case, the scheduler will trigger the scaling up of instances in the
+  # fallback Autoscaling Group when the number of nodes from the target Autoscaling
+  # Group in "Ready" state will be less than those in "CloudProviderTarget" state for
+  # more than 120 consecutive seconds.
+  scaleUpRules:
+    # A cooldown for consecutive scale up operations.
+    stabilizationWindowSeconds: 180
+    policies:
+      # Policies is a list of potential scaling polices which can be evaluated for
+      # scaling decisions.
+      # At least one policy must be specified.
+      # For scale ups the matching policy which triggers the highest number of replicas
+      # will be used.
+      - leftOperand:
+          field: Ready
+        operator: lowerThan
+        rightOperand:
+          field: CloudProviderTarget
+        periodSeconds: 120
+        # The desired number of replicas (ie the number of instances to scale UP) is
+        # calculated here, in this case the difference between the number of
+        # "CloudProviderTarget" instances and the number of "Ready" instances of the
+        # Autoscaling Group target will be used.
+        replicas:
+          operation:
+            leftOperand:
+              field: CloudProviderTarget
+            operator: minus
+            rightOperand:
+              field: Ready
+
+  # Scheduler rules used to match criteria on Target ASG to trigger Scale Down
+  # on Fallback ASG.
+  # In this case, the scheduler will trigger the scaling down of instances in the
+  # fallback Autoscaling Group when the number of nodes from the target Autoscaling
+  # Group in "Ready" state will be equal than those in "CloudProviderTarget" state for
+  # more than 120 consecutive seconds.
+  scaleDownRules:
+    # A cooldown for consecutive scale down operations.
+    stabilizationWindowSeconds: 180
+    policies:
+      - leftOperand:
+          field: Ready
+        operator: equal
+        rightOperand:
+          field: CloudProviderTarget
+        periodSeconds: 120
