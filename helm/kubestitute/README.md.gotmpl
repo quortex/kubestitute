@@ -1,0 +1,77 @@
+{{ template "chart.header" . }}
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.homepageLine" . }}
+
+{{ template "chart.sourcesSection" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+
+## Usage
+The standard use case for this tool is to provision on-demand fallback instances in case Spot instances cannot be scheduled.
+
+To do so, configure an Auto Scaling Group of Spot instances managed by the Cluster Autoscaler and another one of on-demand fallback instances managed by Kubestitute.
+
+Kubestitute will scale up the on-demand Auto Scaling Group according to events on the Spot instances Auto Scaling Group retrieved from the cluster-autoscaler status.
+It will also drain fallback instances and detach them from the Auto Scaling Group according to events (typically when the Spot instances have finally been scheduled).
+
+## Prerequisites
+
+### Kubernetes
+A Kubernetes cluster of version v1.11.3+ is required. If you are just starting out with Kubestitute, it is highly recommended to use the latest version.
+
+### <a id="Prerequisites_AWS"></a>AWS
+To be used with AWS and interact with Auto Scaling Groups, an AWS service account with the following permissions on Auto Scaling Groups managed by Kubestitute is required:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllObjectActions",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:TerminateInstances",
+                "autoscaling:DescribeAutoScalingGroups",
+                "autoscaling:SetDesiredCapacity",
+                "autoscaling:DetachInstances"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+## Installation
+
+1. Add Kubestitute helm repository
+
+```sh
+helm repo add kubestitute https://quortex.github.io/kubestitute
+```
+
+2. Create a namespace for Kubestitute
+
+```sh
+kubectl create ns kubestitute-system
+```
+
+3. Create a secret (`aws-ec2-plugin` by default) with credentials from AWS account with [necessary permissions](#Prerequisites_AWS).
+
+```sh
+kubectl create secret generic aws-ec2-plugin --from-literal=awsKeyId=$AWS_ACCESS_KEY_ID --from-literal=awsSecretKey=$AWS_SECRET_ACCESS_KEY -n kubestitute-system
+```
+
+4. Deploy the appropriate release.
+
+```sh
+helm install kubestitute kubestitute/kubestitute -n kubestitute-system
+```
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "chart.maintainersSection" . }}

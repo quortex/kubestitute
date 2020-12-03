@@ -161,4 +161,4 @@ endef
 charts:
 	@$(KUSTOMIZE) build config/crd | $(call unescape-tpl) > ./helm/kubestitute/crds/crds.yaml
 	@$(KUSTOMIZE) build config/helm | $(call unescape-tpl) > ./helm/kubestitute/templates/rbac.yaml
-	@docker run --rm --volume "$$(pwd)/kubestitute:/helm-docs" jnorwood/helm-docs:latest -s file
+	@docker run --rm --volume "$$(pwd)/helm/kubestitute:/helm-docs" jnorwood/helm-docs:latest -s file
