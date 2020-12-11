@@ -80,6 +80,7 @@ const (
 // +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;patch
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;patch
+// +kubebuilder:rbac:groups=apps,resources=daemonsets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=pods/eviction,verbs=create
 
 // Reconcile reconciles the Instance requested state with the current state.
@@ -364,7 +365,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 			// We don't care about errors here.
 			// Either we can't process them or the eviction has timeout.
 			log.Info("Evicting pods", "node", nodeName)
-			if err := r.evictPods(ctx, log, filterPods(pods.Items, r.deletedFilter)); err != nil {
+			if err := r.evictPods(ctx, log, filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter)); err != nil {
 				log.Error(err, "Failed to evict pods", "node", nodeName)
 			}
 		}
@@ -686,6 +687,12 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pod
 // evictPod will evict the given pod, or return an error if it couldn't
 // This code is largely inspired by kubectl cli source code.
 func (r *InstanceReconciler) evictPod(ctx context.Context, pod kcore_v1.Pod, policyGroupVersion string) error {
+
+	gracePeriod := int64(time.Second * 30)
+	if pod.Spec.TerminationGracePeriodSeconds != nil && *pod.Spec.TerminationGracePeriodSeconds < gracePeriod {
+		gracePeriod = *pod.Spec.TerminationGracePeriodSeconds
+	}
+
 	eviction := &kpolicy_v1beta1.Eviction{
 		TypeMeta: kmeta_v1.TypeMeta{
 			APIVersion: policyGroupVersion,
@@ -695,6 +702,7 @@ func (r *InstanceReconciler) evictPod(ctx context.Context, pod kcore_v1.Pod, pol
 			Name:      pod.Name,
 			Namespace: pod.Namespace,
 		},
+		DeleteOptions: &kmeta_v1.DeleteOptions{GracePeriodSeconds: &gracePeriod},
 	}
 
 	// Remember to change change the URL manipulation func when Eviction's version change
@@ -741,7 +749,7 @@ func (r *InstanceReconciler) waitForDelete(ctx context.Context, pods []kcore_v1.
 	err := wait.PollImmediate(pollInterval, waitForDeleteTimeout, func() (bool, error) {
 		pendingPods := []kcore_v1.Pod{}
 		for i, pod := range pods {
-			var p *kcore_v1.Pod
+			p := &kcore_v1.Pod{}
 			err := r.Get(ctx, types.NamespacedName{
 				Namespace: pod.Namespace,
 				Name:      pod.Name,
