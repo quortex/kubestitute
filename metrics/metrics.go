@@ -33,6 +33,18 @@ var (
 			"scheduler_name",
 		},
 	)
+	EvictedPodsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "evicted_pods_total",
+			Help:      "Number of pods evicted by kubestitute.",
+		},
+		[]string{
+			"autoscaling_group_name",
+			"node_name",
+			"scheduler_name",
+		},
+	)
 	AutoscalingGroupDesiredCapacity = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
@@ -80,6 +92,7 @@ func init() {
 	metrics.Registry.MustRegister(
 		ScaledUpNodesTotal,
 		ScaledDownNodesTotal,
+		EvictedPodsTotal,
 		AutoscalingGroupDesiredCapacity,
 		AutoscalingGroupCapacity,
 		AutoscalingGroupMinSize,

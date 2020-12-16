@@ -70,9 +70,9 @@ const (
 	// evictionSubresource represents the kind of evictions object as pod's subresource
 	evictionSubresource = "pods/eviction"
 	// The global timeout for pods eviction
-	evictionGlobalTimeout = time.Second * 120
+	evictionGlobalTimeout = time.Second * 360
 	// A timeout for delete pod polling
-	waitForDeleteTimeout = time.Second * 120
+	waitForDeleteTimeout = time.Second * 360
 	// The delete pod polling interval
 	pollInterval = time.Second
 )
@@ -352,7 +352,12 @@ func (r *InstanceReconciler) reconcileDeletion(
 			// We don't care about errors here.
 			// Either we can't process them or the eviction has timeout.
 			log.Info("Evicting pods", "node", nodeName)
-			if err := r.evictPods(ctx, log, filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter)); err != nil {
+			if err := r.evictPods(ctx,
+				log,
+				instance.Spec.ASG,
+				nodeName,
+				instance.Labels[lblScheduler],
+				filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter)); err != nil {
 				log.Error(err, "Failed to evict pods", "node", nodeName)
 			}
 		}
@@ -565,7 +570,7 @@ func (r *InstanceReconciler) cordonNode(
 // evictPods evict given pods and returns when all pods have been
 // successfully deleted, error occurred or evictionGlobalTimeout expired.
 // This code is largely inspired by kubectl cli source code.
-func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pods []kcore_v1.Pod) error {
+func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, asgName, nodeName, scheduler string, pods []kcore_v1.Pod) error {
 	returnCh := make(chan error, 1)
 	policyGroupVersion, err := CheckEvictionSupport(r.Kubernetes)
 	if err != nil {
@@ -590,6 +595,7 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pod
 				activePod := pod
 				err := r.evictPod(ctx, activePod, policyGroupVersion)
 				if err == nil {
+					metrics.EvictedPodsTotal.WithLabelValues(asgName, nodeName, scheduler).Add(float64(1))
 					break
 				} else if apierrors.IsNotFound(err) {
 					returnCh <- nil

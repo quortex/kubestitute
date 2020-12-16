@@ -136,14 +136,18 @@ Kubebuilder documentation about metrics can be found [here](https://book.kubebui
 
 We also expose custom metrics as described here:
 
-| Metric name                                    | Metric type | Labels                                     | Description                                                               |
-| ---------------------------------------------- | ----------- | ------------------------------------------ | ------------------------------------------------------------------------- |
-| kubestitute_scaled_up_nodes_total              | Counter     | `autoscaling_group_name`, `scheduler_name` | Number of nodes added by kubestitute.                                     |
-| kubestitute_scaled_down_nodes_total            | Counter     | `autoscaling_group_name`, `scheduler_name` | Number of nodes removed by kubestitute.                                   |
-| kubestitute_autoscaling_group_desired_capacity | Gauge       | `autoscaling_group_name`                   | The desired size of the autoscaling group.                                |
-| kubestitute_autoscaling_group_capacity         | Gauge       | `autoscaling_group_name`                   | The current autoscaling group capacity (Pending and InService instances). |
-| kubestitute_autoscaling_group_min_size         | Gauge       | `autoscaling_group_name`                   | The minimum size of the autoscaling group.                                |
-| kubestitute_autoscaling_group_max_size         | Gauge       | `autoscaling_group_name`                   | The maximum size of the autoscaling group.                                |
+All the metrics are prefixed with kubestitute_
+
+| Metric name                        | Metric type | Labels                                                  | Description                                                               |
+| ---------------------------------- | ----------- | ------------------------------------------------------- | ------------------------------------------------------------------------- |
+| scaled_up_nodes_total              | Counter     | `autoscaling_group_name`, `scheduler_name`              | Number of nodes added by kubestitute.                                     |
+| scaled_down_nodes_total            | Counter     | `autoscaling_group_name`, `scheduler_name`              | Number of nodes removed by kubestitute.                                   |
+| evicted_pods_total                 | Counter     | `autoscaling_group_name`, `node_name`, `scheduler_name` | Number of pods evicted by kubestitute.                                    |
+| autoscaling_group_desired_capacity | Gauge       | `autoscaling_group_name`                                | The desired size of the autoscaling group.                                |
+| autoscaling_group_capacity         | Gauge       | `autoscaling_group_name`                                | The current autoscaling group capacity (Pending and InService instances). |
+| autoscaling_group_min_size         | Gauge       | `autoscaling_group_name`                                | The minimum size of the autoscaling group.                                |
+| autoscaling_group_max_size         | Gauge       | `autoscaling_group_name`                                | The maximum size of the autoscaling group.                                |
+
 
 ## License
 Distributed under the Apache 2.0 License. See `LICENSE` for more information.
