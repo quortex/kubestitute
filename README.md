@@ -3,7 +3,7 @@
 ## Overview
 This project is an operator allowing Kubernetes to automatically manage the lifecycle of instances within a cluster based on specific events.
 
-This tool is not intended to replace existing tools such as the [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler) but rather to supplement them in order to have more control and responsiveness over the provisioning of instances in a cluster.
+This tool is not intended to replace existing tools such as the [Cluster Autoscaler](https://github.com/kubernetes/autoscaler) but rather to supplement them in order to have more control and responsiveness over the provisioning of instances in a cluster.
 
 Kubestitute only works with clusters deployed on AWS using Auto Scaling Groups at the moment.
 
@@ -103,12 +103,13 @@ data:
 
 ### <a id="Configuration_Optional_args"></a>Optional args
 The kubestitute container takes as argument the parameters below.
-| Key                                | Description                                                                 | Default                   |
-| ---------------------------------- | --------------------------------------------------------------------------- | ------------------------- |
-| clusterautoscaler-status-namespace | The namespace the clusterautoscaler status configmap belongs to.            | kube-system               |
-| clusterautoscaler-status-name      | The namespace the clusterautoscaler status configmap belongs to.            | cluster-autoscaler-status |
-| dev                                | Enable dev mode for logging.                                                | `false`                   |
-| v                                  | Logs verbosity. 0 => panic, 1 => error, 2 => warning, 3 => info, 4 => debug | 3                         |
+| Key                                | Description                                                                       | Default                   |
+| ---------------------------------- | --------------------------------------------------------------------------------- | ------------------------- |
+| clusterautoscaler-status-namespace | The namespace the clusterautoscaler status configmap belongs to.                  | kube-system               |
+| clusterautoscaler-status-name      | The namespace the clusterautoscaler status configmap belongs to.                  | cluster-autoscaler-status |
+| dev                                | Enable dev mode for logging.                                                      | `false`                   |
+| v                                  | Logs verbosity. 0 => panic, 1 => error, 2 => warning, 3 => info, 4 => debug       | 3                         |
+| asg-poll-interval                  | AutoScaling Groups polling interval (used to generate custom metrics about ASGs). | 30                        |
 
 
 ## CustomResourceDefinitions
@@ -120,7 +121,7 @@ The Operator acts on the following [custom resource definitions (CRDs)](https://
 
 **`Scheduler`** defines a scheduler for Instances (only AWS EC2 instances in Auto Scaling Groups supported at the moment). This resource is used to configure advanced instances scheduling based on node groups events.
 
-You can find examples of CRDs defined by Kubestitute [here](https://github.com/quortex/kubestitute/tree/feature/documentation/config/samples).
+You can find examples of CRDs defined by Kubestitute [here](./config/samples).
 
 Full API documentation is available [here](./docs/api-docs.asciidoc).
 

@@ -49,6 +49,7 @@ import (
 	"quortex.io/kubestitute/clients/ec2adapter/client/operations"
 	"quortex.io/kubestitute/clients/ec2adapter/models"
 	"quortex.io/kubestitute/metrics"
+	"quortex.io/kubestitute/utils/helper"
 )
 
 // InstanceReconciler reconciles a Instance object
@@ -157,20 +158,6 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	asg := res.Payload
 
-	// Set ASG capacity metrics.
-	metrics.AutoscalingGroupDesiredCapacity.WithLabelValues(asgName).Set(float64(asg.DesiredCapacity))
-	metrics.AutoscalingGroupMinSize.WithLabelValues(asgName).Set(float64(asg.MinSize))
-	metrics.AutoscalingGroupMaxSize.WithLabelValues(asgName).Set(float64(asg.MaxSize))
-	metrics.AutoscalingGroupCapacity.WithLabelValues(asgName).Set(float64(len(
-		filterInstancesWithLifecycleStates(
-			asg.Instances,
-			models.AutoscalingGroupInstanceLifecycleStatePending,
-			models.AutoscalingGroupInstanceLifecycleStatePendingWait,
-			models.AutoscalingGroupInstanceLifecycleStatePendingProceed,
-			models.AutoscalingGroupInstanceLifecycleStateInService,
-		),
-	)))
-
 	// 2nd STEP
 	//
 	// Trigger a new Instance in the ASG
@@ -217,7 +204,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			e := ec2Instances[i]
 
 			// Select only Pending or InService Instance
-			if !containsString([]string{
+			if !helper.ContainsString([]string{
 				models.AutoscalingGroupInstanceLifecycleStatePending,
 				models.AutoscalingGroupInstanceLifecycleStatePendingWait,
 				models.AutoscalingGroupInstanceLifecycleStatePendingProceed,
@@ -447,7 +434,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 	}
 
 	// remove our finalizer from the list and update it.
-	instance.ObjectMeta.Finalizers = removeString(instance.ObjectMeta.Finalizers, instanceFinalizer)
+	instance.ObjectMeta.Finalizers = helper.RemoveString(instance.ObjectMeta.Finalizers, instanceFinalizer)
 	return ctrl.Result{}, r.Update(ctx, &instance)
 }
 
@@ -537,38 +524,6 @@ func isAWSNode(node kcore_v1.Node) bool {
 // ec2InstanceID returns the EC2 instance ID from a given Node
 func ec2InstanceID(node kcore_v1.Node) string {
 	return path.Base(node.Spec.ProviderID)
-}
-
-// filterInstancesWithLifecycleStates returns a filtered slice of AutoscalingGroupInstance with given lifecycleStates.
-func filterInstancesWithLifecycleStates(inst []*models.AutoscalingGroupInstance, lifecycleStates ...string) []*models.AutoscalingGroupInstance {
-	res := []*models.AutoscalingGroupInstance{}
-	for _, e := range inst {
-		if containsString(lifecycleStates, e.LifecycleState) {
-			res = append(res, e)
-		}
-	}
-	return res
-}
-
-// containsString returns if given slice contains string.
-func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
-}
-
-// removeString remove given string from slice.
-func removeString(slice []string, s string) (result []string) {
-	for _, item := range slice {
-		if item == s {
-			continue
-		}
-		result = append(result, item)
-	}
-	return
 }
 
 // instanceWithID returns the instance with the given ID or nil
