@@ -136,7 +136,7 @@ docker-push:
 clients:
 	@t=$$(mktemp -d) && \
 		cd $${t} && \
-		git clone -b 1.0.0 git@github.com:quortex/aws-ec2-adapter.git && \
+		git clone -b 1.1.0 git@github.com:quortex/aws-ec2-adapter.git && \
 		cd - && \
 		cp $${t}/aws-ec2-adapter/docs/swagger.yaml ./clients/ec2adapter && \
 		go generate ./...
