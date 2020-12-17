@@ -19,6 +19,9 @@ manager:
     verbosity: 3
     enableDevLogs: false
 
+  # -- AutoScaling Groups polling interval (used to generate custom metrics about ASGs).
+  asgPollInterval: 30
+
   image:
     # -- Kubestitute manager image repository.
     repository: quortexio/kubestitute

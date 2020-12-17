@@ -49,6 +49,7 @@ import (
 	"quortex.io/kubestitute/clients/ec2adapter/client/operations"
 	"quortex.io/kubestitute/clients/ec2adapter/models"
 	"quortex.io/kubestitute/metrics"
+	"quortex.io/kubestitute/utils/helper"
 )
 
 // InstanceReconciler reconciles a Instance object
@@ -69,9 +70,9 @@ const (
 	// evictionSubresource represents the kind of evictions object as pod's subresource
 	evictionSubresource = "pods/eviction"
 	// The global timeout for pods eviction
-	evictionGlobalTimeout = time.Second * 120
+	evictionGlobalTimeout = time.Second * 360
 	// A timeout for delete pod polling
-	waitForDeleteTimeout = time.Second * 120
+	waitForDeleteTimeout = time.Second * 360
 	// The delete pod polling interval
 	pollInterval = time.Second
 )
@@ -157,20 +158,6 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	asg := res.Payload
 
-	// Set ASG capacity metrics.
-	metrics.AutoscalingGroupDesiredCapacity.WithLabelValues(asgName).Set(float64(asg.DesiredCapacity))
-	metrics.AutoscalingGroupMinSize.WithLabelValues(asgName).Set(float64(asg.MinSize))
-	metrics.AutoscalingGroupMaxSize.WithLabelValues(asgName).Set(float64(asg.MaxSize))
-	metrics.AutoscalingGroupCapacity.WithLabelValues(asgName).Set(float64(len(
-		filterInstancesWithLifecycleStates(
-			asg.Instances,
-			models.AutoscalingGroupInstanceLifecycleStatePending,
-			models.AutoscalingGroupInstanceLifecycleStatePendingWait,
-			models.AutoscalingGroupInstanceLifecycleStatePendingProceed,
-			models.AutoscalingGroupInstanceLifecycleStateInService,
-		),
-	)))
-
 	// 2nd STEP
 	//
 	// Trigger a new Instance in the ASG
@@ -217,7 +204,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			e := ec2Instances[i]
 
 			// Select only Pending or InService Instance
-			if !containsString([]string{
+			if !helper.ContainsString([]string{
 				models.AutoscalingGroupInstanceLifecycleStatePending,
 				models.AutoscalingGroupInstanceLifecycleStatePendingWait,
 				models.AutoscalingGroupInstanceLifecycleStatePendingProceed,
@@ -365,7 +352,12 @@ func (r *InstanceReconciler) reconcileDeletion(
 			// We don't care about errors here.
 			// Either we can't process them or the eviction has timeout.
 			log.Info("Evicting pods", "node", nodeName)
-			if err := r.evictPods(ctx, log, filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter)); err != nil {
+			if err := r.evictPods(ctx,
+				log,
+				instance.Spec.ASG,
+				nodeName,
+				instance.Labels[lblScheduler],
+				filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter)); err != nil {
 				log.Error(err, "Failed to evict pods", "node", nodeName)
 			}
 		}
@@ -447,7 +439,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 	}
 
 	// remove our finalizer from the list and update it.
-	instance.ObjectMeta.Finalizers = removeString(instance.ObjectMeta.Finalizers, instanceFinalizer)
+	instance.ObjectMeta.Finalizers = helper.RemoveString(instance.ObjectMeta.Finalizers, instanceFinalizer)
 	return ctrl.Result{}, r.Update(ctx, &instance)
 }
 
@@ -539,38 +531,6 @@ func ec2InstanceID(node kcore_v1.Node) string {
 	return path.Base(node.Spec.ProviderID)
 }
 
-// filterInstancesWithLifecycleStates returns a filtered slice of AutoscalingGroupInstance with given lifecycleStates.
-func filterInstancesWithLifecycleStates(inst []*models.AutoscalingGroupInstance, lifecycleStates ...string) []*models.AutoscalingGroupInstance {
-	res := []*models.AutoscalingGroupInstance{}
-	for _, e := range inst {
-		if containsString(lifecycleStates, e.LifecycleState) {
-			res = append(res, e)
-		}
-	}
-	return res
-}
-
-// containsString returns if given slice contains string.
-func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
-}
-
-// removeString remove given string from slice.
-func removeString(slice []string, s string) (result []string) {
-	for _, item := range slice {
-		if item == s {
-			continue
-		}
-		result = append(result, item)
-	}
-	return
-}
-
 // instanceWithID returns the instance with the given ID or nil
 func instanceWithID(slice []*models.AutoscalingGroupInstance, id string) *models.AutoscalingGroupInstance {
 	for _, e := range slice {
@@ -610,7 +570,7 @@ func (r *InstanceReconciler) cordonNode(
 // evictPods evict given pods and returns when all pods have been
 // successfully deleted, error occurred or evictionGlobalTimeout expired.
 // This code is largely inspired by kubectl cli source code.
-func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pods []kcore_v1.Pod) error {
+func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, asgName, nodeName, scheduler string, pods []kcore_v1.Pod) error {
 	returnCh := make(chan error, 1)
 	policyGroupVersion, err := CheckEvictionSupport(r.Kubernetes)
 	if err != nil {
@@ -635,6 +595,7 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pod
 				activePod := pod
 				err := r.evictPod(ctx, activePod, policyGroupVersion)
 				if err == nil {
+					metrics.EvictedPodsTotal.WithLabelValues(asgName, nodeName, scheduler).Add(float64(1))
 					break
 				} else if apierrors.IsNotFound(err) {
 					returnCh <- nil

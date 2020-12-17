@@ -40,6 +40,7 @@ spec:
             - --clusterautoscaler-status-name={{ .clusterAutoscaler.name }}
             - --dev={{ .logs.enableDevLogs }}
             - --v={{ .logs.verbosity }}
+            - --asg-poll-interval={{ .asgPollInterval }}
           imagePullPolicy: {{ .image.pullPolicy }}
           {{- if not $.Values.kubeRBACProxy.enabled }}
           ports:
