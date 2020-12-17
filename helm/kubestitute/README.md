@@ -88,7 +88,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | awsEC2Plugin.region | string | `""` | The AWS region. |
 | awsEC2Plugin.tags | object | `{}` | Tags for AWS EC2 plugin scope management. |
 | awsEC2Plugin.image.repository | string | `"quortexio/aws-ec2-adapter"` | AWS EC2 plugin image pull policy. |
-| awsEC2Plugin.image.tag | string | `"1.0.0"` | AWS EC2 plugin image pull policy. |
+| awsEC2Plugin.image.tag | string | `"1.1.0"` | AWS EC2 plugin image pull policy. |
 | awsEC2Plugin.image.pullPolicy | string | `"IfNotPresent"` | AWS EC2 plugin image pull policy. |
 | awsEC2Plugin.resources | object | `{}` | AWS EC2 plugin container required resources. |
 | kubeRBACProxy.enabled | bool | `true` |  |

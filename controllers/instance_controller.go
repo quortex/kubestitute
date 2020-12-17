@@ -309,7 +309,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	} else if instance.Status.State == corev1alpha1.InstanceStateWaitNode {
 		// Next step, we will detach the EC2 instance from the ASG.
-		instance.Status.State = corev1alpha1.InstanceStateDetachInstance
+		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
 		log.V(1).Info("Updating Instance", "state", instance.Status.State)
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
@@ -363,7 +363,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 		}
 
 		// Next step, we will detach the EC2 instance from the ASG.
-		instance.Status.State = corev1alpha1.InstanceStateDetachInstance
+		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
 		log.V(1).Info("Updating Instance", "state", instance.Status.State)
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
@@ -382,10 +382,11 @@ func (r *InstanceReconciler) reconcileDeletion(
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
-	// 2nd STEP
+	// 3rd STEP
 	//
 	// We detach the EC2 instance from the Autoscaling Group.
-	if instance.Status.State == corev1alpha1.InstanceStateDetachInstance {
+	if instance.Status.State == corev1alpha1.InstanceStateTerminateInstance {
+
 		// Retrieve AWS autoscaling group.
 		asgName := instance.Spec.ASG
 		res, err := ec2adapterCli.Operations.GetAutoscalingGroup(&operations.GetAutoscalingGroupParams{
@@ -408,9 +409,10 @@ func (r *InstanceReconciler) reconcileDeletion(
 				Request: &models.DetachInstancesRequest{
 					InstanceIds:                    []string{instanceID},
 					ShouldDecrementDesiredCapacity: true,
+					ShouldTerminateInstances:       true,
 				},
 			}); err != nil {
-				log.Error(err, "Failed to detach instance", "group", group, "instance", instanceID)
+				log.Error(err, "Failed to terminate instance", "group", group, "instance", instanceID)
 				return ctrl.Result{}, err
 			}
 		}
@@ -422,20 +424,6 @@ func (r *InstanceReconciler) reconcileDeletion(
 		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
 		log.V(1).Info("Updating Instance", "state", instance.Status.State)
 		return ctrl.Result{}, r.Update(ctx, &instance)
-	}
-
-	// 3rd STEP
-	//
-	// We terminate the EC2 instance.
-	if instance.Status.State == corev1alpha1.InstanceStateTerminateInstance {
-		instanceID := instance.Status.EC2InstanceID
-		if _, err := ec2adapterCli.Operations.TerminateInstance(&operations.TerminateInstanceParams{
-			Context: ctx,
-			ID:      instanceID,
-		}); err != nil {
-			log.Error(err, "Failed to terminate instance", "instance", instanceID)
-			return ctrl.Result{}, err
-		}
 	}
 
 	// remove our finalizer from the list and update it.

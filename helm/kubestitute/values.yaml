@@ -45,7 +45,7 @@ awsEC2Plugin:
     # -- AWS EC2 plugin image pull policy.
     repository: quortexio/aws-ec2-adapter
     # -- AWS EC2 plugin image pull policy.
-    tag: 1.0.0
+    tag: 1.1.0
     # -- AWS EC2 plugin image pull policy.
     pullPolicy: IfNotPresent
   # --  AWS EC2 plugin container required resources.

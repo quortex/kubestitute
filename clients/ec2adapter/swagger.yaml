@@ -140,6 +140,9 @@ definitions:
           Indicates whether the Auto Scaling group decrements the desired capacity
           value by the number of instances detached.
         type: boolean
+      should_terminate_instances:
+        description: Indicates whether the Instances should be terminated.
+        type: boolean
     type: object
   ErrorData:
     properties:
