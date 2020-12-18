@@ -53,13 +53,20 @@ import (
 	"quortex.io/kubestitute/utils/helper"
 )
 
+// InstanceReconcilerConfiguration wraps configuration for InstanceReconciler.
+type InstanceReconcilerConfiguration struct {
+	// The global timeout for pods eviction
+	EvictionGlobalTimeout int
+}
+
 // InstanceReconciler reconciles a Instance object
 type InstanceReconciler struct {
 	client.Client
-	Kubernetes *kubernetes.Clientset
-	Log        logr.Logger
-	Scheme     *runtime.Scheme
-	recorder   record.EventRecorder
+	Configuration InstanceReconcilerConfiguration
+	Kubernetes    *kubernetes.Clientset
+	Log           logr.Logger
+	Scheme        *runtime.Scheme
+	recorder      record.EventRecorder
 }
 
 const (
@@ -71,10 +78,6 @@ const (
 	evictionKind = "Eviction"
 	// evictionSubresource represents the kind of evictions object as pod's subresource
 	evictionSubresource = "pods/eviction"
-	// The global timeout for pods eviction
-	evictionGlobalTimeout = time.Second * 360
-	// A timeout for delete pod polling
-	waitForDeleteTimeout = time.Second * 360
 	// The delete pod polling interval
 	pollInterval = time.Second
 )
@@ -362,6 +365,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 				instance.Labels[lblScheduler],
 				filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter)); err != nil {
 				log.Error(err, "Failed to evict pods", "node", nodeName)
+				return ctrl.Result{}, err
 			}
 		}
 
@@ -565,6 +569,8 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, ins
 	if err != nil {
 		return err
 	}
+
+	evictionGlobalTimeout := time.Duration(r.Configuration.EvictionGlobalTimeout) * time.Second
 	ctx, cancel := context.WithTimeout(ctx, evictionGlobalTimeout)
 	defer cancel()
 
@@ -702,10 +708,26 @@ func CheckEvictionSupport(clientset kubernetes.Interface) (string, error) {
 	return "", nil
 }
 
+// deleteTimeout compute the delete timeout from given pods.
+func deleteTimeout(pods []kcore_v1.Pod) time.Duration {
+	// We return the max DeletionGracePeriodSeconds from pods with
+	// a 30sec overhead.
+	maxGrace := int64(30)
+	for _, e := range pods {
+		if grace := e.DeletionGracePeriodSeconds; grace != nil {
+			if *grace > maxGrace {
+				maxGrace = *grace
+			}
+		}
+	}
+
+	return time.Duration(maxGrace+30) * time.Second
+}
+
 // waitForDelete poll pods to check their deletion.
 // This code is largely inspired by kubectl cli source code.
 func (r *InstanceReconciler) waitForDelete(ctx context.Context, pods []kcore_v1.Pod) ([]kcore_v1.Pod, error) {
-	err := wait.PollImmediate(pollInterval, waitForDeleteTimeout, func() (bool, error) {
+	err := wait.PollImmediate(pollInterval, deleteTimeout(pods), func() (bool, error) {
 		pendingPods := []kcore_v1.Pod{}
 		for i, pod := range pods {
 			p := &kcore_v1.Pod{}
@@ -725,7 +747,7 @@ func (r *InstanceReconciler) waitForDelete(ctx context.Context, pods []kcore_v1.
 		if len(pendingPods) > 0 {
 			select {
 			case <-ctx.Done():
-				return false, fmt.Errorf("global timeout reached: %v", evictionGlobalTimeout)
+				return false, fmt.Errorf("Eviction global timeout reached")
 			default:
 				return false, nil
 			}

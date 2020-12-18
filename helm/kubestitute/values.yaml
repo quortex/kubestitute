@@ -22,6 +22,9 @@ manager:
   # -- AutoScaling Groups polling interval (used to generate custom metrics about ASGs).
   asgPollInterval: 30
 
+  # -- The timeout in seconds for pods eviction on Instance deletion.
+  evictionTimeout: 300
+
   image:
     # -- Kubestitute manager image repository.
     repository: quortexio/kubestitute

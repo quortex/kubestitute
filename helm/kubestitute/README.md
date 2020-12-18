@@ -79,6 +79,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | manager.logs.verbosity | int | `3` | Logs verbosity:  0 => panic  1 => error  2 => warning  3 => info  4 => debug |
 | manager.logs.enableDevLogs | bool | `false` |  |
 | manager.asgPollInterval | int | `30` | AutoScaling Groups polling interval (used to generate custom metrics about ASGs). |
+| manager.evictionTimeout | int | `300` | The timeout in seconds for pods eviction on Instance deletion. |
 | manager.image.repository | string | `"quortexio/kubestitute"` | Kubestitute manager image repository. |
 | manager.image.tag | string | `"0.1.1"` | Kubestitute manager image tag. |
 | manager.image.pullPolicy | string | `"IfNotPresent"` | Kubestitute manager image pull policy. |
