@@ -41,6 +41,7 @@ spec:
             - --dev={{ .logs.enableDevLogs }}
             - --v={{ .logs.verbosity }}
             - --asg-poll-interval={{ .asgPollInterval }}
+            - --eviction-timeout={{ .evictionTimeout }}
           imagePullPolicy: {{ .image.pullPolicy }}
           {{- if not $.Values.kubeRBACProxy.enabled }}
           ports:

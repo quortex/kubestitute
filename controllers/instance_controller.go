@@ -52,12 +52,19 @@ import (
 	"quortex.io/kubestitute/utils/helper"
 )
 
+// InstanceReconcilerConfiguration wraps configuration for InstanceReconciler.
+type InstanceReconcilerConfiguration struct {
+	// The global timeout for pods eviction
+	EvictionGlobalTimeout int
+}
+
 // InstanceReconciler reconciles a Instance object
 type InstanceReconciler struct {
 	client.Client
-	Kubernetes *kubernetes.Clientset
-	Log        logr.Logger
-	Scheme     *runtime.Scheme
+	Configuration InstanceReconcilerConfiguration
+	Kubernetes    *kubernetes.Clientset
+	Log           logr.Logger
+	Scheme        *runtime.Scheme
 }
 
 const (
@@ -69,8 +76,6 @@ const (
 	evictionKind = "Eviction"
 	// evictionSubresource represents the kind of evictions object as pod's subresource
 	evictionSubresource = "pods/eviction"
-	// The global timeout for pods eviction
-	evictionGlobalTimeout = time.Second * 360
 	// The delete pod polling interval
 	pollInterval = time.Second
 )
@@ -562,6 +567,8 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, asg
 	if err != nil {
 		return err
 	}
+
+	evictionGlobalTimeout := time.Duration(r.Configuration.EvictionGlobalTimeout) * time.Second
 	ctx, cancel := context.WithTimeout(ctx, evictionGlobalTimeout)
 	defer cancel()
 
@@ -729,7 +736,7 @@ func (r *InstanceReconciler) waitForDelete(ctx context.Context, pods []kcore_v1.
 		if len(pendingPods) > 0 {
 			select {
 			case <-ctx.Done():
-				return false, fmt.Errorf("global timeout reached: %v", evictionGlobalTimeout)
+				return false, fmt.Errorf("Eviction global timeout reached")
 			default:
 				return false, nil
 			}
