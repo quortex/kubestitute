@@ -71,8 +71,6 @@ const (
 	evictionSubresource = "pods/eviction"
 	// The global timeout for pods eviction
 	evictionGlobalTimeout = time.Second * 360
-	// A timeout for delete pod polling
-	waitForDeleteTimeout = time.Second * 360
 	// The delete pod polling interval
 	pollInterval = time.Second
 )
@@ -692,10 +690,26 @@ func CheckEvictionSupport(clientset kubernetes.Interface) (string, error) {
 	return "", nil
 }
 
+// deleteTimeout compute the delete timeout from given pods.
+func deleteTimeout(pods []kcore_v1.Pod) time.Duration {
+	// We return the max DeletionGracePeriodSeconds from pods with
+	// a 30sec overhead.
+	maxGrace := int64(30)
+	for _, e := range pods {
+		if grace := e.DeletionGracePeriodSeconds; grace != nil {
+			if *grace > maxGrace {
+				maxGrace = *grace
+			}
+		}
+	}
+
+	return time.Duration(maxGrace+30) * time.Second
+}
+
 // waitForDelete poll pods to check their deletion.
 // This code is largely inspired by kubectl cli source code.
 func (r *InstanceReconciler) waitForDelete(ctx context.Context, pods []kcore_v1.Pod) ([]kcore_v1.Pod, error) {
-	err := wait.PollImmediate(pollInterval, waitForDeleteTimeout, func() (bool, error) {
+	err := wait.PollImmediate(pollInterval, deleteTimeout(pods), func() (bool, error) {
 		pendingPods := []kcore_v1.Pod{}
 		for i, pod := range pods {
 			p := &kcore_v1.Pod{}
