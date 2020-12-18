@@ -38,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -65,6 +66,7 @@ type InstanceReconciler struct {
 	Kubernetes    *kubernetes.Clientset
 	Log           logr.Logger
 	Scheme        *runtime.Scheme
+	recorder      record.EventRecorder
 }
 
 const (
@@ -86,6 +88,7 @@ const (
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;patch
 // +kubebuilder:rbac:groups=apps,resources=daemonsets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=pods/eviction,verbs=create
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // Reconcile reconciles the Instance requested state with the current state.
 func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
@@ -357,7 +360,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 			log.Info("Evicting pods", "node", nodeName)
 			if err := r.evictPods(ctx,
 				log,
-				instance.Spec.ASG,
+				instance,
 				nodeName,
 				instance.Labels[lblScheduler],
 				filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter)); err != nil {
@@ -423,11 +426,6 @@ func (r *InstanceReconciler) reconcileDeletion(
 
 		// Increment scaled_down_nodes_total metric.
 		metrics.ScaledDownNodesTotal.WithLabelValues(asgName, instance.Labels[lblScheduler]).Add(float64(1))
-
-		// Next step, we will terminate the EC2 instance.
-		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
-		log.V(1).Info("Updating Instance", "state", instance.Status.State)
-		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
 
 	// remove our finalizer from the list and update it.
@@ -504,6 +502,9 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	// Get event recorder
+	r.recorder = mgr.GetEventRecorderFor("Instance")
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.Instance{}).
 		Watches(
@@ -562,7 +563,7 @@ func (r *InstanceReconciler) cordonNode(
 // evictPods evict given pods and returns when all pods have been
 // successfully deleted, error occurred or evictionGlobalTimeout expired.
 // This code is largely inspired by kubectl cli source code.
-func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, asgName, nodeName, scheduler string, pods []kcore_v1.Pod) error {
+func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, instance corev1alpha1.Instance, nodeName, scheduler string, pods []kcore_v1.Pod) error {
 	returnCh := make(chan error, 1)
 	policyGroupVersion, err := CheckEvictionSupport(r.Kubernetes)
 	if err != nil {
@@ -572,6 +573,11 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, asg
 	evictionGlobalTimeout := time.Duration(r.Configuration.EvictionGlobalTimeout) * time.Second
 	ctx, cancel := context.WithTimeout(ctx, evictionGlobalTimeout)
 	defer cancel()
+
+	// A reusable function to record pod evictions error events.
+	recordEvictionErrorEvent := func(recorder record.EventRecorder, instance *corev1alpha1.Instance, pod kcore_v1.Pod, err error) {
+		recorder.Eventf(instance, kcore_v1.EventTypeWarning, "FailedEviction", "Pod eviction failed %s/%s err: %s", pod.Namespace, pod.Name, err.Error())
+	}
 
 	for _, pod := range pods {
 		go func(pod kcore_v1.Pod, returnCh chan error) {
@@ -589,13 +595,15 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, asg
 				activePod := pod
 				err := r.evictPod(ctx, activePod, policyGroupVersion)
 				if err == nil {
-					metrics.EvictedPodsTotal.WithLabelValues(asgName, nodeName, scheduler).Add(float64(1))
+					metrics.EvictedPodsTotal.WithLabelValues(instance.Spec.ASG, nodeName, scheduler).Add(float64(1))
+					r.recorder.Eventf(&instance, kcore_v1.EventTypeNormal, "SuccessfulEviction", "Pod evicted %s/%s", pod.Namespace, pod.Name)
 					break
 				} else if apierrors.IsNotFound(err) {
 					returnCh <- nil
 					return
 				} else if apierrors.IsTooManyRequests(err) {
 					log.Error(err, "Failed to evict pod (will retry after 5s)", "name", pod.Name, "namespace", pod.Namespace)
+					recordEvictionErrorEvent(r.recorder, &instance, pod, err)
 					time.Sleep(5 * time.Second)
 				} else if !activePod.ObjectMeta.DeletionTimestamp.IsZero() && apierrors.IsForbidden(err) && apierrors.HasStatusCause(err, kcore_v1.NamespaceTerminatingCause) {
 					// an eviction request in a deleting namespace will throw a forbidden error,
@@ -606,9 +614,11 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, asg
 					// an eviction request in a deleting namespace will throw a forbidden error,
 					// if the pod is not marked deleted, we retry until it is.
 					log.Error(err, "Failed to evict pod (will retry after 5s)", "name", pod.Name, "namespace", pod.Namespace)
+					recordEvictionErrorEvent(r.recorder, &instance, pod, err)
 					time.Sleep(5 * time.Second)
 				} else {
 					returnCh <- fmt.Errorf("error when evicting pods/%q -n %q: %v", activePod.Name, activePod.Namespace, err)
+					recordEvictionErrorEvent(r.recorder, &instance, pod, err)
 					return
 				}
 			}
