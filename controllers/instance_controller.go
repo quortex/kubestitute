@@ -362,6 +362,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 				instance.Labels[lblScheduler],
 				filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter)); err != nil {
 				log.Error(err, "Failed to evict pods", "node", nodeName)
+				return ctrl.Result{}, err
 			}
 		}
 
