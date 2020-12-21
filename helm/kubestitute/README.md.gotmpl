@@ -35,10 +35,9 @@ To be used with AWS and interact with Auto Scaling Groups, an AWS service accoun
             "Sid": "AllObjectActions",
             "Effect": "Allow",
             "Action": [
-                "ec2:TerminateInstances",
                 "autoscaling:DescribeAutoScalingGroups",
                 "autoscaling:SetDesiredCapacity",
-                "autoscaling:DetachInstances"
+                "autoscaling:TerminateInstanceInAutoScalingGroup"
             ],
             "Resource": "*"
         }

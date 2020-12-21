@@ -1,6 +1,6 @@
 # kubestitute
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.2.0](https://img.shields.io/badge/AppVersion-0.2.0-informational?style=flat-square)
+![Version: 0.2.1](https://img.shields.io/badge/Version-0.2.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.2.0](https://img.shields.io/badge/AppVersion-0.2.0-informational?style=flat-square)
 
 Kubestitute is an event based instances lifecycle manager for Kubernetes.
 
@@ -33,10 +33,9 @@ To be used with AWS and interact with Auto Scaling Groups, an AWS service accoun
             "Sid": "AllObjectActions",
             "Effect": "Allow",
             "Action": [
-                "ec2:TerminateInstances",
                 "autoscaling:DescribeAutoScalingGroups",
                 "autoscaling:SetDesiredCapacity",
-                "autoscaling:DetachInstances"
+                "autoscaling:TerminateInstanceInAutoScalingGroup"
             ],
             "Resource": "*"
         }
@@ -81,7 +80,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | manager.asgPollInterval | int | `30` | AutoScaling Groups polling interval (used to generate custom metrics about ASGs). |
 | manager.evictionTimeout | int | `300` | The timeout in seconds for pods eviction on Instance deletion. |
 | manager.image.repository | string | `"quortexio/kubestitute"` | Kubestitute manager image repository. |
-| manager.image.tag | string | `"0.1.1"` | Kubestitute manager image tag. |
+| manager.image.tag | string | `"0.2.0"` | Kubestitute manager image tag. |
 | manager.image.pullPolicy | string | `"IfNotPresent"` | Kubestitute manager image pull policy. |
 | manager.resources | object | `{}` | Kubestitute manager container required resources. |
 | awsEC2Plugin.enabled | bool | `true` | Wether to enable AWS EC2 plugin. |
