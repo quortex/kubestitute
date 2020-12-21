@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -58,9 +59,10 @@ type SchedulerReconcilerConfiguration struct {
 // SchedulerReconciler reconciles a Scheduler object
 type SchedulerReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
-	Conf   SchedulerReconcilerConfiguration
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
+	Conf     SchedulerReconcilerConfiguration
+	recorder record.EventRecorder
 }
 
 // matchedPolicy describe a policy with the last time it matched.
@@ -74,6 +76,7 @@ type matchedPolicy struct {
 // +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=schedulers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // Reconcile reconciles the requested state with the current state.
 func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
@@ -285,8 +288,10 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				},
 			}); err != nil {
 				log.Error(err, "Unable to create Instance", "autoscalingGroup", asg)
+				r.recorder.Eventf(&scheduler, kcore_v1.EventTypeWarning, "FailedScaleUp", "Instance creation failed err: %s", err.Error())
 				return ctrl.Result{}, err
 			}
+			r.recorder.Event(&scheduler, kcore_v1.EventTypeNormal, "SuccessfulScaleUp", "New instance created")
 		}
 
 		// Scheduler Status for scaling up :
@@ -333,8 +338,10 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			log.Info("Scaling down", "autoscalingGroup", scheduler.Spec.ASGFallback, "count", down)
 			if err := r.Delete(ctx, instance); err != nil {
 				log.Error(err, "Unable to delete Instance")
+				r.recorder.Eventf(&scheduler, kcore_v1.EventTypeWarning, "FailedScaleDown", "Instance deletion failed err: %s", err.Error())
 				return ctrl.Result{}, err
 			}
+			r.recorder.Event(&scheduler, kcore_v1.EventTypeNormal, "SuccessfulScaleDown", "Instance succesfuly deleted")
 		}
 
 		// Scheduler Status for scaling down :
@@ -534,6 +541,9 @@ func (m *AllSchedulersMapper) Map(obj handler.MapObject) []reconcile.Request {
 
 // SetupWithManager instantiates and returns the SchedulerReconciler controller.
 func (r *SchedulerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// Get event recorder
+	r.recorder = mgr.GetEventRecorderFor("Scheduler")
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.Scheduler{}).
 		Watches(

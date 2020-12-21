@@ -37,6 +37,13 @@ metadata:
   name: kubestitute-manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - apps
   resources:
   - daemonsets

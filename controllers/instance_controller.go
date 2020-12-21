@@ -38,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -49,14 +50,23 @@ import (
 	"quortex.io/kubestitute/clients/ec2adapter/client/operations"
 	"quortex.io/kubestitute/clients/ec2adapter/models"
 	"quortex.io/kubestitute/metrics"
+	"quortex.io/kubestitute/utils/helper"
 )
+
+// InstanceReconcilerConfiguration wraps configuration for InstanceReconciler.
+type InstanceReconcilerConfiguration struct {
+	// The global timeout for pods eviction
+	EvictionGlobalTimeout int
+}
 
 // InstanceReconciler reconciles a Instance object
 type InstanceReconciler struct {
 	client.Client
-	Kubernetes *kubernetes.Clientset
-	Log        logr.Logger
-	Scheme     *runtime.Scheme
+	Configuration InstanceReconcilerConfiguration
+	Kubernetes    *kubernetes.Clientset
+	Log           logr.Logger
+	Scheme        *runtime.Scheme
+	recorder      record.EventRecorder
 }
 
 const (
@@ -68,10 +78,6 @@ const (
 	evictionKind = "Eviction"
 	// evictionSubresource represents the kind of evictions object as pod's subresource
 	evictionSubresource = "pods/eviction"
-	// The global timeout for pods eviction
-	evictionGlobalTimeout = time.Second * 120
-	// A timeout for delete pod polling
-	waitForDeleteTimeout = time.Second * 120
 	// The delete pod polling interval
 	pollInterval = time.Second
 )
@@ -82,6 +88,7 @@ const (
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;patch
 // +kubebuilder:rbac:groups=apps,resources=daemonsets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=pods/eviction,verbs=create
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // Reconcile reconciles the Instance requested state with the current state.
 func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
@@ -157,20 +164,6 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	asg := res.Payload
 
-	// Set ASG capacity metrics.
-	metrics.AutoscalingGroupDesiredCapacity.WithLabelValues(asgName).Set(float64(asg.DesiredCapacity))
-	metrics.AutoscalingGroupMinSize.WithLabelValues(asgName).Set(float64(asg.MinSize))
-	metrics.AutoscalingGroupMaxSize.WithLabelValues(asgName).Set(float64(asg.MaxSize))
-	metrics.AutoscalingGroupCapacity.WithLabelValues(asgName).Set(float64(len(
-		filterInstancesWithLifecycleStates(
-			asg.Instances,
-			models.AutoscalingGroupInstanceLifecycleStatePending,
-			models.AutoscalingGroupInstanceLifecycleStatePendingWait,
-			models.AutoscalingGroupInstanceLifecycleStatePendingProceed,
-			models.AutoscalingGroupInstanceLifecycleStateInService,
-		),
-	)))
-
 	// 2nd STEP
 	//
 	// Trigger a new Instance in the ASG
@@ -217,7 +210,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			e := ec2Instances[i]
 
 			// Select only Pending or InService Instance
-			if !containsString([]string{
+			if !helper.ContainsString([]string{
 				models.AutoscalingGroupInstanceLifecycleStatePending,
 				models.AutoscalingGroupInstanceLifecycleStatePendingWait,
 				models.AutoscalingGroupInstanceLifecycleStatePendingProceed,
@@ -322,7 +315,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	} else if instance.Status.State == corev1alpha1.InstanceStateWaitNode {
 		// Next step, we will detach the EC2 instance from the ASG.
-		instance.Status.State = corev1alpha1.InstanceStateDetachInstance
+		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
 		log.V(1).Info("Updating Instance", "state", instance.Status.State)
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
@@ -365,13 +358,19 @@ func (r *InstanceReconciler) reconcileDeletion(
 			// We don't care about errors here.
 			// Either we can't process them or the eviction has timeout.
 			log.Info("Evicting pods", "node", nodeName)
-			if err := r.evictPods(ctx, log, filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter)); err != nil {
+			if err := r.evictPods(ctx,
+				log,
+				instance,
+				nodeName,
+				instance.Labels[lblScheduler],
+				filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter)); err != nil {
 				log.Error(err, "Failed to evict pods", "node", nodeName)
+				return ctrl.Result{}, err
 			}
 		}
 
 		// Next step, we will detach the EC2 instance from the ASG.
-		instance.Status.State = corev1alpha1.InstanceStateDetachInstance
+		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
 		log.V(1).Info("Updating Instance", "state", instance.Status.State)
 		return ctrl.Result{}, r.Update(ctx, &instance)
 	}
@@ -390,10 +389,11 @@ func (r *InstanceReconciler) reconcileDeletion(
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
-	// 2nd STEP
+	// 3rd STEP
 	//
 	// We detach the EC2 instance from the Autoscaling Group.
-	if instance.Status.State == corev1alpha1.InstanceStateDetachInstance {
+	if instance.Status.State == corev1alpha1.InstanceStateTerminateInstance {
+
 		// Retrieve AWS autoscaling group.
 		asgName := instance.Spec.ASG
 		res, err := ec2adapterCli.Operations.GetAutoscalingGroup(&operations.GetAutoscalingGroupParams{
@@ -416,38 +416,20 @@ func (r *InstanceReconciler) reconcileDeletion(
 				Request: &models.DetachInstancesRequest{
 					InstanceIds:                    []string{instanceID},
 					ShouldDecrementDesiredCapacity: true,
+					ShouldTerminateInstances:       true,
 				},
 			}); err != nil {
-				log.Error(err, "Failed to detach instance", "group", group, "instance", instanceID)
+				log.Error(err, "Failed to terminate instance", "group", group, "instance", instanceID)
 				return ctrl.Result{}, err
 			}
 		}
 
 		// Increment scaled_down_nodes_total metric.
 		metrics.ScaledDownNodesTotal.WithLabelValues(asgName, instance.Labels[lblScheduler]).Add(float64(1))
-
-		// Next step, we will terminate the EC2 instance.
-		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
-		log.V(1).Info("Updating Instance", "state", instance.Status.State)
-		return ctrl.Result{}, r.Update(ctx, &instance)
-	}
-
-	// 3rd STEP
-	//
-	// We terminate the EC2 instance.
-	if instance.Status.State == corev1alpha1.InstanceStateTerminateInstance {
-		instanceID := instance.Status.EC2InstanceID
-		if _, err := ec2adapterCli.Operations.TerminateInstance(&operations.TerminateInstanceParams{
-			Context: ctx,
-			ID:      instanceID,
-		}); err != nil {
-			log.Error(err, "Failed to terminate instance", "instance", instanceID)
-			return ctrl.Result{}, err
-		}
 	}
 
 	// remove our finalizer from the list and update it.
-	instance.ObjectMeta.Finalizers = removeString(instance.ObjectMeta.Finalizers, instanceFinalizer)
+	instance.ObjectMeta.Finalizers = helper.RemoveString(instance.ObjectMeta.Finalizers, instanceFinalizer)
 	return ctrl.Result{}, r.Update(ctx, &instance)
 }
 
@@ -520,6 +502,9 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	// Get event recorder
+	r.recorder = mgr.GetEventRecorderFor("Instance")
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.Instance{}).
 		Watches(
@@ -537,38 +522,6 @@ func isAWSNode(node kcore_v1.Node) bool {
 // ec2InstanceID returns the EC2 instance ID from a given Node
 func ec2InstanceID(node kcore_v1.Node) string {
 	return path.Base(node.Spec.ProviderID)
-}
-
-// filterInstancesWithLifecycleStates returns a filtered slice of AutoscalingGroupInstance with given lifecycleStates.
-func filterInstancesWithLifecycleStates(inst []*models.AutoscalingGroupInstance, lifecycleStates ...string) []*models.AutoscalingGroupInstance {
-	res := []*models.AutoscalingGroupInstance{}
-	for _, e := range inst {
-		if containsString(lifecycleStates, e.LifecycleState) {
-			res = append(res, e)
-		}
-	}
-	return res
-}
-
-// containsString returns if given slice contains string.
-func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
-}
-
-// removeString remove given string from slice.
-func removeString(slice []string, s string) (result []string) {
-	for _, item := range slice {
-		if item == s {
-			continue
-		}
-		result = append(result, item)
-	}
-	return
 }
 
 // instanceWithID returns the instance with the given ID or nil
@@ -610,14 +563,21 @@ func (r *InstanceReconciler) cordonNode(
 // evictPods evict given pods and returns when all pods have been
 // successfully deleted, error occurred or evictionGlobalTimeout expired.
 // This code is largely inspired by kubectl cli source code.
-func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pods []kcore_v1.Pod) error {
+func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, instance corev1alpha1.Instance, nodeName, scheduler string, pods []kcore_v1.Pod) error {
 	returnCh := make(chan error, 1)
 	policyGroupVersion, err := CheckEvictionSupport(r.Kubernetes)
 	if err != nil {
 		return err
 	}
+
+	evictionGlobalTimeout := time.Duration(r.Configuration.EvictionGlobalTimeout) * time.Second
 	ctx, cancel := context.WithTimeout(ctx, evictionGlobalTimeout)
 	defer cancel()
+
+	// A reusable function to record pod evictions error events.
+	recordEvictionErrorEvent := func(recorder record.EventRecorder, instance *corev1alpha1.Instance, pod kcore_v1.Pod, err error) {
+		recorder.Eventf(instance, kcore_v1.EventTypeWarning, "FailedEviction", "Pod eviction failed %s/%s err: %s", pod.Namespace, pod.Name, err.Error())
+	}
 
 	for _, pod := range pods {
 		go func(pod kcore_v1.Pod, returnCh chan error) {
@@ -635,12 +595,15 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pod
 				activePod := pod
 				err := r.evictPod(ctx, activePod, policyGroupVersion)
 				if err == nil {
+					metrics.EvictedPodsTotal.WithLabelValues(instance.Spec.ASG, nodeName, scheduler).Add(float64(1))
+					r.recorder.Eventf(&instance, kcore_v1.EventTypeNormal, "SuccessfulEviction", "Pod evicted %s/%s", pod.Namespace, pod.Name)
 					break
 				} else if apierrors.IsNotFound(err) {
 					returnCh <- nil
 					return
 				} else if apierrors.IsTooManyRequests(err) {
 					log.Error(err, "Failed to evict pod (will retry after 5s)", "name", pod.Name, "namespace", pod.Namespace)
+					recordEvictionErrorEvent(r.recorder, &instance, pod, err)
 					time.Sleep(5 * time.Second)
 				} else if !activePod.ObjectMeta.DeletionTimestamp.IsZero() && apierrors.IsForbidden(err) && apierrors.HasStatusCause(err, kcore_v1.NamespaceTerminatingCause) {
 					// an eviction request in a deleting namespace will throw a forbidden error,
@@ -651,9 +614,11 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, pod
 					// an eviction request in a deleting namespace will throw a forbidden error,
 					// if the pod is not marked deleted, we retry until it is.
 					log.Error(err, "Failed to evict pod (will retry after 5s)", "name", pod.Name, "namespace", pod.Namespace)
+					recordEvictionErrorEvent(r.recorder, &instance, pod, err)
 					time.Sleep(5 * time.Second)
 				} else {
 					returnCh <- fmt.Errorf("error when evicting pods/%q -n %q: %v", activePod.Name, activePod.Namespace, err)
+					recordEvictionErrorEvent(r.recorder, &instance, pod, err)
 					return
 				}
 			}
@@ -743,10 +708,26 @@ func CheckEvictionSupport(clientset kubernetes.Interface) (string, error) {
 	return "", nil
 }
 
+// deleteTimeout compute the delete timeout from given pods.
+func deleteTimeout(pods []kcore_v1.Pod) time.Duration {
+	// We return the max DeletionGracePeriodSeconds from pods with
+	// a 30sec overhead.
+	maxGrace := int64(30)
+	for _, e := range pods {
+		if grace := e.DeletionGracePeriodSeconds; grace != nil {
+			if *grace > maxGrace {
+				maxGrace = *grace
+			}
+		}
+	}
+
+	return time.Duration(maxGrace+30) * time.Second
+}
+
 // waitForDelete poll pods to check their deletion.
 // This code is largely inspired by kubectl cli source code.
 func (r *InstanceReconciler) waitForDelete(ctx context.Context, pods []kcore_v1.Pod) ([]kcore_v1.Pod, error) {
-	err := wait.PollImmediate(pollInterval, waitForDeleteTimeout, func() (bool, error) {
+	err := wait.PollImmediate(pollInterval, deleteTimeout(pods), func() (bool, error) {
 		pendingPods := []kcore_v1.Pod{}
 		for i, pod := range pods {
 			p := &kcore_v1.Pod{}
@@ -766,7 +747,7 @@ func (r *InstanceReconciler) waitForDelete(ctx context.Context, pods []kcore_v1.
 		if len(pendingPods) > 0 {
 			select {
 			case <-ctx.Done():
-				return false, fmt.Errorf("global timeout reached: %v", evictionGlobalTimeout)
+				return false, fmt.Errorf("Eviction global timeout reached")
 			default:
 				return false, nil
 			}

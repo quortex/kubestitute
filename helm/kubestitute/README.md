@@ -1,6 +1,6 @@
 # kubestitute
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.0](https://img.shields.io/badge/AppVersion-0.1.0-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.2.0](https://img.shields.io/badge/AppVersion-0.2.0-informational?style=flat-square)
 
 Kubestitute is an event based instances lifecycle manager for Kubernetes.
 
@@ -78,8 +78,10 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | manager.clusterAutoscaler.name | string | `"cluster-autoscaler-status"` | The Cluster Autoscaler status configmap name. |
 | manager.logs.verbosity | int | `3` | Logs verbosity:  0 => panic  1 => error  2 => warning  3 => info  4 => debug |
 | manager.logs.enableDevLogs | bool | `false` |  |
+| manager.asgPollInterval | int | `30` | AutoScaling Groups polling interval (used to generate custom metrics about ASGs). |
+| manager.evictionTimeout | int | `300` | The timeout in seconds for pods eviction on Instance deletion. |
 | manager.image.repository | string | `"quortexio/kubestitute"` | Kubestitute manager image repository. |
-| manager.image.tag | string | `"0.1.0"` | Kubestitute manager image tag. |
+| manager.image.tag | string | `"0.1.1"` | Kubestitute manager image tag. |
 | manager.image.pullPolicy | string | `"IfNotPresent"` | Kubestitute manager image pull policy. |
 | manager.resources | object | `{}` | Kubestitute manager container required resources. |
 | awsEC2Plugin.enabled | bool | `true` | Wether to enable AWS EC2 plugin. |
@@ -87,7 +89,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | awsEC2Plugin.region | string | `""` | The AWS region. |
 | awsEC2Plugin.tags | object | `{}` | Tags for AWS EC2 plugin scope management. |
 | awsEC2Plugin.image.repository | string | `"quortexio/aws-ec2-adapter"` | AWS EC2 plugin image pull policy. |
-| awsEC2Plugin.image.tag | string | `"1.0.0"` | AWS EC2 plugin image pull policy. |
+| awsEC2Plugin.image.tag | string | `"1.1.0"` | AWS EC2 plugin image pull policy. |
 | awsEC2Plugin.image.pullPolicy | string | `"IfNotPresent"` | AWS EC2 plugin image pull policy. |
 | awsEC2Plugin.resources | object | `{}` | AWS EC2 plugin container required resources. |
 | kubeRBACProxy.enabled | bool | `true` |  |
