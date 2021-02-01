@@ -3,12 +3,12 @@ module quortex.io/kubestitute
 go 1.13
 
 require (
-	github.com/go-logr/logr v0.1.0
-	github.com/go-openapi/errors v0.19.8
-	github.com/go-openapi/runtime v0.19.24
-	github.com/go-openapi/strfmt v0.19.11
-	github.com/go-openapi/swag v0.19.12
-	github.com/go-openapi/validate v0.19.14
+	github.com/go-logr/logr v0.4.0
+	github.com/go-openapi/errors v0.19.8 // indirect
+	github.com/go-openapi/runtime v0.19.24 // indirect
+	github.com/go-openapi/strfmt v0.19.11 // indirect
+	github.com/go-openapi/swag v0.19.12 // indirect
+	github.com/go-openapi/validate v0.19.14 // indirect
 	github.com/go-test/deep v1.0.7
 	github.com/google/uuid v1.1.1
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
