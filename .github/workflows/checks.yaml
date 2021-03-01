@@ -20,7 +20,7 @@ jobs:
       # Instead of using our own CI, we uses https://golangci-lint.run/
       # It combines 48 linters and execute them in parallel
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2.3.0
+        uses: golangci/golangci-lint-action@v2.5.1
         with:
           version: v1.32
           args: --timeout 5m
