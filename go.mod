@@ -15,7 +15,7 @@ require (
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.1
 	github.com/prometheus/client_golang v1.7.1
-	go.uber.org/zap v1.10.0
+	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.24.0 // indirect
 	k8s.io/api v0.19.0-beta.2
 	k8s.io/apimachinery v0.19.0-beta.2
