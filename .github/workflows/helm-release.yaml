@@ -35,5 +35,4 @@ jobs:
           charts_dir: ./helm
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          # release name is available since v1.1.0... which is broken
-          # CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-chart-{{ .Version }}"
+          CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-chart-{{ .Version }}"
