@@ -1,3 +1,8 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubestitute-controller-manager
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -16,19 +21,24 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ""
+  - coordination.k8s.io
   resources:
-  - configmaps/status
+  - leases
   verbs:
   - get
+  - list
+  - watch
+  - create
   - update
   - patch
+  - delete
 - apiGroups:
   - ""
   resources:
   - events
   verbs:
   - create
+  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -98,6 +108,12 @@ rules:
 - apiGroups:
   - core.kubestitute.quortex.io
   resources:
+  - instances/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - core.kubestitute.quortex.io
+  resources:
   - instances/status
   verbs:
   - get
@@ -118,11 +134,27 @@ rules:
 - apiGroups:
   - core.kubestitute.quortex.io
   resources:
+  - schedulers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - core.kubestitute.quortex.io
+  resources:
   - schedulers/status
   verbs:
   - get
   - patch
   - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubestitute-metrics-reader
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -142,16 +174,6 @@ rules:
   verbs:
   - create
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRole
-metadata:
-  name: kubestitute-metrics-reader
-rules:
-- nonResourceURLs:
-  - /metrics
-  verbs:
-  - get
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -162,7 +184,7 @@ roleRef:
   name: kubestitute-leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: kubestitute-controller-manager
   namespace: {{ $.Release.Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -175,7 +197,7 @@ roleRef:
   name: kubestitute-manager-role
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: kubestitute-controller-manager
   namespace: {{ $.Release.Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -188,5 +210,5 @@ roleRef:
   name: kubestitute-proxy-role
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: kubestitute-controller-manager
   namespace: {{ $.Release.Namespace }}

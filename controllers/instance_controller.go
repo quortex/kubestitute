@@ -1,5 +1,5 @@
 /*
-
+Copyright 2021.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -62,10 +63,9 @@ type InstanceReconcilerConfiguration struct {
 // InstanceReconciler reconciles a Instance object
 type InstanceReconciler struct {
 	client.Client
+	Scheme        *runtime.Scheme
 	Configuration InstanceReconcilerConfiguration
 	Kubernetes    *kubernetes.Clientset
-	Log           logr.Logger
-	Scheme        *runtime.Scheme
 	recorder      record.EventRecorder
 }
 
@@ -82,18 +82,17 @@ const (
 	pollInterval = time.Second
 )
 
-// +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;patch
-// +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;patch
-// +kubebuilder:rbac:groups=apps,resources=daemonsets,verbs=get;list;watch
-// +kubebuilder:rbac:groups=core,resources=pods/eviction,verbs=create
-// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+//+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances/finalizers,verbs=update
+//+kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;patch
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;patch
+//+kubebuilder:rbac:groups=apps,resources=daemonsets,verbs=get;list;watch
+//+kubebuilder:rbac:groups=core,resources=pods/eviction,verbs=create
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
-// Reconcile reconciles the Instance requested state with the current state.
-func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.Log.WithValues("instance", req.NamespacedName, "reconciliationID", uuid.New().String())
+func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := ctrllog.FromContext(ctx, "instance", req.NamespacedName, "reconciliationID", uuid.New().String())
 
 	log.V(1).Info("Instance reconciliation started")
 	defer log.V(1).Info("Instance reconciliation done")
@@ -127,15 +126,21 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// **** LIFECYCLE RECONCILIATION ****
 	// **********************************
 
+	// Add finalizer if there are none.
+	if !helper.ContainsString(instance.ObjectMeta.Finalizers, instanceFinalizer) {
+		instance.ObjectMeta.Finalizers = append(instance.ObjectMeta.Finalizers, instanceFinalizer)
+		log.V(1).Info("Add finalizer to Instance", "finalizer", instanceFinalizer)
+		return ctrl.Result{}, r.Update(ctx, &instance)
+	}
+
 	// 1st STEP
 	//
-	// Initialize Instance with TriggerScaling state and add the finalizer.
+	// Initialize Instance with TriggerScaling state.
 	if instance.Status.State == corev1alpha1.InstanceStateNone {
 		// Next step, we will trigger a new EC2 instance.
 		instance.Status.State = corev1alpha1.InstanceStateTriggerScaling
-		instance.ObjectMeta.Finalizers = append(instance.ObjectMeta.Finalizers, instanceFinalizer)
-		log.V(1).Info("Updating Instance", "state", instance.Status.State, "finalizer", instanceFinalizer)
-		return ctrl.Result{}, r.Update(ctx, &instance)
+		log.V(1).Info("Updating Instance Status", "state", instance.Status.State)
+		return ctrl.Result{}, r.Status().Update(ctx, &instance)
 	}
 
 	// Instantiate aws-ec2-adapter client requirements
@@ -182,10 +187,11 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			log.Error(err, "Failed to set autoscaling group desired capacity", "name", asg.Name, "capacity", capacity)
 			return ctrl.Result{}, err
 		}
+
 		// Next step, we will wait for EC2 instance joining the ASG.
 		instance.Status.State = corev1alpha1.InstanceStateWaitInstance
 		log.V(1).Info("Updating Instance", "state", instance.Status.State)
-		return ctrl.Result{}, r.Update(ctx, &instance)
+		return ctrl.Result{}, r.Status().Update(ctx, &instance)
 	}
 
 	// 3rd STEP
@@ -252,7 +258,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		instance.Status.EC2InstanceID = instanceID
 		log.Info("EC2 instance retrieved", "ec2InstanceID", instance.Status.EC2InstanceID)
 		log.V(1).Info("Updating Instance", "state", instance.Status.State, "ec2InstanceID", instance.Status.EC2InstanceID)
-		return ctrl.Result{}, r.Update(ctx, &instance)
+		return ctrl.Result{}, r.Status().Update(ctx, &instance)
 	}
 
 	// 4th STEP
@@ -289,7 +295,7 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				instance.Status.State = corev1alpha1.InstanceStateReady
 				instance.Status.Node = e.GetName()
 				log.V(1).Info("Updating Instance", "state", instance.Status.State, "node", instance.Status.Node)
-				return ctrl.Result{}, r.Update(ctx, &instance)
+				return ctrl.Result{}, r.Status().Update(ctx, &instance)
 			}
 		}
 	}
@@ -301,8 +307,8 @@ func (r *InstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 func (r *InstanceReconciler) reconcileDeletion(
 	ctx context.Context,
 	instance corev1alpha1.Instance,
-	log logr.Logger) (ctrl.Result, error) {
-
+	log logr.Logger,
+) (ctrl.Result, error) {
 	// 1st STEP
 	//
 	// Initialize Instance with the desired state.
@@ -312,12 +318,12 @@ func (r *InstanceReconciler) reconcileDeletion(
 		// Next step, we will drain the associated Node.
 		instance.Status.State = corev1alpha1.InstanceStateDrainNode
 		log.V(1).Info("Updating Instance", "state", instance.Status.State)
-		return ctrl.Result{}, r.Update(ctx, &instance)
+		return ctrl.Result{}, r.Status().Update(ctx, &instance)
 	} else if instance.Status.State == corev1alpha1.InstanceStateWaitNode {
 		// Next step, we will detach the EC2 instance from the ASG.
 		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
 		log.V(1).Info("Updating Instance", "state", instance.Status.State)
-		return ctrl.Result{}, r.Update(ctx, &instance)
+		return ctrl.Result{}, r.Status().Update(ctx, &instance)
 	}
 
 	// 2nd STEP
@@ -358,12 +364,14 @@ func (r *InstanceReconciler) reconcileDeletion(
 			// We don't care about errors here.
 			// Either we can't process them or the eviction has timeout.
 			log.Info("Evicting pods", "node", nodeName)
-			if err := r.evictPods(ctx,
+			if err := r.evictPods(
+				ctx,
 				log,
 				instance,
 				nodeName,
 				instance.Labels[lblScheduler],
-				filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter)); err != nil {
+				filterPods(pods.Items, r.deletedFilter, r.daemonSetFilter),
+			); err != nil {
 				log.Error(err, "Failed to evict pods", "node", nodeName)
 				return ctrl.Result{}, err
 			}
@@ -372,7 +380,7 @@ func (r *InstanceReconciler) reconcileDeletion(
 		// Next step, we will detach the EC2 instance from the ASG.
 		instance.Status.State = corev1alpha1.InstanceStateTerminateInstance
 		log.V(1).Info("Updating Instance", "state", instance.Status.State)
-		return ctrl.Result{}, r.Update(ctx, &instance)
+		return ctrl.Result{}, r.Status().Update(ctx, &instance)
 	}
 
 	// Instantiate aws-ec2-adapter client requirements
@@ -393,7 +401,6 @@ func (r *InstanceReconciler) reconcileDeletion(
 	//
 	// We detach the EC2 instance from the Autoscaling Group.
 	if instance.Status.State == corev1alpha1.InstanceStateTerminateInstance {
-
 		// Retrieve AWS autoscaling group.
 		asgName := instance.Spec.ASG
 		res, err := ec2adapterCli.Operations.GetAutoscalingGroup(&operations.GetAutoscalingGroupParams{
@@ -429,89 +436,9 @@ func (r *InstanceReconciler) reconcileDeletion(
 	}
 
 	// remove our finalizer from the list and update it.
+	log.V(1).Info("Remove finalizer from Instance", "finalizer", instanceFinalizer)
 	instance.ObjectMeta.Finalizers = helper.RemoveString(instance.ObjectMeta.Finalizers, instanceFinalizer)
 	return ctrl.Result{}, r.Update(ctx, &instance)
-}
-
-// NodeMapper is a mapper reconciling Instances for Node events
-type NodeMapper struct {
-	cli client.Client
-	log logr.Logger
-}
-
-// Map function reconciling Instance associated to node.
-func (m *NodeMapper) Map(obj handler.MapObject) []reconcile.Request {
-	ctx := context.Background()
-	log := m.log.WithName("inputmapper")
-
-	// Obtain the modified node
-	node, ok := obj.Object.(*kcore_v1.Node)
-	if !ok {
-		log.Error(fmt.Errorf("fail to cast object %s into Node", obj.Meta.GetName()),
-			"Fail to cast object into Node", "kind", obj.Object.GetObjectKind().GroupVersionKind, "obj", obj)
-		return []reconcile.Request{}
-	}
-
-	// Node is not managed by AWS, the reconciler does not support it.
-	if !isAWSNode(*node) {
-		log.Info("Node is not managed by AWS, the reconciler does not support it", "node", node.Name)
-		return []reconcile.Request{}
-	}
-
-	// Get instance ID from node's Provider field
-	// E.g for an AWS EKS / KOPS node
-	// providerID: aws:///eu-west-1b/i-0d0b3844fcfb3c137
-	ec2InstanceID := ec2InstanceID(*node)
-	if ec2InstanceID == "" {
-		log.Error(fmt.Errorf("Node has no valid ProviderID"), "name", node.Name)
-		return []reconcile.Request{}
-	}
-
-	// List instances
-	instances := &corev1alpha1.InstanceList{}
-	if err := m.cli.List(ctx, instances); err != nil {
-		log.Error(err, "Unable to list Instances")
-		return []reconcile.Request{}
-	}
-
-	// If an Instance match the ec2InstanceID, we reconcile it.
-	for _, e := range instances.Items {
-		if e.Status.EC2InstanceID == ec2InstanceID {
-			return []reconcile.Request{
-				{
-					NamespacedName: types.NamespacedName{
-						Namespace: e.Namespace,
-						Name:      e.Name,
-					},
-				},
-			}
-		}
-	}
-
-	// No matching Instance, no reconciliation required.
-	return []reconcile.Request{}
-}
-
-// SetupWithManager instantiates and returns the InstanceReconciler controller.
-func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// Index nodeName pod's spec field to get pods scheduled on Node
-	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &kcore_v1.Pod{}, nodeNameField, func(rawObj runtime.Object) []string {
-		pod := rawObj.(*kcore_v1.Pod)
-		return []string{pod.Spec.NodeName}
-	}); err != nil {
-		return err
-	}
-
-	// Get event recorder
-	r.recorder = mgr.GetEventRecorderFor("Instance")
-
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&corev1alpha1.Instance{}).
-		Watches(
-			&source.Kind{Type: &kcore_v1.Node{}},
-			&handler.EnqueueRequestsFromMapFunc{ToRequests: &NodeMapper{cli: mgr.GetClient(), log: mgr.GetLogger()}},
-		).
-		Complete(r)
 }
 
 // isAWSNode returns if given Node is identified as an AWS cluster Node
@@ -537,7 +464,8 @@ func instanceWithID(slice []*models.AutoscalingGroupInstance, id string) *models
 // cordonNode cordon the given Node (mark it as unschedulable).
 func (r *InstanceReconciler) cordonNode(
 	ctx context.Context,
-	node *kcore_v1.Node) error {
+	node *kcore_v1.Node,
+) error {
 	// To cordon a Node, patch it to set it Unschedulable.
 	old, err := json.Marshal(node)
 	if err != nil {
@@ -652,7 +580,6 @@ func (r *InstanceReconciler) evictPods(ctx context.Context, log logr.Logger, ins
 // evictPod will evict the given pod, or return an error if it couldn't
 // This code is largely inspired by kubectl cli source code.
 func (r *InstanceReconciler) evictPod(ctx context.Context, pod kcore_v1.Pod, policyGroupVersion string) error {
-
 	gracePeriod := int64(time.Second * 30)
 	if pod.Spec.TerminationGracePeriodSeconds != nil && *pod.Spec.TerminationGracePeriodSeconds < gracePeriod {
 		gracePeriod = *pod.Spec.TerminationGracePeriodSeconds
@@ -813,4 +740,81 @@ func (r *InstanceReconciler) deletedFilter(pods []kcore_v1.Pod) []kcore_v1.Pod {
 		}
 	}
 	return pods
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// Index nodeName pod's spec field to get pods scheduled on Node
+	if err := mgr.GetFieldIndexer().IndexField(
+		context.Background(),
+		&kcore_v1.Pod{},
+		nodeNameField,
+		func(o client.Object) []string {
+			pod := o.(*kcore_v1.Pod)
+			return []string{pod.Spec.NodeName}
+		},
+	); err != nil {
+		return err
+	}
+
+	// Get event recorder
+	r.recorder = mgr.GetEventRecorderFor("Instance")
+
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&corev1alpha1.Instance{}).
+		Watches(
+			&source.Kind{Type: &kcore_v1.Node{}},
+			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
+				ctx := context.Background()
+				log := ctrllog.Log.WithName("instancemapper")
+
+				// Obtain the modified node
+				node, ok := o.(*kcore_v1.Node)
+				if !ok {
+					log.Error(fmt.Errorf("fail to cast object %s into Node", o.GetName()),
+						"Fail to cast object into Node", "kind", o.GetObjectKind().GroupVersionKind, "obj", o)
+					return []reconcile.Request{}
+				}
+
+				// Node is not managed by AWS, the reconciler does not support it.
+				if !isAWSNode(*node) {
+					log.Info("Node is not managed by AWS, the reconciler does not support it", "node", node.Name)
+					return []reconcile.Request{}
+				}
+
+				// Get instance ID from node's Provider field
+				// E.g for an AWS EKS / KOPS node
+				// providerID: aws:///eu-west-1b/i-0d0b3844fcfb3c137
+				ec2InstanceID := ec2InstanceID(*node)
+				if ec2InstanceID == "" {
+					log.Error(fmt.Errorf("Node has no valid ProviderID"), "name", node.Name)
+					return []reconcile.Request{}
+				}
+
+				// List instances
+				instances := &corev1alpha1.InstanceList{}
+				if err := r.List(ctx, instances); err != nil {
+					log.Error(err, "Unable to list Instances")
+					return []reconcile.Request{}
+				}
+
+				// If an Instance match the ec2InstanceID, we reconcile it.
+				for _, e := range instances.Items {
+					if e.Status.EC2InstanceID == ec2InstanceID {
+						return []reconcile.Request{
+							{
+								NamespacedName: types.NamespacedName{
+									Namespace: e.Namespace,
+									Name:      e.Name,
+								},
+							},
+						}
+					}
+				}
+
+				// No matching Instance, no reconciliation required.
+				return []reconcile.Request{}
+			}),
+		).
+		Complete(r)
 }

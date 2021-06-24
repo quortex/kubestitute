@@ -1,5 +1,5 @@
 /*
-
+Copyright 2021.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -59,10 +60,9 @@ type SchedulerReconcilerConfiguration struct {
 // SchedulerReconciler reconciles a Scheduler object
 type SchedulerReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	Conf     SchedulerReconcilerConfiguration
-	recorder record.EventRecorder
+	Scheme        *runtime.Scheme
+	Configuration SchedulerReconcilerConfiguration
+	recorder      record.EventRecorder
 }
 
 // matchedPolicy describe a policy with the last time it matched.
@@ -72,16 +72,15 @@ type matchedPolicy struct {
 	Match  time.Time                    `json:"match,omitempty"`
 }
 
-// +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=schedulers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=schedulers/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
-// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+//+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=schedulers,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=schedulers/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=schedulers/finalizers,verbs=update
+//+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
-// Reconcile reconciles the requested state with the current state.
-func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.Log.WithValues("scheduler", req.NamespacedName, "reconciliationID", uuid.New().String())
+func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := ctrllog.FromContext(ctx, "scheduler", req.NamespacedName, "reconciliationID", uuid.New().String())
 
 	log.V(1).Info("Scheduler reconciliation started")
 	defer log.V(1).Info("Scheduler reconciliation done")
@@ -109,14 +108,14 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// Fetch clusterautoscaler status configmap.
 	var cm kcore_v1.ConfigMap
 	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: r.Conf.ClusterAutoscalerStatusNamespace,
-		Name:      r.Conf.ClusterAutoscalerStatusName,
+		Namespace: r.Configuration.ClusterAutoscalerStatusNamespace,
+		Name:      r.Configuration.ClusterAutoscalerStatusName,
 	}, &cm); err != nil {
 		log.Error(
 			err,
 			"Unable to fetch ClusterAutoscaler status configmap",
-			"namespace", r.Conf.ClusterAutoscalerStatusNamespace,
-			"name", r.Conf.ClusterAutoscalerStatusName,
+			"namespace", r.Configuration.ClusterAutoscalerStatusNamespace,
+			"name", r.Configuration.ClusterAutoscalerStatusName,
 		)
 
 		return ctrl.Result{}, err
@@ -129,8 +128,8 @@ func (r *SchedulerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		log.Error(
 			err,
 			"unable to parse ClusterAutoscaler status",
-			"namespace", r.Conf.ClusterAutoscalerStatusNamespace,
-			"name", r.Conf.ClusterAutoscalerStatusName,
+			"namespace", r.Configuration.ClusterAutoscalerStatusNamespace,
+			"name", r.Configuration.ClusterAutoscalerStatusName,
 		)
 	}
 
@@ -362,8 +361,8 @@ func (r *SchedulerReconciler) endReconciliation(
 	log logr.Logger,
 	scheduler corev1alpha1.Scheduler,
 	scaleDownPolicies, scaleUpPolicies []matchedPolicy,
-	scaleDownTime, scaleUpTime *kmeta_v1.Time) (ctrl.Result, error) {
-
+	scaleDownTime, scaleUpTime *kmeta_v1.Time,
+) (ctrl.Result, error) {
 	// Marshal scheduler, ...
 	old, err := json.Marshal(scheduler)
 	if err != nil {
@@ -377,6 +376,7 @@ func (r *SchedulerReconciler) endReconciliation(
 		log.Error(err, "Failed to marshal scale down policies")
 		return ctrl.Result{}, err
 	}
+
 	// ... and scaleUpPolicies.
 	up, err := json.Marshal(scaleUpPolicies)
 	if err != nil {
@@ -398,13 +398,19 @@ func (r *SchedulerReconciler) endReconciliation(
 	// ... and create a patch.
 	patch, err := strategicpatch.CreateTwoWayMergePatch(old, new, scheduler)
 	if err != nil {
-		log.Error(err, "Failed to create patch for scheduler")
+		log.Error(err, "Failed to create patch for scheduler status")
+		return ctrl.Result{}, err
+	}
+
+	// Apply patch to set scheduler's wanted annotations.
+	if err = r.Patch(ctx, &scheduler, client.RawPatch(types.MergePatchType, patch)); err != nil {
+		log.Error(err, "Failed to patch scheduler annotations")
 		return ctrl.Result{}, err
 	}
 
 	// Apply patch to set scheduler's wanted status.
-	if err = r.Patch(ctx, &scheduler, client.RawPatch(types.MergePatchType, patch)); err != nil {
-		log.Error(err, "Failed to patch scheduler")
+	if err = r.Status().Patch(ctx, &scheduler, client.RawPatch(types.MergePatchType, patch)); err != nil {
+		log.Error(err, "Failed to update scheduler status")
 		return ctrl.Result{}, err
 	}
 
@@ -508,38 +514,7 @@ func nodeGroupReplicas(ng clusterautoscaler.NodeGroup, operation corev1alpha1.In
 	return operation.IntVal
 }
 
-// AllSchedulersMapper is a Mapper reconciling all Schedulers.
-type AllSchedulersMapper struct {
-	cli client.Client
-	log logr.Logger
-}
-
-// Map function reconciling all Schedulers for each event.
-func (m *AllSchedulersMapper) Map(obj handler.MapObject) []reconcile.Request {
-	ctx := context.Background()
-	log := m.log.WithName("schedulermapper")
-
-	// List Schedulers
-	schedulers := &corev1alpha1.SchedulerList{}
-	if err := m.cli.List(ctx, schedulers); err != nil {
-		log.Error(err, "Unable to list Schedulers")
-		return []reconcile.Request{}
-	}
-
-	// We reconcile each Scheduler atm.
-	res := make([]reconcile.Request, len(schedulers.Items))
-	for i, e := range schedulers.Items {
-		res[i] = reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Namespace: e.Namespace,
-				Name:      e.Name,
-			},
-		}
-	}
-	return res
-}
-
-// SetupWithManager instantiates and returns the SchedulerReconciler controller.
+// SetupWithManager sets up the controller with the Manager.
 func (r *SchedulerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Get event recorder
 	r.recorder = mgr.GetEventRecorderFor("Scheduler")
@@ -548,7 +523,30 @@ func (r *SchedulerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&corev1alpha1.Scheduler{}).
 		Watches(
 			&source.Kind{Type: &kcore_v1.ConfigMap{}},
-			&handler.EnqueueRequestsFromMapFunc{ToRequests: &AllSchedulersMapper{cli: mgr.GetClient(), log: mgr.GetLogger()}},
+			handler.EnqueueRequestsFromMapFunc(func(_ client.Object) []reconcile.Request {
+				ctx := context.Background()
+				log := ctrllog.Log.WithName("schedulermapper")
+
+				// List Schedulers
+				schedulers := &corev1alpha1.SchedulerList{}
+				if err := r.List(ctx, schedulers); err != nil {
+					log.Error(err, "Unable to list Schedulers")
+					return []reconcile.Request{}
+				}
+
+				// We reconcile each Scheduler atm.
+				res := make([]reconcile.Request, len(schedulers.Items))
+				for i, e := range schedulers.Items {
+					res[i] = reconcile.Request{
+						NamespacedName: types.NamespacedName{
+							Namespace: e.Namespace,
+							Name:      e.Name,
+						},
+					}
+				}
+
+				return res
+			}),
 			r.clusterAutoscalerStatusConfigmapPredicates(),
 		).
 		Complete(r)
@@ -575,6 +573,6 @@ func (r *SchedulerReconciler) clusterAutoscalerStatusConfigmapPredicates() build
 func (r *SchedulerReconciler) shouldReconcileConfigmap(obj *kcore_v1.ConfigMap) bool {
 	// We should only consider reconciliation for clusterautoscaler status
 	// configmap.
-	return obj.Namespace == r.Conf.ClusterAutoscalerStatusNamespace &&
-		obj.Name == r.Conf.ClusterAutoscalerStatusName
+	return obj.Namespace == r.Configuration.ClusterAutoscalerStatusNamespace &&
+		obj.Name == r.Configuration.ClusterAutoscalerStatusName
 }
