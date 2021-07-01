@@ -1,8 +1,8 @@
 apiVersion: v2
 name: kubestitute
 type: application
-version: 0.2.1
-appVersion: 0.2.0
+version: 1.0.0-rc.1
+appVersion: 1.0.0-rc.1
 description: Kubestitute is an event based instances lifecycle manager for Kubernetes.
 home: https://github.com/quortex/kubestitute
 sources:

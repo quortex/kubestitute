@@ -1,6 +1,6 @@
 # kubestitute
 
-![Version: 0.2.1](https://img.shields.io/badge/Version-0.2.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.2.0](https://img.shields.io/badge/AppVersion-0.2.0-informational?style=flat-square)
+![Version: 1.0.0-rc.1](https://img.shields.io/badge/Version-1.0.0--rc.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.0.0-rc.1](https://img.shields.io/badge/AppVersion-1.0.0--rc.1-informational?style=flat-square)
 
 Kubestitute is an event based instances lifecycle manager for Kubernetes.
 
@@ -80,7 +80,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | manager.asgPollInterval | int | `30` | AutoScaling Groups polling interval (used to generate custom metrics about ASGs). |
 | manager.evictionTimeout | int | `300` | The timeout in seconds for pods eviction on Instance deletion. |
 | manager.image.repository | string | `"quortexio/kubestitute"` | Kubestitute manager image repository. |
-| manager.image.tag | string | `"0.2.0"` | Kubestitute manager image tag. |
+| manager.image.tag | string | `"1.0.0-rc.1"` | Kubestitute manager image tag. |
 | manager.image.pullPolicy | string | `"IfNotPresent"` | Kubestitute manager image pull policy. |
 | manager.livenessProbe.httpGet.path | string | `"/healthz"` | Path of the manager liveness probe. |
 | manager.livenessProbe.httpGet.port | int | `8081` | Name or number of the manager liveness probe port. |
@@ -119,7 +119,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | serviceMonitor.additionalLabels | object | `{}` | Labels added to the ServiceMonitor. |
 | serviceMonitor.annotations | object | `{}` | Annotations added to the ServiceMonitor. |
 | serviceMonitor.interval | string | `""` | Override prometheus operator scrapping interval. |
-| serviceMonitor.scrapeTimeout | string | `"30s"` | Override prometheus operator scrapping timeout. |
+| serviceMonitor.scrapeTimeout | string | `""` | Override prometheus operator scrapping timeout. |
 | serviceMonitor.relabelings | list | `[]` | Relabellings to apply to samples before scraping. |
 
 ## Maintainers
