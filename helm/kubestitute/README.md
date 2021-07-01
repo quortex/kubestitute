@@ -115,6 +115,12 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | nodeSelector | object | `{}` | Node labels for Kubestitute pod assignment. |
 | tolerations | list | `[]` | Node tolerations for Kubestitute scheduling to nodes with taints. |
 | affinity | object | `{}` | Affinity for Kubestitute pod assignment. |
+| serviceMonitor.enabled | bool | `false` | Create a prometheus operator ServiceMonitor. |
+| serviceMonitor.additionalLabels | object | `{}` | Labels added to the ServiceMonitor. |
+| serviceMonitor.annotations | object | `{}` | Annotations added to the ServiceMonitor. |
+| serviceMonitor.interval | string | `""` | Override prometheus operator scrapping interval. |
+| serviceMonitor.scrapeTimeout | string | `"30s"` | Override prometheus operator scrapping timeout. |
+| serviceMonitor.relabelings | list | `[]` | Relabellings to apply to samples before scraping. |
 
 ## Maintainers
 
