@@ -68,6 +68,12 @@ rules:
 - apiGroups:
   - core.kubestitute.quortex.io
   resources:
+  - instances/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - core.kubestitute.quortex.io
+  resources:
   - instances/status
   verbs:
   - get
@@ -85,6 +91,12 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - core.kubestitute.quortex.io
+  resources:
+  - schedulers/finalizers
+  verbs:
+  - update
 - apiGroups:
   - core.kubestitute.quortex.io
   resources:

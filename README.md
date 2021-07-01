@@ -70,7 +70,7 @@ kubectl apply -f myconfigmap.yaml
 4. Deploy the appropriate release.
 
 ```sh
-make deploy IMG=quortexio/quortex-operator:$RELEASE
+make deploy IMG=quortexio/kubestitute:$RELEASE
 ```
 
 
@@ -130,7 +130,7 @@ Full API documentation is available [here](./docs/api-docs.asciidoc).
 By default, Kubestitute produces structured logs, with "Info" verbosity. These settings can be configured as described [here](#Configuration_Optional_args).
 
 ### Metrics
-Kubestitute being built from Kubebuilder, it natively exposes a collection of performance metrics for each controller. 
+Kubestitute being built from Kubebuilder, it natively exposes a collection of performance metrics for each controller.
 Kubebuilder documentation about metrics can be found [here](https://book.kubebuilder.io/reference/metrics.html).
 
 We also expose custom metrics as described here:

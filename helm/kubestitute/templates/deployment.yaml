@@ -27,29 +27,38 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
       containers:
       {{- with .Values.manager }}
         - name: manager
           image: "{{ .image.repository }}:{{ .image.tag }}"
+          imagePullPolicy: {{ .image.pullPolicy }}
           command:
             - /manager
           args:
-            - --metrics-addr={{ ternary "127.0.0.1:8080" "0.0.0.0:8080" $.Values.kubeRBACProxy.enabled }}
-            - --enable-leader-election
+            - --health-probe-bind-address=0.0.0.0:8081
+            - --metrics-bind-address={{ ternary "127.0.0.1:8080" "0.0.0.0:8080" $.Values.kubeRBACProxy.enabled }}
+            - --leader-elect
             - --clusterautoscaler-status-namespace={{ .clusterAutoscaler.namespace }}
             - --clusterautoscaler-status-name={{ .clusterAutoscaler.name }}
             - --dev={{ .logs.enableDevLogs }}
             - --v={{ .logs.verbosity }}
             - --asg-poll-interval={{ .asgPollInterval }}
             - --eviction-timeout={{ .evictionTimeout }}
-          imagePullPolicy: {{ .image.pullPolicy }}
           {{- if not $.Values.kubeRBACProxy.enabled }}
           ports:
             - containerPort: 8080
-              name: metrics
+              name: http-metrics
           {{- end }}
+          livenessProbe:
+            {{- toYaml .livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
       {{- end }}
       {{- with .Values.awsEC2Plugin }}
         {{- if .enabled }}
@@ -71,9 +80,6 @@ spec:
                   key: awsSecretKey
                   name: {{ .secret }}
           imagePullPolicy: {{ .image.pullPolicy }}
-          ports:
-            - containerPort: 8008
-              name: http
           resources:
             {{- toYaml .resources | nindent 12 }}
           volumeMounts:
@@ -94,11 +100,12 @@ spec:
           imagePullPolicy: {{ .image.pullPolicy }}
           ports:
             - containerPort: 8443
-              name: https
+              name: https-metrics
           resources:
             {{- toYaml .resources | nindent 12 }}
         {{- end }}
       {{- end }}
+      serviceAccountName: {{ $fullName }}-controller-manager
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriod }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

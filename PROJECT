@@ -1,10 +1,25 @@
 domain: kubestitute.quortex.io
+layout:
+- go.kubebuilder.io/v3
+projectName: kubestitute
 repo: quortex.io/kubestitute
 resources:
-- group: core
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kubestitute.quortex.io
+  group: core
   kind: Instance
+  path: quortex.io/kubestitute/api/v1alpha1
   version: v1alpha1
-- group: core
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kubestitute.quortex.io
+  group: core
   kind: Scheduler
+  path: quortex.io/kubestitute/api/v1alpha1
   version: v1alpha1
-version: "2"
+version: "3"

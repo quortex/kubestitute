@@ -1,4 +1,4 @@
-{{- if .Values.kubeRBACProxy.enabled }}
+{{- if or .Values.kubeRBACProxy.enabled .Values.serviceMonitor.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -7,10 +7,15 @@ metadata:
     {{- include "kubestitute.labels" . | nindent 4 }}
 spec:
   ports:
+    {{- if or .Values.kubeRBACProxy.enabled }}
     - port: 8443
-      targetPort: https
-      protocol: TCP
-      name: https
+      targetPort: https-metrics
+      name: https-metrics
+    {{- else }}
+    - port: 8080
+      targetPort: http-metrics
+      name: http-metrics
+    {{- end }}
   selector:
     {{- include "kubestitute.selectorLabels" . | nindent 4 }}
 {{- end }}

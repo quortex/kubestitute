@@ -1,5 +1,5 @@
 /*
-
+Copyright 2021.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,16 +22,15 @@ import (
 
 // InstanceSpec defines the desired state of Instance
 type InstanceSpec struct {
-
 	// The AutoScaling Group name.
-	// +kubebuilder:validation:Required
+	//+kubebuilder:validation:Required
 	ASG string `json:"autoscalingGroup"`
 
 	// Indicates whether Amazon EC2 Auto Scaling waits for the cooldown period to
 	// complete before initiating a scaling activity to set your Auto Scaling group
 	// to its new capacity. By default, Amazon EC2 Auto Scaling does not honor the
 	// cooldown period during manual scaling activities.
-	// +kubebuilder:validation:Optional
+	//+kubebuilder:validation:Optional
 	HonorCooldown bool `json:"honorCooldown"`
 }
 
@@ -51,7 +50,6 @@ const (
 
 // InstanceStatus defines the observed state of Instance
 type InstanceStatus struct {
-
 	// The current state of the instance
 	State InstanceState `json:"state,omitempty"`
 
@@ -62,10 +60,11 @@ type InstanceStatus struct {
 	Node string `json:"node,omitempty"`
 }
 
-// +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status.state",description="The Instance status"
-// +kubebuilder:printcolumn:name="EC2 INSTANCE",type="string",JSONPath=".status.ec2InstanceID",description="The EC2 Instance ID"
-// +kubebuilder:printcolumn:name="NODE",type="string",JSONPath=".status.node",description="The Kubernetes Node"
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status.state",description="The Instance status"
+//+kubebuilder:printcolumn:name="EC2 INSTANCE",type="string",JSONPath=".status.ec2InstanceID",description="The EC2 Instance ID"
+//+kubebuilder:printcolumn:name="NODE",type="string",JSONPath=".status.node",description="The Kubernetes Node"
 
 // Instance is the Schema for the instances API
 type Instance struct {
@@ -76,7 +75,7 @@ type Instance struct {
 	Status InstanceStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:object:root=true
+//+kubebuilder:object:root=true
 
 // InstanceList contains a list of Instance
 type InstanceList struct {

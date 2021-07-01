@@ -82,6 +82,14 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | manager.image.repository | string | `"quortexio/kubestitute"` | Kubestitute manager image repository. |
 | manager.image.tag | string | `"0.2.0"` | Kubestitute manager image tag. |
 | manager.image.pullPolicy | string | `"IfNotPresent"` | Kubestitute manager image pull policy. |
+| manager.livenessProbe.httpGet.path | string | `"/healthz"` | Path of the manager liveness probe. |
+| manager.livenessProbe.httpGet.port | int | `8081` | Name or number of the manager liveness probe port. |
+| manager.livenessProbe.initialDelaySeconds | int | `15` | Number of seconds before the manager liveness probe is initiated. |
+| manager.livenessProbe.periodSeconds | int | `20` | How often (in seconds) to perform the manager liveness probe. |
+| manager.readinessProbe.httpGet.path | string | `"/readyz"` | Path of the manager readiness probe. |
+| manager.readinessProbe.httpGet.port | int | `8081` | Name or number of the manager readiness probe port. |
+| manager.readinessProbe.initialDelaySeconds | int | `5` | Number of seconds before the manager readiness probe is initiated. |
+| manager.readinessProbe.periodSeconds | int | `10` | How often (in seconds) to perform the manager readiness probe. |
 | manager.resources | object | `{}` | Kubestitute manager container required resources. |
 | awsEC2Plugin.enabled | bool | `true` | Wether to enable AWS EC2 plugin. |
 | awsEC2Plugin.secret | string | `"aws-ec2-plugin"` | A reference to a secret wit AWS credentials for AWS EC2 plugin. |
@@ -93,10 +101,11 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | awsEC2Plugin.resources | object | `{}` | AWS EC2 plugin container required resources. |
 | kubeRBACProxy.enabled | bool | `true` |  |
 | kubeRBACProxy.image.repository | string | `"gcr.io/kubebuilder/kube-rbac-proxy"` | kube-rbac-proxy image repository. |
-| kubeRBACProxy.image.tag | string | `"v0.5.0"` | kube-rbac-proxy image tag. |
+| kubeRBACProxy.image.tag | string | `"v0.8.0"` | kube-rbac-proxy image tag. |
 | kubeRBACProxy.image.pullPolicy | string | `"IfNotPresent"` | kube-rbac-proxy image pull policy. |
 | kubeRBACProxy.resources | object | `{}` | kube-rbac-proxy container required resources. |
 | replicaCount | int | `1` | Number of desired pods. |
+| securityContext | object | `{}` | Security contexts to set for all containers of the pod. |
 | imagePullSecrets | list | `[]` | A list of secrets used to pull containers images. |
 | nameOverride | string | `""` | Helm's name computing override. |
 | fullnameOverride | string | `""` | Helm's fullname computing override. |
@@ -106,6 +115,12 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | nodeSelector | object | `{}` | Node labels for Kubestitute pod assignment. |
 | tolerations | list | `[]` | Node tolerations for Kubestitute scheduling to nodes with taints. |
 | affinity | object | `{}` | Affinity for Kubestitute pod assignment. |
+| serviceMonitor.enabled | bool | `false` | Create a prometheus operator ServiceMonitor. |
+| serviceMonitor.additionalLabels | object | `{}` | Labels added to the ServiceMonitor. |
+| serviceMonitor.annotations | object | `{}` | Annotations added to the ServiceMonitor. |
+| serviceMonitor.interval | string | `""` | Override prometheus operator scrapping interval. |
+| serviceMonitor.scrapeTimeout | string | `"30s"` | Override prometheus operator scrapping timeout. |
+| serviceMonitor.relabelings | list | `[]` | Relabellings to apply to samples before scraping. |
 
 ## Maintainers
 
