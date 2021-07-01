@@ -1,5 +1,5 @@
 /*
-
+Copyright 2021.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,33 +19,30 @@ package controllers
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"k8s.io/apimachinery/pkg/runtime"
-	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
 	"quortex.io/kubestitute/utils/supervisor"
 )
 
 // SupervisionReconciler reconciles a Supervision object
 type SupervisionReconciler struct {
 	client.Client
-	Log        logr.Logger
 	Scheme     *runtime.Scheme
 	Supervisor supervisor.Supervisor
 }
 
-// +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=schedulers,verbs=get;list;watch
-// +kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances,verbs=get;list;watch
+//+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=schedulers,verbs=get;list;watch
+//+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances,verbs=get;list;watch
 
-// Reconcile reconciles the requested state with the current state.
-func (r *SupervisionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	log := r.Log.WithValues("supervision", req.NamespacedName, "reconciliationID", uuid.New().String())
+func (r *SupervisionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := ctrllog.FromContext(ctx, "supervision", req.NamespacedName, "reconciliationID", uuid.New().String())
 
 	log.V(1).Info("Supervision reconciliation started")
 	defer log.V(1).Info("Supervision reconciliation done")
@@ -68,11 +65,11 @@ func (r *SupervisionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 
 	// Compute all ASG names
 	asgs := []string{}
-	for _, e := range instances.Items {
-		asgs = append(asgs, e.Spec.ASG)
+	for _, instance := range instances.Items {
+		asgs = append(asgs, instance.Spec.ASG)
 	}
-	for _, e := range schedulers.Items {
-		asgs = append(asgs, e.Spec.ASGTarget, e.Spec.ASGFallback)
+	for _, scheduler := range schedulers.Items {
+		asgs = append(asgs, scheduler.Spec.ASGTarget, scheduler.Spec.ASGFallback)
 	}
 
 	// Give ASG names to supervisor.
@@ -81,7 +78,7 @@ func (r *SupervisionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	return ctrl.Result{}, nil
 }
 
-// SetupWithManager instantiates and returns the SupervisionReconciler controller.
+// SetupWithManager sets up the controller with the Manager.
 func (r *SupervisionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.Instance{}).

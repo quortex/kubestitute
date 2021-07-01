@@ -1,5 +1,5 @@
 /*
-
+Copyright 2021.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,58 +30,57 @@ const (
 
 // SchedulerSpec defines the desired state of Scheduler
 type SchedulerSpec struct {
-
 	// The Scheduler Trigger
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum:={"ClusterAutoscaler"}
+	//+kubebuilder:validation:Required
+	//+kubebuilder:validation:Enum:={"ClusterAutoscaler"}
 	Trigger SchedulerTrigger `json:"trigger,omitempty"`
 
 	// The name of the autoscaling group, which the scheduler will use to
 	// apply the rules.
-	// +kubebuilder:validation:Required
+	//+kubebuilder:validation:Required
 	ASGTarget string `json:"autoscalingGroupTarget"`
 
 	// The name of the autoscaling group, in which the scheduler will trigger
 	// fallback instances.
 	// This autoscaling group must not be managed by the cluster-autoscaler !!!
-	// +kubebuilder:validation:Required
+	//+kubebuilder:validation:Required
 	ASGFallback string `json:"autoscalingGroupFallback"`
 
 	// Scheduler rules used to match criteria on Target ASG to trigger Scale Up
 	// on Fallback ASG.
-	// +kubebuilder:validation:Optional
+	//+kubebuilder:validation:Optional
 	ScaleUpRules ScaleUpRules `json:"scaleUpRules"`
 
 	// Scheduler rules used to match criteria on Target ASG to trigger Scale Down
 	// on Fallback ASG.
-	// +kubebuilder:validation:Optional
+	//+kubebuilder:validation:Optional
 	ScaleDownRules ScaleDownRules `json:"scaleDownRules"`
 }
 
 // ScaleDownRules configures the scaling behavior for Instance scale downs.
 type ScaleDownRules struct {
 	// A cooldown for consecutive scale down operations.
-	// +kubebuilder:validation:Optional
+	//+kubebuilder:validation:Optional
 	StabilizationWindowSeconds int32 `json:"stabilizationWindowSeconds"`
 
 	// Policies is a list of potential scaling polices which can be evaluated for scaling decisions.
 	// At least one policy must be specified.
 	// Instances will be scaled down one by one.
-	// +kubebuilder:validation:Required
+	//+kubebuilder:validation:Required
 	Policies []SchedulerPolicy `json:"policies,omitempty"`
 }
 
 // ScaleUpRules configures the scaling behavior for Instance scale ups.
 type ScaleUpRules struct {
 	// A cooldown for consecutive scale up operations.
-	// +kubebuilder:validation:Optional
+	//+kubebuilder:validation:Optional
 	StabilizationWindowSeconds int32 `json:"stabilizationWindowSeconds"`
 
 	// Policies is a list of potential scaling polices which can be evaluated for scaling decisions.
 	// At least one policy must be specified.
 	// For scale ups the matching policy which triggers the highest number of replicas
 	// will be used.
-	// +kubebuilder:validation:Required
+	//+kubebuilder:validation:Required
 	Policies []AdvancedSchedulerPolicy `json:"policies,omitempty"`
 }
 
@@ -89,21 +88,21 @@ type ScaleUpRules struct {
 type SchedulerPolicy struct {
 	// LeftOperand is the left operand of the comparison. It could be the target ASG Health field from
 	// which this policy is applied or an integer.
-	// +kubebuilder:validation:Required
+	//+kubebuilder:validation:Required
 	LeftOperand IntOrField `json:"leftOperand"`
 
 	// A comparison operator used to apply policy between From and To.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum:={"equal","notEqual","greaterThan","greaterThanOrEqual","lowerThan","lowerThanOrEqual"}
+	//+kubebuilder:validation:Required
+	//+kubebuilder:validation:Enum:={"equal","notEqual","greaterThan","greaterThanOrEqual","lowerThan","lowerThanOrEqual"}
 	Operator ComparisonOperator `json:"operator"`
 
 	// RightOperand is the left operand of the comparison. It could be the target ASG Health field from
 	// which this policy is applied or an integer.
-	// +kubebuilder:validation:Required
+	//+kubebuilder:validation:Required
 	RightOperand IntOrField `json:"rightOperand"`
 
 	// PeriodSeconds specifies the window of time for which the policy should hold true.
-	// +kubebuilder:validation:Optional
+	//+kubebuilder:validation:Optional
 	PeriodSeconds int32 `json:"periodSeconds"`
 }
 
@@ -112,19 +111,19 @@ type AdvancedSchedulerPolicy struct {
 	SchedulerPolicy `json:",inline"`
 
 	// Replicas specify the replicas to Scale.
-	// +kubebuilder:validation:Required
+	//+kubebuilder:validation:Required
 	Replicas IntOrArithmeticOperation `json:"replicas"`
 }
 
 // IntOrField is a type that can hold an int32 or a Field.
 type IntOrField struct {
 	// An Int for value.
-	// +kubebuilder:validation:Optional
+	//+kubebuilder:validation:Optional
 	IntVal int32 `json:"int,omitempty"`
 
 	// An Field for value.
-	// +kubebuilder:validation:Enum:={"Ready","Unready","NotStarted","LongNotStarted","Registered","LongUnregistered","CloudProviderTarget"}
-	// +kubebuilder:validation:Optional
+	//+kubebuilder:validation:Enum:={"Ready","Unready","NotStarted","LongNotStarted","Registered","LongUnregistered","CloudProviderTarget"}
+	//+kubebuilder:validation:Optional
 	FieldVal *Field `json:"field,omitempty"`
 }
 
@@ -132,11 +131,11 @@ type IntOrField struct {
 // an arithmetic operation.
 type IntOrArithmeticOperation struct {
 	// An Int for value.
-	// +kubebuilder:validation:Optional
+	//+kubebuilder:validation:Optional
 	IntVal int32 `json:"int,omitempty"`
 
 	// An arithmetic operation..
-	// +kubebuilder:validation:Optional
+	//+kubebuilder:validation:Optional
 	OperationVal *ArithmeticOperation `json:"operation,omitempty"`
 }
 
@@ -182,16 +181,16 @@ const (
 // ArithmeticOperation describes an arithmetic operation.
 type ArithmeticOperation struct {
 	// LeftOperand is the left operand of the operation.
-	// +kubebuilder:validation:Required
+	//+kubebuilder:validation:Required
 	LeftOperand IntOrField `json:"leftOperand"`
 
 	// An arithmetic operator used to apply policy between From and To.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum:={"plus","minus","multiply","divide"}
+	//+kubebuilder:validation:Required
+	//+kubebuilder:validation:Enum:={"plus","minus","multiply","divide"}
 	Operator ArithmeticOperator `json:"operator"`
 
 	// RightOperand is the right operand of the operation.
-	// +kubebuilder:validation:Required
+	//+kubebuilder:validation:Required
 	RightOperand IntOrField `json:"rightOperand"`
 }
 
@@ -199,11 +198,13 @@ type ArithmeticOperation struct {
 type SchedulerStatus struct {
 	// The last time this scheduler has perform a scale up.
 	LastScaleUp *metav1.Time `json:"lastScaleUp,omitempty"`
+
 	// The last time this scheduler has perform a scale down.
 	LastScaleDown *metav1.Time `json:"lastScaleDown,omitempty"`
 }
 
-// +kubebuilder:object:root=true
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
 
 // Scheduler is the Schema for the schedulers API
 type Scheduler struct {
@@ -214,7 +215,7 @@ type Scheduler struct {
 	Status SchedulerStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:object:root=true
+//+kubebuilder:object:root=true
 
 // SchedulerList contains a list of Scheduler
 type SchedulerList struct {

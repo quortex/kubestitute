@@ -8,6 +8,7 @@ manager:
     namespace: kube-system
     # -- The Cluster Autoscaler status configmap name.
     name: cluster-autoscaler-status
+
   logs:
     # -- Logs verbosity:
     #
@@ -32,6 +33,29 @@ manager:
     tag: 0.2.0
     # -- Kubestitute manager image pull policy.
     pullPolicy: IfNotPresent
+
+  livenessProbe:
+    httpGet:
+      # -- Path of the manager liveness probe.
+      path: /healthz
+      # -- Name or number of the manager liveness probe port.
+      port: 8081
+    # -- Number of seconds before the manager liveness probe is initiated.
+    initialDelaySeconds: 15
+    # -- How often (in seconds) to perform the manager liveness probe.
+    periodSeconds: 20
+
+  readinessProbe:
+    httpGet:
+      # -- Path of the manager readiness probe.
+      path: /readyz
+      # -- Name or number of the manager readiness probe port.
+      port: 8081
+    # -- Number of seconds before the manager readiness probe is initiated.
+    initialDelaySeconds: 5
+    # -- How often (in seconds) to perform the manager readiness probe.
+    periodSeconds: 10
+
   # -- Kubestitute manager container required resources.
   resources: {}
 
@@ -60,7 +84,7 @@ kubeRBACProxy:
     # -- kube-rbac-proxy image repository.
     repository: gcr.io/kubebuilder/kube-rbac-proxy
     # -- kube-rbac-proxy image tag.
-    tag: v0.5.0
+    tag: v0.8.0
     # -- kube-rbac-proxy image pull policy.
     pullPolicy: IfNotPresent
   # --  kube-rbac-proxy container required resources.
@@ -68,6 +92,10 @@ kubeRBACProxy:
 
 # -- Number of desired pods.
 replicaCount: 1
+
+# -- Security contexts to set for all containers of the pod.
+securityContext: {}
+  # runAsNonRoot: true
 
 # --  A list of secrets used to pull containers images.
 imagePullSecrets: []
