@@ -49,7 +49,7 @@ spec:
           {{- if not $.Values.kubeRBACProxy.enabled }}
           ports:
             - containerPort: 8080
-              name: metrics
+              name: http-metrics
           {{- end }}
           livenessProbe:
             {{- toYaml .livenessProbe | nindent 12 }}
@@ -80,9 +80,6 @@ spec:
                   key: awsSecretKey
                   name: {{ .secret }}
           imagePullPolicy: {{ .image.pullPolicy }}
-          ports:
-            - containerPort: 8008
-              name: http
           resources:
             {{- toYaml .resources | nindent 12 }}
           volumeMounts:
@@ -103,7 +100,7 @@ spec:
           imagePullPolicy: {{ .image.pullPolicy }}
           ports:
             - containerPort: 8443
-              name: https
+              name: https-metrics
           resources:
             {{- toYaml .resources | nindent 12 }}
         {{- end }}

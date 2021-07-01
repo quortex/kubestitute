@@ -105,7 +105,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | kubeRBACProxy.image.pullPolicy | string | `"IfNotPresent"` | kube-rbac-proxy image pull policy. |
 | kubeRBACProxy.resources | object | `{}` | kube-rbac-proxy container required resources. |
 | replicaCount | int | `1` | Number of desired pods. |
-| securityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. |
+| securityContext | object | `{}` | Security contexts to set for all containers of the pod. |
 | imagePullSecrets | list | `[]` | A list of secrets used to pull containers images. |
 | nameOverride | string | `""` | Helm's name computing override. |
 | fullnameOverride | string | `""` | Helm's fullname computing override. |
