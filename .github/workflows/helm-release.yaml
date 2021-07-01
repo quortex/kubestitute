@@ -20,19 +20,17 @@ jobs:
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
       # Install Helm.
       - name: Install Helm
-        uses: azure/setup-helm@v1.1
+        uses: azure/setup-helm@v1
         with:
           version: v3.4.0
 
       # Run chart-releaser action (https://github.com/helm/chart-releaser-action).
       - name: Run chart-releaser
-        # charts discovery is broken in v1.1.0 so we keep v1.0.0 atm
         uses: helm/chart-releaser-action@v1.2.1
         with:
-          charts_dir: ./helm
+          charts_dir: helm
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           CR_RELEASE_NAME_TEMPLATE: "{{ .Name }}-chart-{{ .Version }}"
