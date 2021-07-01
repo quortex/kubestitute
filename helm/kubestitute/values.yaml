@@ -123,3 +123,17 @@ tolerations: []
 
 # --  Affinity for Kubestitute pod assignment.
 affinity: {}
+
+serviceMonitor:
+  # -- Create a prometheus operator ServiceMonitor.
+  enabled: false
+  # -- Labels added to the ServiceMonitor.
+  additionalLabels: {}
+  # -- Annotations added to the ServiceMonitor.
+  annotations: {}
+  # -- Override prometheus operator scrapping interval.
+  interval: ""
+  # -- Override prometheus operator scrapping timeout.
+  scrapeTimeout: ""
+  # -- Relabellings to apply to samples before scraping.
+  relabelings: []

@@ -55,9 +55,13 @@ docs: crd-ref-docs ## Generate documentation from api definitions.
 	$(CRD_REF_DOCS) --source-path=api --output-path=docs/api-docs.asciidoc\
 		--renderer=asciidoctor --config=hack/doc-generation/config.yaml --templates-dir=hack/doc-generation/templates/asciidoctor
 
-charts: kustomize ## Generate helm chart crds, rbac from kustomize files and doc from helm values.
-	@$(KUSTOMIZE) build config/crd | sed 's/<tpl \(.*\) tpl>/\1/' > ./helm/kubestitute/crds/crds.yaml
-	@$(KUSTOMIZE) build config/helm | sed 's/<tpl \(.*\) tpl>/\1/' > ./helm/kubestitute/templates/rbac.yaml
+charts: yq kustomize ## Generate helm chart crds, rbac from kustomize files and doc from helm values.
+	@TMPFILE=$$(mktemp) && \
+	${YQ} -y '.metadata.name = ("PREFIX-" + .metadata.name)' config/rbac/role.yaml | \
+		sed "s/PREFIX/{{ include \"kubestitute.fullname\" . }}/" > helm/kubestitute/templates/manager_role.yaml && \
+	${KUSTOMIZE} build config/default/ > $${TMPFILE} && \
+	${YQ} -y 'select(.kind=="CustomResourceDefinition")' $${TMPFILE} > helm/kubestitute/crds/crds.yaml && \
+	rm -rf $${TMPFILE}
 	@docker run --rm --volume "$$(pwd)/helm/kubestitute:/helm-docs" jnorwood/helm-docs:latest -s file
 
 fmt: ## Run go fmt against code.
@@ -101,6 +105,11 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/default | kubectl delete -f -
 
+yq: ## Download yq if necessary.
+ifeq (, $(shell which yq))
+	@pip3 install yq
+endif
+YQ=$(shell which yq)
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 controller-gen: ## Download controller-gen locally if necessary.

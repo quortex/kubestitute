@@ -105,7 +105,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | kubeRBACProxy.image.pullPolicy | string | `"IfNotPresent"` | kube-rbac-proxy image pull policy. |
 | kubeRBACProxy.resources | object | `{}` | kube-rbac-proxy container required resources. |
 | replicaCount | int | `1` | Number of desired pods. |
-| securityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. |
+| securityContext | object | `{}` | Security contexts to set for all containers of the pod. |
 | imagePullSecrets | list | `[]` | A list of secrets used to pull containers images. |
 | nameOverride | string | `""` | Helm's name computing override. |
 | fullnameOverride | string | `""` | Helm's fullname computing override. |
@@ -115,6 +115,12 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | nodeSelector | object | `{}` | Node labels for Kubestitute pod assignment. |
 | tolerations | list | `[]` | Node tolerations for Kubestitute scheduling to nodes with taints. |
 | affinity | object | `{}` | Affinity for Kubestitute pod assignment. |
+| serviceMonitor.enabled | bool | `false` | Create a prometheus operator ServiceMonitor. |
+| serviceMonitor.additionalLabels | object | `{}` | Labels added to the ServiceMonitor. |
+| serviceMonitor.annotations | object | `{}` | Annotations added to the ServiceMonitor. |
+| serviceMonitor.interval | string | `""` | Override prometheus operator scrapping interval. |
+| serviceMonitor.scrapeTimeout | string | `"30s"` | Override prometheus operator scrapping timeout. |
+| serviceMonitor.relabelings | list | `[]` | Relabellings to apply to samples before scraping. |
 
 ## Maintainers
 
