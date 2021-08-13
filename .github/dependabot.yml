@@ -3,7 +3,6 @@ updates:
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
-    target-branch: "develop"
     schedule:
       interval: "weekly"
     reviewers:
@@ -13,7 +12,6 @@ updates:
   # Maintain dependencies for go modules
   - package-ecosystem: "gomod"
     directory: "/"
-    target-branch: "develop"
     schedule:
       interval: "weekly"
     reviewers:
@@ -23,7 +21,6 @@ updates:
   # Enable version updates for Docker
   - package-ecosystem: "docker"
     directory: "/"
-    target-branch: "develop"
     schedule:
       interval: "weekly"
     reviewers:
