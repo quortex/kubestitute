@@ -30,7 +30,7 @@ manager:
     # -- Kubestitute manager image repository.
     repository: quortexio/kubestitute
     # -- Kubestitute manager image tag.
-    tag: 1.0.0-rc.1
+    tag: 1.0.0
     # -- Kubestitute manager image pull policy.
     pullPolicy: IfNotPresent
 
