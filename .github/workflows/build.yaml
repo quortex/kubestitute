@@ -20,10 +20,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      # Render generated code
-      - name: Generate code
-        run: go generate ./...
-
       # This step uses action-hub docker action: https://github.com/actions-hub/docker
       - name: Login to docker hub
         if: success()

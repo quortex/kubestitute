@@ -13,10 +13,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      # Render generated code
-      - name: Generate code
-        run: go generate ./...
-
       # Instead of using our own CI, we uses https://golangci-lint.run/
       # It combines 48 linters and execute them in parallel
       - name: golangci-lint
@@ -38,10 +34,6 @@ jobs:
       # This step uses Github's checkout-action: https://github.com/actions/checkout
       - name: Check out code
         uses: actions/checkout@v2
-
-      # Render generated code
-      - name: Generate code
-        run: go generate ./...
 
       # Execute tests
       - name: Execute tests
