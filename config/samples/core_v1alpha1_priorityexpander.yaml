@@ -1,7 +1,8 @@
 apiVersion: core.kubestitute.quortex.io/v1alpha1
 kind: PriorityExpander
 metadata:
-  name: priorityexpander-sample
+  name: priority-expander-default
+  namespace: kubestitute-system
 spec:
   # Add fields here
   template: |

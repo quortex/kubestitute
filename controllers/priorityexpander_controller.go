@@ -45,6 +45,8 @@ type PriorityExpanderReconcilerConfiguration struct {
 	ClusterAutoscalerStatusNamespace string
 	ClusterAutoscalerStatusName      string
 	ClusterAutoscalerPEConfigMapName string
+	PriorityExpanderNamespace        string
+	PriorityExpanderName             string
 }
 
 type PriorityExpanderReconciler struct {
@@ -83,6 +85,12 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 
 		return ctrl.Result{}, err
+	}
+
+	// Skip if PriorityExpander object is not the one and only allowed.
+	if pexp.ObjectMeta.Name != r.Configuration.PriorityExpanderNamespace ||
+		pexp.ObjectMeta.Namespace != r.Configuration.PriorityExpanderName {
+		return ctrl.Result{}, nil
 	}
 
 	// Fetch clusterautoscaler status configmap.
@@ -182,28 +190,14 @@ func (r *PriorityExpanderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(
 			&source.Kind{Type: &kcore_v1.ConfigMap{}},
 			handler.EnqueueRequestsFromMapFunc(func(_ client.Object) []reconcile.Request {
-				ctx := context.Background()
-				log := ctrllog.Log.WithName("priorityexpander")
-
-				// List PriorityExpanders, even though there should be only one.
-				pexp := &corev1alpha1.PriorityExpanderList{}
-				if err := r.List(ctx, pexp); err != nil {
-					log.Error(err, "Unable to list PriorityExpanders")
-					return []reconcile.Request{}
-				}
-
-				// We reconcile all Priority Expander.
-				res := make([]reconcile.Request, len(pexp.Items))
-				for i, e := range pexp.Items {
-					res[i] = reconcile.Request{
+				return []reconcile.Request{
+					{
 						NamespacedName: types.NamespacedName{
-							Namespace: e.Namespace,
-							Name:      e.Name,
+							Namespace: r.Configuration.PriorityExpanderNamespace,
+							Name:      r.Configuration.PriorityExpanderName,
 						},
-					}
+					},
 				}
-
-				return res
 			}),
 			r.clusterAutoscalerStatusConfigmapPredicates(),
 		).

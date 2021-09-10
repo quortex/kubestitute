@@ -59,6 +59,9 @@ func main() {
 	var clusterAutoscalerStatusNamespace string
 	var clusterAutoscalerStatusName string
 	var clusterAutoscalerPEConfigMapName string
+	var priorityExpanderNamespace string
+	var priorityExpanderName string
+
 	var asgPollInterval int
 	var evictionGlobalTimeout int
 
@@ -73,6 +76,9 @@ func main() {
 	flag.StringVar(&clusterAutoscalerStatusNamespace, "clusterautoscaler-status-namespace", "kube-system", "The namespace the clusterautoscaler status configmap belongs to.")
 	flag.StringVar(&clusterAutoscalerStatusName, "clusterautoscaler-status-name", "cluster-autoscaler-status", "The name of the clusterautoscaler status configmap.")
 	flag.StringVar(&clusterAutoscalerPEConfigMapName, "cluster-autoscaler-priority-expander-config-map", "cluster-autoscaler-priority-expander", "The name of the clusterautoscaler priority expander config map.")
+	flag.StringVar(&priorityExpanderNamespace, "priority-expander-namespace", "kubestitute-system", "The namespace the _unique_ priority expander object belongs to.")
+	flag.StringVar(&priorityExpanderName, "priority-expander-name", "priority-expander-default", "The only accepted name for the priority expander object.")
+
 	flag.IntVar(&asgPollInterval, "asg-poll-interval", 30, "AutoScaling Groups polling interval (used to generate custom metrics about ASGs).")
 	flag.IntVar(&evictionGlobalTimeout, "eviction-timeout", 300, "The timeout in seconds for pods eviction on Instance deletion.")
 	flag.Parse()
@@ -135,6 +141,8 @@ func main() {
 			ClusterAutoscalerStatusNamespace: clusterAutoscalerStatusNamespace,
 			ClusterAutoscalerStatusName:      clusterAutoscalerStatusName,
 			ClusterAutoscalerPEConfigMapName: clusterAutoscalerPEConfigMapName,
+			PriorityExpanderNamespace:        priorityExpanderNamespace,
+			PriorityExpanderName:             priorityExpanderName,
 		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PriorityExpander")
