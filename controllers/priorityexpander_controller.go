@@ -47,10 +47,6 @@ type PriorityExpanderReconciler struct {
 	Scheme        *runtime.Scheme
 }
 
-type PriorityExpanderConfigMap struct {
-	ready, unready, notStarted, longNotStarted, registered, longUnregistered, cloudProviderTarget, minSize, maxSize int32
-}
-
 //+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=priorityexpanders,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=priorityexpanders/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=priorityexpanders/finalizers,verbs=update
