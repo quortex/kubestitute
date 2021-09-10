@@ -22,6 +22,8 @@ import (
 
 // PriorityExpanderSpec defines the desired state of PriorityExpander
 type PriorityExpanderSpec struct {
+	// The Go template to parse, which will generate the priority expander
+	// config map for cluster autoscaler to use.
 	//+kubebuilder:validation:Required
 	Template string `json:"template"`
 }
