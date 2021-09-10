@@ -28,8 +28,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
 	"quortex.io/kubestitute/utils/clusterautoscaler"
@@ -97,7 +103,7 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Get human readable status from configmap...
 	readableStatus, ok := cm.Data["status"]
 	if !ok {
-		err := fmt.Errorf("Invalid configmap: no status")
+		err := fmt.Errorf("invalid configmap: no status")
 		log.Error(
 			err,
 			"unable to parse ClusterAutoscaler status",
@@ -177,5 +183,58 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 func (r *PriorityExpanderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.PriorityExpander{}).
+		Watches(
+			&source.Kind{Type: &kcore_v1.ConfigMap{}},
+			handler.EnqueueRequestsFromMapFunc(func(_ client.Object) []reconcile.Request {
+				ctx := context.Background()
+				log := ctrllog.Log.WithName("priorityexpander")
+
+				// List PriorityExpanders, even though there should be only one.
+				pexp := &corev1alpha1.PriorityExpanderList{}
+				if err := r.List(ctx, pexp); err != nil {
+					log.Error(err, "Unable to list PriorityExpanders")
+					return []reconcile.Request{}
+				}
+
+				// We reconcile all Priority Expander.
+				res := make([]reconcile.Request, len(pexp.Items))
+				for i, e := range pexp.Items {
+					res[i] = reconcile.Request{
+						NamespacedName: types.NamespacedName{
+							Namespace: e.Namespace,
+							Name:      e.Name,
+						},
+					}
+				}
+
+				return res
+			}),
+			r.clusterAutoscalerStatusConfigmapPredicates(),
+		).
 		Complete(r)
+}
+
+// reconciliationPredicates returns predicates for the controller reconciliation configuration.
+func (r *PriorityExpanderReconciler) clusterAutoscalerStatusConfigmapPredicates() builder.Predicates {
+	builder.WithPredicates()
+	return builder.WithPredicates(predicate.Funcs{
+		CreateFunc: func(e event.CreateEvent) bool {
+			return r.shouldReconcileConfigmap(e.Object.(*kcore_v1.ConfigMap))
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return r.shouldReconcileConfigmap(e.Object.(*kcore_v1.ConfigMap))
+		},
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return r.shouldReconcileConfigmap(e.ObjectNew.(*kcore_v1.ConfigMap)) || r.shouldReconcileConfigmap(e.ObjectOld.(*kcore_v1.ConfigMap))
+		},
+	})
+}
+
+// shouldReconcileConfigmap returns if given ConfigMap is the clusterautoscaler status
+// Configmap and should be reconciled by the controller.
+func (r *PriorityExpanderReconciler) shouldReconcileConfigmap(obj *kcore_v1.ConfigMap) bool {
+	// We should only consider reconciliation for clusterautoscaler status
+	// configmap.
+	return obj.Namespace == r.Configuration.ClusterAutoscalerStatusNamespace &&
+		obj.Name == r.Configuration.ClusterAutoscalerStatusName
 }
