@@ -1,0 +1,11 @@
+apiVersion: core.kubestitute.quortex.io/v1alpha1
+kind: PriorityExpander
+metadata:
+  name: priorityexpander-sample
+spec:
+  # Add fields here
+  template: |
+    5:
+      - "*"
+    80:
+      - { gt (.dp-ci-dev-eu-west-1_ainodes-fix-group.CloudProviderTarget / 3) (.dp-ci-dev-eu-west-1_units-spot-group.CloudProviderTarget / 7) | ternary asgSpot1 asgSpot2 }

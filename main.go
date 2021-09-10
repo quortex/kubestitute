@@ -58,6 +58,7 @@ func main() {
 
 	var clusterAutoscalerStatusNamespace string
 	var clusterAutoscalerStatusName string
+	var clusterAutoscalerPEConfigMapName string
 	var asgPollInterval int
 	var evictionGlobalTimeout int
 
@@ -71,6 +72,7 @@ func main() {
 
 	flag.StringVar(&clusterAutoscalerStatusNamespace, "clusterautoscaler-status-namespace", "kube-system", "The namespace the clusterautoscaler status configmap belongs to.")
 	flag.StringVar(&clusterAutoscalerStatusName, "clusterautoscaler-status-name", "cluster-autoscaler-status", "The name of the clusterautoscaler status configmap.")
+	flag.StringVar(&clusterAutoscalerPEConfigMapName, "cluster-autoscaler-priority-expander-config-map", "cluster-autoscaler-priority-expander", "The name of the clusterautoscaler priority expander config map.")
 	flag.IntVar(&asgPollInterval, "asg-poll-interval", 30, "AutoScaling Groups polling interval (used to generate custom metrics about ASGs).")
 	flag.IntVar(&evictionGlobalTimeout, "eviction-timeout", 300, "The timeout in seconds for pods eviction on Instance deletion.")
 	flag.Parse()
@@ -124,6 +126,18 @@ func main() {
 		Supervisor: supervisor.New(time.Second*time.Duration(asgPollInterval), ctrl.Log.WithName("supervisor")),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Supervision")
+		os.Exit(1)
+	}
+	if err = (&controllers.PriorityExpanderReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+		Configuration: controllers.PriorityExpanderReconcilerConfiguration{
+			ClusterAutoscalerStatusNamespace: clusterAutoscalerStatusNamespace,
+			ClusterAutoscalerStatusName:      clusterAutoscalerStatusName,
+			ClusterAutoscalerPEConfigMapName: clusterAutoscalerPEConfigMapName,
+		},
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PriorityExpander")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
