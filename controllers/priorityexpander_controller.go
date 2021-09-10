@@ -151,10 +151,6 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// parsed content: fmt.Println(buf.String())
 	// Create the new ConfigMap object
 	pecm := kcore_v1.ConfigMap{
-		TypeMeta: kmeta_v1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
 		ObjectMeta: kmeta_v1.ObjectMeta{
 			Name:      r.Configuration.ClusterAutoscalerPEConfigMapName,
 			Namespace: r.Configuration.ClusterAutoscalerStatusNamespace,
