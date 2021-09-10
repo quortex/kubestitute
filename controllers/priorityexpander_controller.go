@@ -110,7 +110,6 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	status := clusterautoscaler.ParseReadableString(readableStatus)
 
 	var oroot = map[string]map[string]int32{}
-
 	for _, node := range status.NodeGroups {
 		oroot[node.Name] = make(map[string]int32)
 		oroot[node.Name]["CloudProviderTarget"] = node.Health.CloudProviderTarget
@@ -122,14 +121,22 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		oroot[node.Name]["LongUnregistered"] = node.Health.LongUnregistered
 		oroot[node.Name]["MinSize"] = node.Health.MinSize
 		oroot[node.Name]["MaxSize"] = node.Health.MaxSize
-
 	}
 
-	// Create new PriorityExpander template and parse it
-	t := template.Must(template.New("template").Parse(pexp.Spec.Template))
-	buf := new(bytes.Buffer)
-	_ = t.Execute(buf, status)
+	//Create new PriorityExpander template and parse it
+	t, err := template.New("template").Parse(pexp.Spec.Template)
+	if err != nil {
+		log.Error(
+			err,
+			"Error parsing PriorityExpander template. Check your syntax and/or rtfm.",
+		)
+		return ctrl.Result{}, err
+	}
 
+	buf := new(bytes.Buffer)
+	t.Execute(buf, oroot)
+
+	// parsed content: fmt.Println(buf.String())
 	// Create the new ConfigMap object
 	pecm := kcore_v1.ConfigMap{
 		TypeMeta: kmeta_v1.TypeMeta{
