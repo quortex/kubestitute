@@ -134,7 +134,13 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	buf := new(bytes.Buffer)
-	t.Execute(buf, oroot)
+	if err := t.Execute(buf, oroot); err != nil {
+		log.Error(
+			err,
+			"Error parsing generating template output.",
+		)
+		return ctrl.Result{}, err
+	}
 
 	// parsed content: fmt.Println(buf.String())
 	// Create the new ConfigMap object
