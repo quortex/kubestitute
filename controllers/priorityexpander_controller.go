@@ -67,7 +67,7 @@ type PriorityExpanderReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := ctrllog.FromContext(ctx, "pexp", req.NamespacedName, "reconciliationID", uuid.New().String())
+	log := ctrllog.FromContext(ctx, "priorityexpander", req.NamespacedName, "reconciliationID", uuid.New().String())
 
 	log.V(1).Info("PriorityExpander reconciliation started")
 	defer log.V(1).Info("PriorityExpander reconciliation done")
