@@ -19,17 +19,23 @@ package controllers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"text/template"
+
+	"github.com/Masterminds/sprig"
+	"github.com/go-logr/logr"
 
 	"github.com/google/uuid"
 	kcore_v1 "k8s.io/api/core/v1"
 	kmeta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -88,8 +94,8 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Skip if PriorityExpander object is not the one and only allowed.
-	if pexp.ObjectMeta.Name != r.Configuration.PriorityExpanderNamespace ||
-		pexp.ObjectMeta.Namespace != r.Configuration.PriorityExpanderName {
+	if pexp.ObjectMeta.Name != r.Configuration.PriorityExpanderName ||
+		pexp.ObjectMeta.Namespace != r.Configuration.PriorityExpanderNamespace {
 		return ctrl.Result{}, nil
 	}
 
@@ -111,13 +117,14 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Get human readable status from configmap...
 	readableStatus, ok := cm.Data["status"]
 	if !ok {
-		err := fmt.Errorf("invalid configmap: no status")
+		err := fmt.Errorf("invalid autoscaler status configmap")
 		log.Error(
 			err,
 			"unable to parse ClusterAutoscaler status",
 			"namespace", r.Configuration.ClusterAutoscalerStatusNamespace,
 			"name", r.Configuration.ClusterAutoscalerStatusName,
 		)
+		return ctrl.Result{}, err
 	}
 
 	// ... and parse it.
@@ -137,14 +144,14 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		oroot[node.Name]["MaxSize"] = node.Health.MaxSize
 	}
 
-	//Create new PriorityExpander template and parse it
-	t, err := template.New("template").Parse(pexp.Spec.Template)
+	// Create new PriorityExpander template and parse it
+	t, err := template.New("template").Funcs(sprig.TxtFuncMap()).Parse(pexp.Spec.Template)
 	if err != nil {
 		log.Error(
 			err,
 			"Error parsing PriorityExpander template. Check your syntax and/or rtfm.",
 		)
-		return ctrl.Result{}, err
+		return r.endReconciliation(ctx, log, pexp, controllerutil.OperationResultNone, err)
 	}
 
 	buf := new(bytes.Buffer)
@@ -153,7 +160,7 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			err,
 			"Error parsing generating template output.",
 		)
-		return ctrl.Result{}, err
+		return r.endReconciliation(ctx, log, pexp, controllerutil.OperationResultNone, err)
 	}
 
 	// parsed content: fmt.Println(buf.String())
@@ -163,20 +170,73 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			Name:      r.Configuration.ClusterAutoscalerPEConfigMapName,
 			Namespace: r.Configuration.ClusterAutoscalerStatusNamespace,
 		},
-		Data: map[string]string{
-			"priorities": buf.String(),
-		},
 	}
 
-	// Update it inplace. The ConfigMap _must_ exist.
-	if err := r.Update(ctx, &pecm); err != nil {
+	op, err := ctrl.CreateOrUpdate(ctx, r.Client, &pecm, func() error {
+
+		pecm.Data = map[string]string{
+			"priorities": buf.String(),
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		log.Error(
 			err,
-			"Unable to update ClusterAutoscaler priority expander configmap",
+			"Unable to reconcile ClusterAutoscaler priority expander configmap",
 			"namespace", r.Configuration.ClusterAutoscalerStatusNamespace,
 			"name", r.Configuration.ClusterAutoscalerStatusName,
 		)
+		return r.endReconciliation(ctx, log, pexp, op, err)
+	} else {
+		log.Info("ConfigMap successfully reconciled", "operation", op)
+	}
 
+	return r.endReconciliation(ctx, log, pexp, op, nil)
+}
+
+func (r *PriorityExpanderReconciler) endReconciliation(
+	ctx context.Context,
+	log logr.Logger,
+	pexp corev1alpha1.PriorityExpander,
+	op controllerutil.OperationResult,
+	error error,
+) (ctrl.Result, error) {
+	// Marshal priority expander, ...
+	old, err := json.Marshal(pexp)
+	if err != nil {
+		log.Error(err, "Failed to marshal priority expander")
+		return ctrl.Result{}, err
+	}
+
+	// Then compute new pexp to marshal it...
+	if error != nil {
+		pexp.Status.State = "failed"
+	} else if string(op) == "unchanged" {
+		pexp.Status.State = "successful"
+	} else {
+		now := kmeta_v1.Now()
+		pexp.Status.LastSuccessfulUpdate = &now
+		pexp.Status.State = "successful"
+	}
+
+	new, err := json.Marshal(pexp)
+	if err != nil {
+		log.Error(err, "Failed to marshal new priority expander")
+		return ctrl.Result{}, err
+	}
+
+	// ... and create a patch.
+	patch, err := strategicpatch.CreateTwoWayMergePatch(old, new, pexp)
+	if err != nil {
+		log.Error(err, "Failed to create patch for priority expander status")
+		return ctrl.Result{}, err
+	}
+
+	// Apply patch to set scheduler's wanted status.
+	if err = r.Status().Patch(ctx, &pexp, client.RawPatch(types.MergePatchType, patch)); err != nil {
+		log.Error(err, "Failed to update priority expander status")
 		return ctrl.Result{}, err
 	}
 

@@ -30,8 +30,11 @@ type PriorityExpanderSpec struct {
 
 // PriorityExpanderStatus defines the observed state of PriorityExpander
 type PriorityExpanderStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// The last time the prioriry exchanger was updated.
+	LastSuccessfulUpdate *metav1.Time `json:"lastSuccessfulUpdate,omitempty"`
+
+	// State of last update.
+	State string `json:"state,omitempty"`
 }
 
 //+kubebuilder:object:root=true
