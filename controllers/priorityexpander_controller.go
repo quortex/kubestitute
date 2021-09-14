@@ -44,6 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
+	"quortex.io/kubestitute/metrics"
 	"quortex.io/kubestitute/utils/clusterautoscaler"
 )
 
@@ -211,14 +212,19 @@ func (r *PriorityExpanderReconciler) endReconciliation(
 	}
 
 	// Then compute new pexp to marshal it...
+	// update LastSuccessfulUpdate only if ConfigMap is actually modified.
 	if error != nil {
+		// Set to 1 if template error.
+		metrics.PriorityExpanderTemplateError.Set(1)
 		pexp.Status.State = "failed"
 	} else if string(op) == "unchanged" {
 		pexp.Status.State = "successful"
+		metrics.PriorityExpanderTemplateError.Set(0)
 	} else {
 		now := kmeta_v1.Now()
 		pexp.Status.LastSuccessfulUpdate = &now
 		pexp.Status.State = "successful"
+		metrics.PriorityExpanderTemplateError.Set(0)
 	}
 
 	new, err := json.Marshal(pexp)
