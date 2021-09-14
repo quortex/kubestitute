@@ -3,9 +3,7 @@ module quortex.io/kubestitute
 go 1.16
 
 require (
-	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver v1.5.0 // indirect
-	github.com/Masterminds/sprig v2.22.0+incompatible
+	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/go-logr/logr v0.3.0
 	github.com/go-openapi/analysis v0.20.1 // indirect

@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/Masterminds/sprig"
+	"github.com/Masterminds/sprig/v3"
 	"github.com/go-logr/logr"
 
 	"github.com/google/uuid"
