@@ -8,6 +8,7 @@
 .Packages
 * xref:{anchor_prefix}-core-kubestitute-quortex-io-v1alpha1[$$core.kubestitute.quortex.io/v1alpha1$$]
 ** xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-instance[$$Instance$$]
+** xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-priorityexpander[$$PriorityExpander$$]
 ** xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scheduler[$$Scheduler$$]
 
 
@@ -19,6 +20,7 @@ Package v1alpha1 contains API Schema definitions for the core v1alpha1 API group
 
 .Resource Types
 - xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-instance[$$Instance$$]
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-priorityexpander[$$PriorityExpander$$]
 - xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scheduler[$$Scheduler$$]
 
 
@@ -26,7 +28,7 @@ Package v1alpha1 contains API Schema definitions for the core v1alpha1 API group
 [id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-advancedschedulerpolicy"]
 === AdvancedSchedulerPolicy
 
-
+AdvancedSchedulerPolicy is a policy that allow arithmetic operation to compute replicas.
 
 .Appears In:
 ****
@@ -44,7 +46,7 @@ Package v1alpha1 contains API Schema definitions for the core v1alpha1 API group
 [id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-arithmeticoperation"]
 === ArithmeticOperation
 
-
+ArithmeticOperation describes an arithmetic operation.
 
 .Appears In:
 ****
@@ -55,7 +57,7 @@ Package v1alpha1 contains API Schema definitions for the core v1alpha1 API group
 |===
 | Field | Description
 | *`leftOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | LeftOperand is the left operand of the operation.
-| *`operator`* __ArithmeticOperator__ | An arithmetic operator used to apply policy between From and To.
+| *`operator`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-arithmeticoperator[$$ArithmeticOperator$$]__ | An arithmetic operator used to apply policy between From and To.
 | *`rightOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | RightOperand is the right operand of the operation.
 |===
 
@@ -63,7 +65,7 @@ Package v1alpha1 contains API Schema definitions for the core v1alpha1 API group
 [id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-arithmeticoperator"]
 === ArithmeticOperator(string)
 
-
+ArithmeticOperator describes arithmetic operators
 
 .Appears In:
 ****
@@ -75,7 +77,7 @@ Package v1alpha1 contains API Schema definitions for the core v1alpha1 API group
 [id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-comparisonoperator"]
 === ComparisonOperator(string)
 
-
+ComparisonOperator describes comparison operators
 
 .Appears In:
 ****
@@ -85,9 +87,9 @@ Package v1alpha1 contains API Schema definitions for the core v1alpha1 API group
 
 
 [id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-field"]
-=== Field
+=== Field(string)
 
-
+Field describes a SchedulerPolicy Field. It is based on ASG health status.
 
 .Appears In:
 ****
@@ -165,7 +167,42 @@ IntOrField is a type that can hold an int32 or a Field.
 |===
 | Field | Description
 | *`int`* __integer__ | An Int for value.
-| *`field`* __Field__ | An Field for value.
+| *`field`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-field[$$Field$$]__ | An Field for value.
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-priorityexpander"]
+=== PriorityExpander
+
+PriorityExpander is the Schema for the priorityexpanders API
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `core.kubestitute.quortex.io/v1alpha1`
+| *`kind`* __string__ | `PriorityExpander`
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-priorityexpanderspec[$$PriorityExpanderSpec$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-priorityexpanderspec"]
+=== PriorityExpanderSpec
+
+PriorityExpanderSpec defines the desired state of PriorityExpander
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-priorityexpander[$$PriorityExpander$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`template`* __string__ | The Go template to parse, which will generate the priority expander config map for cluster autoscaler to use.
 |===
 
 
@@ -238,7 +275,7 @@ SchedulerPolicy is a single policy which must hold true for a specified past int
 |===
 | Field | Description
 | *`leftOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | LeftOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
-| *`operator`* __ComparisonOperator__ | A comparison operator used to apply policy between From and To.
+| *`operator`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-comparisonoperator[$$ComparisonOperator$$]__ | A comparison operator used to apply policy between From and To.
 | *`rightOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | RightOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
 | *`periodSeconds`* __integer__ | PeriodSeconds specifies the window of time for which the policy should hold true.
 |===
