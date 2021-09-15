@@ -7,9 +7,7 @@ spec:
   # Add fields here
   template: |
     5:
-      - "*"
-    10:
-      - {{index . "dp-ci-dev-eu-west-1_ainodes-fix-group" "CloudProviderTarget"}}
+      - *
     80: {{if (gt (index . "dp-ci-dev-eu-west-1_ainodes-fix-group" "CloudProviderTarget") (index . "dp-ci-dev-eu-west-1_units-spot-group" "CloudProviderTarget"))}}
       - dp-ci-dev-eu-west-1_ainodes-fix-group
         {{else}}
