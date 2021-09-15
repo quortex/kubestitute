@@ -45,7 +45,7 @@ import (
 )
 
 type PriorityExpanderReconcilerConfiguration struct {
-	ClusterAutoscalerNamespace string
+	ClusterAutoscalerNamespace       string
 	ClusterAutoscalerStatusName      string
 	ClusterAutoscalerPEConfigMapName string
 	PriorityExpanderNamespace        string
@@ -100,13 +100,13 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Fetch clusterautoscaler status configmap.
 	var cm kcore_v1.ConfigMap
 	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: r.Configuration.ClusterAutoscalerStatusNamespace,
+		Namespace: r.Configuration.ClusterAutoscalerNamespace,
 		Name:      r.Configuration.ClusterAutoscalerStatusName,
 	}, &cm); err != nil {
 		log.Error(
 			err,
 			"Unable to fetch ClusterAutoscaler status configmap",
-			"namespace", r.Configuration.ClusterAutoscalerStatusNamespace,
+			"namespace", r.Configuration.ClusterAutoscalerNamespace,
 			"name", r.Configuration.ClusterAutoscalerStatusName,
 		)
 
@@ -119,7 +119,7 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		log.Error(
 			err,
 			"unable to parse ClusterAutoscaler status",
-			"namespace", r.Configuration.ClusterAutoscalerStatusNamespace,
+			"namespace", r.Configuration.ClusterAutoscalerNamespace,
 			"name", r.Configuration.ClusterAutoscalerStatusName,
 		)
 		return ctrl.Result{}, err
@@ -165,7 +165,7 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	pecm := kcore_v1.ConfigMap{
 		ObjectMeta: kmeta_v1.ObjectMeta{
 			Name:      r.Configuration.ClusterAutoscalerPEConfigMapName,
-			Namespace: r.Configuration.ClusterAutoscalerStatusNamespace,
+			Namespace: r.Configuration.ClusterAutoscalerNamespace,
 		},
 	}
 
@@ -182,7 +182,7 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		log.Error(
 			err,
 			"Unable to reconcile ClusterAutoscaler priority expander configmap",
-			"namespace", r.Configuration.ClusterAutoscalerStatusNamespace,
+			"namespace", r.Configuration.ClusterAutoscalerNamespace,
 			"name", r.Configuration.ClusterAutoscalerPEConfigMapName,
 		)
 		return r.endReconciliation(ctx, pexp, op, err)
@@ -259,6 +259,6 @@ func (r *PriorityExpanderReconciler) clusterAutoscalerStatusConfigmapPredicates(
 func (r *PriorityExpanderReconciler) shouldReconcileConfigmap(obj *kcore_v1.ConfigMap) bool {
 	// We should only consider reconciliation for clusterautoscaler status
 	// configmap.
-	return obj.Namespace == r.Configuration.ClusterAutoscalerStatusNamespace &&
+	return obj.Namespace == r.Configuration.ClusterAutoscalerNamespace &&
 		obj.Name == r.Configuration.ClusterAutoscalerStatusName
 }

@@ -56,7 +56,7 @@ func main() {
 	var enableDevLogs bool
 	var logVerbosity int
 
-	var clusterAutoscalerStatusNamespace string
+	var clusterAutoscalerNamespace string
 	var clusterAutoscalerStatusName string
 	var clusterAutoscalerPEConfigMapName string
 	var priorityExpanderNamespace string
@@ -119,8 +119,8 @@ func main() {
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 		Configuration: controllers.SchedulerReconcilerConfiguration{
-			ClusterAutoscalerStatusNamespace: clusterAutoscalerStatusNamespace,
-			ClusterAutoscalerStatusName:      clusterAutoscalerStatusName,
+			ClusterAutoscalerNamespace:  clusterAutoscalerNamespace,
+			ClusterAutoscalerStatusName: clusterAutoscalerStatusName,
 		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Scheduler")
@@ -138,7 +138,7 @@ func main() {
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 		Configuration: controllers.PriorityExpanderReconcilerConfiguration{
-			ClusterAutoscalerStatusNamespace: clusterAutoscalerStatusNamespace,
+			ClusterAutoscalerNamespace:       clusterAutoscalerNamespace,
 			ClusterAutoscalerStatusName:      clusterAutoscalerStatusName,
 			ClusterAutoscalerPEConfigMapName: clusterAutoscalerPEConfigMapName,
 			PriorityExpanderNamespace:        priorityExpanderNamespace,
