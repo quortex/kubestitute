@@ -19,19 +19,16 @@ package controllers
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/go-logr/logr"
 
 	"github.com/google/uuid"
 	kcore_v1 "k8s.io/api/core/v1"
 	kmeta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -65,6 +62,7 @@ type PriorityExpanderReconciler struct {
 //+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=priorityexpanders,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=priorityexpanders/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=priorityexpanders/finalizers,verbs=update
+//+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -152,7 +150,7 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			err,
 			"Error parsing PriorityExpander template. Check your syntax and/or rtfm.",
 		)
-		return r.endReconciliation(ctx, log, pexp, controllerutil.OperationResultNone, err)
+		return r.endReconciliation(ctx, pexp, controllerutil.OperationResultNone, err)
 	}
 
 	buf := new(bytes.Buffer)
@@ -161,7 +159,7 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			err,
 			"Error parsing generating template output.",
 		)
-		return r.endReconciliation(ctx, log, pexp, controllerutil.OperationResultNone, err)
+		return r.endReconciliation(ctx, pexp, controllerutil.OperationResultNone, err)
 	}
 
 	// parsed content: fmt.Println(buf.String())
@@ -189,29 +187,20 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			"namespace", r.Configuration.ClusterAutoscalerStatusNamespace,
 			"name", r.Configuration.ClusterAutoscalerPEConfigMapName,
 		)
-		return r.endReconciliation(ctx, log, pexp, op, err)
+		return r.endReconciliation(ctx, pexp, op, err)
 	} else {
 		log.Info("ConfigMap successfully reconciled", "operation", op)
 	}
 
-	return r.endReconciliation(ctx, log, pexp, op, nil)
+	return r.endReconciliation(ctx, pexp, op, nil)
 }
 
 func (r *PriorityExpanderReconciler) endReconciliation(
 	ctx context.Context,
-	log logr.Logger,
 	pexp corev1alpha1.PriorityExpander,
 	op controllerutil.OperationResult,
 	error error,
 ) (ctrl.Result, error) {
-	// Marshal priority expander, ...
-	old, err := json.Marshal(pexp)
-	if err != nil {
-		log.Error(err, "Failed to marshal priority expander")
-		return ctrl.Result{}, err
-	}
-
-	// Then compute new pexp to marshal it...
 	// update LastSuccessfulUpdate only if ConfigMap is actually modified.
 	if error != nil {
 		// Set to 1 if template error.
@@ -227,26 +216,7 @@ func (r *PriorityExpanderReconciler) endReconciliation(
 		metrics.PriorityExpanderTemplateError.Set(0)
 	}
 
-	new, err := json.Marshal(pexp)
-	if err != nil {
-		log.Error(err, "Failed to marshal new priority expander")
-		return ctrl.Result{}, err
-	}
-
-	// ... and create a patch.
-	patch, err := strategicpatch.CreateTwoWayMergePatch(old, new, pexp)
-	if err != nil {
-		log.Error(err, "Failed to create patch for priority expander status")
-		return ctrl.Result{}, err
-	}
-
-	// Apply patch to set scheduler's wanted status.
-	if err = r.Status().Patch(ctx, &pexp, client.RawPatch(types.MergePatchType, patch)); err != nil {
-		log.Error(err, "Failed to update priority expander status")
-		return ctrl.Result{}, err
-	}
-
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, r.Status().Update(ctx, &pexp)
 }
 
 // SetupWithManager sets up the controller with the Manager.
