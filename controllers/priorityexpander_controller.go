@@ -187,7 +187,7 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			err,
 			"Unable to reconcile ClusterAutoscaler priority expander configmap",
 			"namespace", r.Configuration.ClusterAutoscalerStatusNamespace,
-			"name", r.Configuration.ClusterAutoscalerStatusName,
+			"name", r.Configuration.ClusterAutoscalerPEConfigMapName,
 		)
 		return r.endReconciliation(ctx, log, pexp, op, err)
 	} else {
