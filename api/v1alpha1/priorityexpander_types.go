@@ -33,8 +33,8 @@ type PriorityExpanderState string
 
 // All defined PriorityExpanderState
 const (
-	PriorityExpanderStateSuccess PriorityExpanderState = "successful"
-	PriorityExpanderStateFailure PriorityExpanderState = "failed"
+	PriorityExpanderStateSuccess PriorityExpanderState = "Successful"
+	PriorityExpanderStateFailure PriorityExpanderState = "Failed"
 )
 
 // PriorityExpanderStatus defines the observed state of PriorityExpander
