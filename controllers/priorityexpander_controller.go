@@ -161,7 +161,6 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return r.endReconciliation(ctx, pexp, controllerutil.OperationResultNone, err)
 	}
 
-	// parsed content: fmt.Println(buf.String())
 	// Create the new ConfigMap object
 	pecm := kcore_v1.ConfigMap{
 		ObjectMeta: kmeta_v1.ObjectMeta{
