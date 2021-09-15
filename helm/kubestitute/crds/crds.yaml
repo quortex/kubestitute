@@ -106,6 +106,9 @@ spec:
         - jsonPath: .status.state
           name: Status
           type: string
+        - jsonPath: .status.configMapPath
+          name: ConfigMapPath
+          type: string
       name: v1alpha1
       schema:
         openAPIV3Schema:
@@ -137,6 +140,10 @@ spec:
             status:
               description: PriorityExpanderStatus defines the observed state of PriorityExpander
               properties:
+                configMapPath:
+                  description: namespace/configmapname of the created priorityexpander
+                    ConfigMap
+                  type: string
                 lastSuccessfulUpdate:
                   description: The last time the prioriry exchanger was updated.
                   format: date-time
