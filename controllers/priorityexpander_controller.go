@@ -45,7 +45,7 @@ import (
 )
 
 type PriorityExpanderReconcilerConfiguration struct {
-	ClusterAutoscalerStatusNamespace string
+	ClusterAutoscalerNamespace string
 	ClusterAutoscalerStatusName      string
 	ClusterAutoscalerPEConfigMapName string
 	PriorityExpanderNamespace        string
