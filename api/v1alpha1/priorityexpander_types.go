@@ -44,11 +44,15 @@ type PriorityExpanderStatus struct {
 
 	// State of last update.
 	State PriorityExpanderState `json:"state,omitempty"`
+
+	// namespace/configmapname of the created priorityexpander ConfigMap
+	ConfigMapPath string `json:"configMapPath,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.state`
+//+kubebuilder:printcolumn:name="ConfigMapPath",type=string,JSONPath=`.status.configMapPath`
 
 // PriorityExpander is the Schema for the priorityexpanders API
 type PriorityExpander struct {

@@ -214,6 +214,8 @@ func (r *PriorityExpanderReconciler) endReconciliation(
 		metrics.PriorityExpanderTemplateError.Set(0)
 	}
 
+	pexp.Status.ConfigMapPath = r.Configuration.ClusterAutoscalerNamespace + "/" + r.Configuration.ClusterAutoscalerPEConfigMapName
+
 	return ctrl.Result{}, r.Status().Update(ctx, &pexp)
 }
 
