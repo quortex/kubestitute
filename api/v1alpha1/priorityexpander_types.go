@@ -28,13 +28,22 @@ type PriorityExpanderSpec struct {
 	Template string `json:"template"`
 }
 
+// PriorityExpanderState describes the PriorityExpander state.
+type PriorityExpanderState string
+
+// All defined PriorityExpanderState
+const (
+	PriorityExpanderStateSuccess PriorityExpanderState = "successful"
+	PriorityExpanderStateFailure PriorityExpanderState = "failed"
+)
+
 // PriorityExpanderStatus defines the observed state of PriorityExpander
 type PriorityExpanderStatus struct {
 	// The last time the prioriry exchanger was updated.
 	LastSuccessfulUpdate *metav1.Time `json:"lastSuccessfulUpdate,omitempty"`
 
 	// State of last update.
-	State string `json:"state,omitempty"`
+	State PriorityExpanderState `json:"state,omitempty"`
 }
 
 //+kubebuilder:object:root=true

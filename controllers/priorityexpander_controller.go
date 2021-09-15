@@ -205,14 +205,14 @@ func (r *PriorityExpanderReconciler) endReconciliation(
 	if error != nil {
 		// Set to 1 if template error.
 		metrics.PriorityExpanderTemplateError.Set(1)
-		pexp.Status.State = "failed"
-	} else if string(op) == "unchanged" {
-		pexp.Status.State = "successful"
+		pexp.Status.State = corev1alpha1.PriorityExpanderStateFailure
+	} else if op == controllerutil.OperationResultNone {
+		pexp.Status.State = corev1alpha1.PriorityExpanderStateSuccess
 		metrics.PriorityExpanderTemplateError.Set(0)
 	} else {
 		now := kmeta_v1.Now()
 		pexp.Status.LastSuccessfulUpdate = &now
-		pexp.Status.State = "successful"
+		pexp.Status.State = corev1alpha1.PriorityExpanderStateSuccess
 		metrics.PriorityExpanderTemplateError.Set(0)
 	}
 
