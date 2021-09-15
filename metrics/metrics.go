@@ -104,5 +104,6 @@ func init() {
 		AutoscalingGroupCapacity,
 		AutoscalingGroupMinSize,
 		AutoscalingGroupMaxSize,
+		PriorityExpanderTemplateError,
 	)
 }
