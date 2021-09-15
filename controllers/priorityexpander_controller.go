@@ -23,7 +23,6 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
-
 	"github.com/google/uuid"
 	kcore_v1 "k8s.io/api/core/v1"
 	kmeta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
