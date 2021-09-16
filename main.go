@@ -61,6 +61,7 @@ func main() {
 	var clusterAutoscalerPEConfigMapName string
 	var priorityExpanderNamespace string
 	var priorityExpanderName string
+	var priorityExpanderEnabled bool
 
 	var asgPollInterval int
 	var evictionGlobalTimeout int
@@ -78,6 +79,7 @@ func main() {
 	flag.StringVar(&clusterAutoscalerPEConfigMapName, "cluster-autoscaler-priority-expander-config-map", "cluster-autoscaler-priority-expander", "The name of the clusterautoscaler priority expander config map.")
 	flag.StringVar(&priorityExpanderNamespace, "priority-expander-namespace", "kubestitute-system", "The namespace the _unique_ priority expander object belongs to.")
 	flag.StringVar(&priorityExpanderName, "priority-expander-name", "priority-expander-default", "The only accepted name for the priority expander object.")
+	flag.BoolVar(&priorityExpanderEnabled, "priority-expander-enabled", false, "Is the controller is enabled.")
 
 	flag.IntVar(&asgPollInterval, "asg-poll-interval", 30, "AutoScaling Groups polling interval (used to generate custom metrics about ASGs).")
 	flag.IntVar(&evictionGlobalTimeout, "eviction-timeout", 300, "The timeout in seconds for pods eviction on Instance deletion.")
@@ -134,19 +136,21 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Supervision")
 		os.Exit(1)
 	}
-	if err = (&controllers.PriorityExpanderReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-		Configuration: controllers.PriorityExpanderReconcilerConfiguration{
-			ClusterAutoscalerNamespace:       clusterAutoscalerNamespace,
-			ClusterAutoscalerStatusName:      clusterAutoscalerStatusName,
-			ClusterAutoscalerPEConfigMapName: clusterAutoscalerPEConfigMapName,
-			PriorityExpanderNamespace:        priorityExpanderNamespace,
-			PriorityExpanderName:             priorityExpanderName,
-		},
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "PriorityExpander")
-		os.Exit(1)
+	if priorityExpanderEnabled {
+		if err = (&controllers.PriorityExpanderReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+			Configuration: controllers.PriorityExpanderReconcilerConfiguration{
+				ClusterAutoscalerNamespace:       clusterAutoscalerNamespace,
+				ClusterAutoscalerStatusName:      clusterAutoscalerStatusName,
+				ClusterAutoscalerPEConfigMapName: clusterAutoscalerPEConfigMapName,
+				PriorityExpanderNamespace:        priorityExpanderNamespace,
+				PriorityExpanderName:             priorityExpanderName,
+			},
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "PriorityExpander")
+			os.Exit(1)
+		}
 	}
 	//+kubebuilder:scaffold:builder
 

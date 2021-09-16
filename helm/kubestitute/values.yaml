@@ -9,6 +9,16 @@ manager:
     # -- The Cluster Autoscaler status configmap name.
     name: cluster-autoscaler-status
 
+  priorityExpander:
+    enabled: false
+    # -- All the following values should not be modified.
+    # -- Name of the Priority Expander object.
+    name: priority-expander-default
+    # -- Namespace of the Priority Expander object.
+    namespace: kubestitute-system
+    # -- This name should not be changed. This is the exact name cluster autoscaler is looking for.
+    clusterAutoscalerConfigMap: cluster-autoscaler-priority-expander
+
   logs:
     # -- Logs verbosity:
     #

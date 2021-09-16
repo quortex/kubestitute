@@ -40,8 +40,14 @@ spec:
             - --health-probe-bind-address=0.0.0.0:8081
             - --metrics-bind-address={{ ternary "127.0.0.1:8080" "0.0.0.0:8080" $.Values.kubeRBACProxy.enabled }}
             - --leader-elect
-            - --clusterautoscaler-status-namespace={{ .clusterAutoscaler.namespace }}
+            - --clusterautoscaler-namespace={{ .clusterAutoscaler.namespace }}
             - --clusterautoscaler-status-name={{ .clusterAutoscaler.name }}
+            {{- if .priorityExpander.enabled }}
+            - --priority-expander-namespace={{ .priorityExpander.namespace }}
+            - --priority-expander-name={{ .priorityExpander.name }}
+            - --priority-expander-enabled
+            - --cluster-autoscaler-priority-expander-config-map={{ .priorityExpander.clusterAutoscalerConfigMap }}
+            {{- end }}
             - --dev={{ .logs.enableDevLogs }}
             - --v={{ .logs.verbosity }}
             - --asg-poll-interval={{ .asgPollInterval }}
