@@ -53,8 +53,8 @@ const (
 
 // SchedulerReconcilerConfiguration wraps configuration for the SchedulerReconciler.
 type SchedulerReconcilerConfiguration struct {
-	ClusterAutoscalerStatusNamespace string
-	ClusterAutoscalerStatusName      string
+	ClusterAutoscalerNamespace  string
+	ClusterAutoscalerStatusName string
 }
 
 // SchedulerReconciler reconciles a Scheduler object
@@ -108,13 +108,13 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// Fetch clusterautoscaler status configmap.
 	var cm kcore_v1.ConfigMap
 	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: r.Configuration.ClusterAutoscalerStatusNamespace,
+		Namespace: r.Configuration.ClusterAutoscalerNamespace,
 		Name:      r.Configuration.ClusterAutoscalerStatusName,
 	}, &cm); err != nil {
 		log.Error(
 			err,
 			"Unable to fetch ClusterAutoscaler status configmap",
-			"namespace", r.Configuration.ClusterAutoscalerStatusNamespace,
+			"namespace", r.Configuration.ClusterAutoscalerNamespace,
 			"name", r.Configuration.ClusterAutoscalerStatusName,
 		)
 
@@ -128,7 +128,7 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		log.Error(
 			err,
 			"unable to parse ClusterAutoscaler status",
-			"namespace", r.Configuration.ClusterAutoscalerStatusNamespace,
+			"namespace", r.Configuration.ClusterAutoscalerNamespace,
 			"name", r.Configuration.ClusterAutoscalerStatusName,
 		)
 	}
@@ -573,6 +573,6 @@ func (r *SchedulerReconciler) clusterAutoscalerStatusConfigmapPredicates() build
 func (r *SchedulerReconciler) shouldReconcileConfigmap(obj *kcore_v1.ConfigMap) bool {
 	// We should only consider reconciliation for clusterautoscaler status
 	// configmap.
-	return obj.Namespace == r.Configuration.ClusterAutoscalerStatusNamespace &&
+	return obj.Namespace == r.Configuration.ClusterAutoscalerNamespace &&
 		obj.Name == r.Configuration.ClusterAutoscalerStatusName
 }

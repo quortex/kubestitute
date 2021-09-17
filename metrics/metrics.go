@@ -85,6 +85,13 @@ var (
 			"autoscaling_group_name",
 		},
 	)
+	PriorityExpanderTemplateError = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "priority_expander_template_error",
+			Help:      "Is 1 if template is unparsable.",
+		},
+	)
 )
 
 func init() {
@@ -97,5 +104,6 @@ func init() {
 		AutoscalingGroupCapacity,
 		AutoscalingGroupMinSize,
 		AutoscalingGroupMaxSize,
+		PriorityExpanderTemplateError,
 	)
 }

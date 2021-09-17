@@ -22,4 +22,13 @@ resources:
   kind: Scheduler
   path: quortex.io/kubestitute/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kubestitute.quortex.io
+  group: core
+  kind: PriorityExpander
+  path: quortex.io/kubestitute/api/v1alpha1
+  version: v1alpha1
 version: "3"

@@ -26,8 +26,10 @@ rules:
   resources:
   - configmaps
   verbs:
+  - create
   - get
   - list
+  - update
   - watch
 - apiGroups:
   - ""
@@ -75,6 +77,32 @@ rules:
   - core.kubestitute.quortex.io
   resources:
   - instances/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - core.kubestitute.quortex.io
+  resources:
+  - priorityexpanders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - core.kubestitute.quortex.io
+  resources:
+  - priorityexpanders/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - core.kubestitute.quortex.io
+  resources:
+  - priorityexpanders/status
   verbs:
   - get
   - patch
