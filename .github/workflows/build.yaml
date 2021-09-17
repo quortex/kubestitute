@@ -6,8 +6,7 @@ on:
   push:
     # Sequence of patterns matched against refs/heads
     branches:
-      - develop
-      - master
+      - fix/action_build
     tags:
       - "*"
 
@@ -35,6 +34,11 @@ jobs:
         shell: bash
         env:
           IMG: quortexio/kubestitute:${IMAGE_TAG}
+
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 15
 
       # Push docker image to docker hub
       - name: Push docker image
