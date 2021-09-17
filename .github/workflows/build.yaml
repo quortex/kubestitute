@@ -39,11 +39,6 @@ jobs:
         env:
           IMG: quortexio/kubestitute:${IMAGE_TAG}
 
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 15
-
       # Push docker image to docker hub
       - name: Push docker image
         if: success()
