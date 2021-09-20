@@ -1,0 +1,11 @@
+{{- if .Values.manager.priorityExpander.enabled }}
+apiVersion: core.kubestitute.quortex.io/v1alpha1
+kind: PriorityExpander
+{{- with .Values.manager.priorityExpander }}
+metadata:
+  name: {{ .name }}
+  namespace: {{ .namespace }}
+spec:
+  template: {{ toYaml .template | indent 4 }}
+{{- end }}
+{{- end }}
