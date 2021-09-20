@@ -18,7 +18,7 @@ require (
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/onsi/ginkgo v1.16.4
-	github.com/onsi/gomega v1.15.0
+	github.com/onsi/gomega v1.16.0
 	github.com/prometheus/client_golang v1.11.0
 	go.mongodb.org/mongo-driver v1.7.2 // indirect
 	go.uber.org/zap v1.19.1
