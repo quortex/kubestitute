@@ -79,12 +79,13 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | manager.priorityExpander.name | string | `"priority-expander-default"` | All the following values should not be modified. -- Name of the Priority Expander object. |
 | manager.priorityExpander.namespace | string | `"kubestitute-system"` | Namespace of the Priority Expander object. |
 | manager.priorityExpander.clusterAutoscalerConfigMap | string | `"cluster-autoscaler-priority-expander"` | This name should not be changed. This is the exact name cluster autoscaler is looking for. |
+| manager.priorityExpander.template | string | `"5:\n - .*"` | Default template, no priorities. |
 | manager.logs.verbosity | int | `3` | Logs verbosity:  0 => panic  1 => error  2 => warning  3 => info  4 => debug |
 | manager.logs.enableDevLogs | bool | `false` |  |
 | manager.asgPollInterval | int | `30` | AutoScaling Groups polling interval (used to generate custom metrics about ASGs). |
 | manager.evictionTimeout | int | `300` | The timeout in seconds for pods eviction on Instance deletion. |
 | manager.image.repository | string | `"quortexio/kubestitute"` | Kubestitute manager image repository. |
-| manager.image.tag | string | `"1.0.0"` | Kubestitute manager image tag. |
+| manager.image.tag | string | `"1.1.0"` | Kubestitute manager image tag. |
 | manager.image.pullPolicy | string | `"IfNotPresent"` | Kubestitute manager image pull policy. |
 | manager.livenessProbe.httpGet.path | string | `"/healthz"` | Path of the manager liveness probe. |
 | manager.livenessProbe.httpGet.port | int | `8081` | Name or number of the manager liveness probe port. |

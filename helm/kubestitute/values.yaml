@@ -18,6 +18,10 @@ manager:
     namespace: kubestitute-system
     # -- This name should not be changed. This is the exact name cluster autoscaler is looking for.
     clusterAutoscalerConfigMap: cluster-autoscaler-priority-expander
+    # -- Default template, no priorities.
+    template: |-
+      5:
+       - .*
 
   logs:
     # -- Logs verbosity:
@@ -40,7 +44,7 @@ manager:
     # -- Kubestitute manager image repository.
     repository: quortexio/kubestitute
     # -- Kubestitute manager image tag.
-    tag: 1.0.0
+    tag: 1.1.0
     # -- Kubestitute manager image pull policy.
     pullPolicy: IfNotPresent
 
