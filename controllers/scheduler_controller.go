@@ -139,6 +139,7 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if targetStatus == nil {
 		err := fmt.Errorf("node group not in cluster autoscaler status: %s", scheduler.Spec.ASGTarget)
 		log.Error(err, "Invalid autoscalingGroupTarget", "autoscalingGroupTarget", scheduler.Spec.ASGTarget)
+		return ctrl.Result{}, err
 	}
 
 	// Get last ScaleUp policies that matched.
