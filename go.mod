@@ -17,7 +17,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
 	github.com/prometheus/client_golang v1.11.0
 	go.uber.org/zap v1.19.1
