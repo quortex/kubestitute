@@ -18,7 +18,7 @@ jobs:
     steps:
       # This step uses Github's checkout-action: https://github.com/actions/checkout
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # This step uses action-hub docker action: https://github.com/actions-hub/docker
       - name: Login to docker hub
