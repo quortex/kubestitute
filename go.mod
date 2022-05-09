@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
-	github.com/go-logr/logr v0.4.0
+	github.com/go-logr/logr v1.2.0
 	github.com/go-openapi/errors v0.20.1
 	github.com/go-openapi/runtime v0.21.0
 	github.com/go-openapi/strfmt v0.21.0
@@ -19,9 +19,8 @@ require (
 	github.com/onsi/gomega v1.18.0
 	github.com/prometheus/client_golang v1.11.0
 	go.uber.org/zap v1.19.1
-	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8 // indirect
-	k8s.io/api v0.22.3
-	k8s.io/apimachinery v0.22.3
+	k8s.io/api v0.24.0
+	k8s.io/apimachinery v0.24.0
 	k8s.io/client-go v0.22.3
 	sigs.k8s.io/controller-runtime v0.10.2
 )
