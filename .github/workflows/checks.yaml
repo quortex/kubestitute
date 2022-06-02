@@ -11,7 +11,7 @@ jobs:
     steps:
       # This step uses Github's checkout-action: https://github.com/actions/checkout
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # Instead of using our own CI, we uses https://golangci-lint.run/
       # It combines 48 linters and execute them in parallel
@@ -33,7 +33,7 @@ jobs:
 
       # This step uses Github's checkout-action: https://github.com/actions/checkout
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # Execute tests
       - name: Execute tests
@@ -48,7 +48,7 @@ jobs:
       # Upload artifacts
       - name: Upload artifacts
         if: github.event == 'pull_request'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage
           path: coverage.html
