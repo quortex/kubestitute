@@ -48,7 +48,7 @@ jobs:
       # Upload artifacts
       - name: Upload artifacts
         if: github.event == 'pull_request'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage
           path: coverage.html
