@@ -20,7 +20,7 @@ require (
 	github.com/prometheus/client_golang v1.12.2
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.24.0
-	k8s.io/apimachinery v0.24.0
+	k8s.io/apimachinery v0.24.1
 	k8s.io/client-go v0.24.0
 	sigs.k8s.io/controller-runtime v0.12.1
 )
