@@ -16,10 +16,9 @@ require (
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.18.0
+	github.com/onsi/gomega v1.19.0
 	github.com/prometheus/client_golang v1.12.2
 	go.uber.org/zap v1.19.1
-	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8 // indirect
 	k8s.io/api v0.22.3
 	k8s.io/apimachinery v0.22.3
 	k8s.io/client-go v0.22.3
