@@ -22,7 +22,7 @@ jobs:
       # This step uses action-hub docker action: https://github.com/actions-hub/docker
       - name: Login to docker hub
         if: success()
-        uses: actions-hub/docker/login@v1.0.2
+        uses: actions-hub/docker/login@v1.0.3
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
@@ -42,6 +42,6 @@ jobs:
       # Push docker image to docker hub
       - name: Push docker image
         if: success()
-        uses: actions-hub/docker@v1.0.2
+        uses: actions-hub/docker@v1.0.3
         with:
           args: push quortexio/kubestitute:${IMAGE_TAG}
