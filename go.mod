@@ -17,8 +17,8 @@ require (
 	github.com/onsi/gomega v1.20.2
 	github.com/prometheus/client_golang v1.13.0
 	go.uber.org/zap v1.23.0
-	k8s.io/api v0.24.3
-	k8s.io/apimachinery v0.24.3
+	k8s.io/api v0.25.3
+	k8s.io/apimachinery v0.25.3
 	k8s.io/client-go v0.24.3
 	sigs.k8s.io/controller-runtime v0.12.3
 )
