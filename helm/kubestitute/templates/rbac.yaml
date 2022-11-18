@@ -2,6 +2,10 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ include "kubestitute.fullname" . }}-controller-manager
+  {{- with .Values.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role

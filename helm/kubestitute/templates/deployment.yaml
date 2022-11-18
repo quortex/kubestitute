@@ -75,6 +75,7 @@ spec:
           env:
             - name: QX_CONFIGURATION_PATH
               value: /config/config.yaml
+            {{- if .secret }}
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -85,6 +86,7 @@ spec:
                 secretKeyRef:
                   key: awsSecretKey
                   name: {{ .secret }}
+            {{- end }}
           imagePullPolicy: {{ .image.pullPolicy }}
           resources:
             {{- toYaml .resources | nindent 12 }}
