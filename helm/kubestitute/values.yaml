@@ -76,8 +76,8 @@ manager:
 awsEC2Plugin:
   # -- Wether to enable AWS EC2 plugin.
   enabled: true
-  # -- A reference to a secret wit AWS credentials for AWS EC2 plugin.
-  secret: aws-ec2-plugin
+  # -- A reference to a secret with AWS credentials for AWS EC2 plugin.
+  secret: ""
   # -- The AWS region.
   region: ""
   # -- Tags for AWS EC2 plugin scope management.
@@ -122,6 +122,10 @@ fullnameOverride: ""
 
 # --  Annotations to be added to pods.
 podAnnotations: {}
+
+# -- serviceAccount setup
+serviceAccount:
+  annotations: {}
 
 # --  Annotations to be added to deployment.
 deploymentAnnotations: {}
