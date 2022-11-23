@@ -16,7 +16,7 @@ endif
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
-all: clients manifests build docs charts
+all: clients manifests build doc charts
 
 ##@ General
 
@@ -69,7 +69,7 @@ clients: ## Generates clients from swagger documentation.
 
 .PHONY: doc
 doc: crd-ref-docs ## Build api documentation.
-	$(CRD_REF_DOCS) --source-path=apis \
+	$(CRD_REF_DOCS) --source-path=api \
 					--renderer=asciidoctor \
 					--config=hack/doc-generation/config.yaml \
 					--templates-dir=hack/doc-generation/templates/asciidoctor \
