@@ -2,14 +2,13 @@
 package supervisor
 
 import (
-	"context"
+	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"github.com/go-logr/logr"
 
-	ec2adapter "quortex.io/kubestitute/clients/ec2adapter/client"
-	"quortex.io/kubestitute/clients/ec2adapter/client/operations"
-	"quortex.io/kubestitute/clients/ec2adapter/models"
 	"quortex.io/kubestitute/metrics"
 	"quortex.io/kubestitute/utils/helper"
 )
@@ -20,18 +19,15 @@ type Supervisor interface {
 }
 
 type supervisor struct {
-	asgs          map[string]struct{}
-	ec2adapterCli *ec2adapter.AwsEc2Adapter
+	asgs        map[string]struct{}
+	autoscaling *autoscaling.AutoScaling
 }
 
 // New returns a new Supervisor instances with given supervision interval.
-func New(interval time.Duration, log logr.Logger) Supervisor {
+func New(autoscaling *autoscaling.AutoScaling, interval time.Duration, log logr.Logger) Supervisor {
 	// Instantiate Supervisor with aws-ec2-adapter client requirements
 	sup := &supervisor{
-		ec2adapterCli: ec2adapter.NewHTTPClientWithConfig(nil, &ec2adapter.TransportConfig{
-			Host:    "localhost:8008",
-			Schemes: []string{"http"},
-		}),
+		autoscaling: autoscaling,
 	}
 
 	// Configure ticker to refresh ASGs metrics based on time interval.
@@ -58,39 +54,40 @@ func (s *supervisor) SetASGs(asgs []string) {
 
 // refreshMetrics refresh metrics for given asg name.
 func (s *supervisor) refreshMetrics(asgName string, log logr.Logger) {
-	ctx := context.Background()
 	// Retrieve AWS autoscaling group.
 	log.Info("ASG supervision start", "autoscalingGroup", asgName)
-	res, err := s.ec2adapterCli.Operations.GetAutoscalingGroup(&operations.GetAutoscalingGroupParams{
-		Context: ctx,
-		Name:    asgName,
+	res, err := s.autoscaling.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
+		AutoScalingGroupNames: []*string{&asgName},
 	})
+	if err == nil && len(res.AutoScalingGroups) == 0 {
+		err = fmt.Errorf("autoscaling group not found")
+	}
 	if err != nil {
 		log.Error(err, "Failed to get autoscaling group", "name", asgName)
 		return
 	}
-	asg := res.Payload
+	asg := res.AutoScalingGroups[0]
 
 	// Set ASG capacity metrics.
-	metrics.AutoscalingGroupDesiredCapacity.WithLabelValues(asgName).Set(float64(asg.DesiredCapacity))
-	metrics.AutoscalingGroupMinSize.WithLabelValues(asgName).Set(float64(asg.MinSize))
-	metrics.AutoscalingGroupMaxSize.WithLabelValues(asgName).Set(float64(asg.MaxSize))
+	metrics.AutoscalingGroupDesiredCapacity.WithLabelValues(asgName).Set(float64(aws.Int64Value(asg.DesiredCapacity)))
+	metrics.AutoscalingGroupMinSize.WithLabelValues(asgName).Set(float64(aws.Int64Value(asg.MinSize)))
+	metrics.AutoscalingGroupMaxSize.WithLabelValues(asgName).Set(float64(aws.Int64Value(asg.MaxSize)))
 	metrics.AutoscalingGroupCapacity.WithLabelValues(asgName).Set(float64(len(
 		filterInstancesWithLifecycleStates(
 			asg.Instances,
-			models.AutoscalingGroupInstanceLifecycleStatePending,
-			models.AutoscalingGroupInstanceLifecycleStatePendingWait,
-			models.AutoscalingGroupInstanceLifecycleStatePendingProceed,
-			models.AutoscalingGroupInstanceLifecycleStateInService,
+			autoscaling.LifecycleStatePending,
+			autoscaling.LifecycleStatePendingWait,
+			autoscaling.LifecycleStatePendingProceed,
+			autoscaling.LifecycleStateInService,
 		),
 	)))
 }
 
 // filterInstancesWithLifecycleStates returns a filtered slice of AutoscalingGroupInstance with given lifecycleStates.
-func filterInstancesWithLifecycleStates(inst []*models.AutoscalingGroupInstance, lifecycleStates ...string) []*models.AutoscalingGroupInstance {
-	res := []*models.AutoscalingGroupInstance{}
+func filterInstancesWithLifecycleStates(inst []*autoscaling.Instance, lifecycleStates ...string) []*autoscaling.Instance {
+	res := []*autoscaling.Instance{}
 	for _, e := range inst {
-		if helper.ContainsString(lifecycleStates, e.LifecycleState) {
+		if helper.ContainsString(lifecycleStates, aws.StringValue(e.LifecycleState)) {
 			res = append(res, e)
 		}
 	}

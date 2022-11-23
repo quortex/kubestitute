@@ -16,7 +16,7 @@ endif
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
-all: clients manifests build doc charts
+all: manifests build doc charts
 
 ##@ General
 
@@ -59,13 +59,6 @@ lint: golangci-lint ## Run the linter used in CI against code.
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
-
-.PHONY: clients
-clients: ## Generates clients from swagger documentation.
-	@t=$$(mktemp -d) && \
-		cd $${t} && git clone -b 1.1.0 git@github.com:quortex/aws-ec2-adapter.git && cd - && \
-		cp $${t}/aws-ec2-adapter/docs/swagger.yaml ./clients/ec2adapter && \
-		go generate ./...
 
 .PHONY: doc
 doc: crd-ref-docs ## Build api documentation.
