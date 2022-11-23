@@ -55,7 +55,8 @@ func NewGetAutoscalingGroupParamsWithHTTPClient(client *http.Client) *GetAutosca
 	}
 }
 
-/*GetAutoscalingGroupParams contains all the parameters to send to the API endpoint
+/*
+GetAutoscalingGroupParams contains all the parameters to send to the API endpoint
 for the get autoscaling group operation typically these are written to a http.Request
 */
 type GetAutoscalingGroupParams struct {

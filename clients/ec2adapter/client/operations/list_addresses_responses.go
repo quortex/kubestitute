@@ -64,7 +64,8 @@ func NewListAddressesOK() *ListAddressesOK {
 	return &ListAddressesOK{}
 }
 
-/*ListAddressesOK handles this case with default header values.
+/*
+ListAddressesOK handles this case with default header values.
 
 OK
 */
@@ -95,7 +96,8 @@ func NewListAddressesBadRequest() *ListAddressesBadRequest {
 	return &ListAddressesBadRequest{}
 }
 
-/*ListAddressesBadRequest handles this case with default header values.
+/*
+ListAddressesBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -128,7 +130,8 @@ func NewListAddressesForbidden() *ListAddressesForbidden {
 	return &ListAddressesForbidden{}
 }
 
-/*ListAddressesForbidden handles this case with default header values.
+/*
+ListAddressesForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -161,7 +164,8 @@ func NewListAddressesNotFound() *ListAddressesNotFound {
 	return &ListAddressesNotFound{}
 }
 
-/*ListAddressesNotFound handles this case with default header values.
+/*
+ListAddressesNotFound handles this case with default header values.
 
 Not Found
 */
@@ -194,7 +198,8 @@ func NewListAddressesInternalServerError() *ListAddressesInternalServerError {
 	return &ListAddressesInternalServerError{}
 }
 
-/*ListAddressesInternalServerError handles this case with default header values.
+/*
+ListAddressesInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

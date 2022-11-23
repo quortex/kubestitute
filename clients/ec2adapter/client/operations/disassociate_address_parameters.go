@@ -55,7 +55,8 @@ func NewDisassociateAddressParamsWithHTTPClient(client *http.Client) *Disassocia
 	}
 }
 
-/*DisassociateAddressParams contains all the parameters to send to the API endpoint
+/*
+DisassociateAddressParams contains all the parameters to send to the API endpoint
 for the disassociate address operation typically these are written to a http.Request
 */
 type DisassociateAddressParams struct {

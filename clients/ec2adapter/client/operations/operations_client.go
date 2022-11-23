@@ -79,9 +79,9 @@ type ClientService interface {
 }
 
 /*
-  AddSecurityGroup adds security group
+AddSecurityGroup adds security group
 
-  Add a SecurityGroup to an EC2 Instance.
+Add a SecurityGroup to an EC2 Instance.
 */
 func (a *Client) AddSecurityGroup(params *AddSecurityGroupParams) (*AddSecurityGroupCreated, error) {
 	// TODO: Validate the params before sending
@@ -115,9 +115,9 @@ func (a *Client) AddSecurityGroup(params *AddSecurityGroupParams) (*AddSecurityG
 }
 
 /*
-  AssociateAddress associates address
+AssociateAddress associates address
 
-  Associate an Elastic IP to an instance or network interface.
+Associate an Elastic IP to an instance or network interface.
 */
 func (a *Client) AssociateAddress(params *AssociateAddressParams) (*AssociateAddressCreated, error) {
 	// TODO: Validate the params before sending
@@ -151,9 +151,9 @@ func (a *Client) AssociateAddress(params *AssociateAddressParams) (*AssociateAdd
 }
 
 /*
-  AuthorizeSecurityGroupEgress creates egress permission
+AuthorizeSecurityGroupEgress creates egress permission
 
-  Add an Egress permission to a security group.
+Add an Egress permission to a security group.
 */
 func (a *Client) AuthorizeSecurityGroupEgress(params *AuthorizeSecurityGroupEgressParams) (*AuthorizeSecurityGroupEgressCreated, error) {
 	// TODO: Validate the params before sending
@@ -187,9 +187,9 @@ func (a *Client) AuthorizeSecurityGroupEgress(params *AuthorizeSecurityGroupEgre
 }
 
 /*
-  AuthorizeSecurityGroupIngress creates ingress permission
+AuthorizeSecurityGroupIngress creates ingress permission
 
-  Add an Ingress permission to a security group.
+Add an Ingress permission to a security group.
 */
 func (a *Client) AuthorizeSecurityGroupIngress(params *AuthorizeSecurityGroupIngressParams) (*AuthorizeSecurityGroupIngressCreated, error) {
 	// TODO: Validate the params before sending
@@ -223,9 +223,9 @@ func (a *Client) AuthorizeSecurityGroupIngress(params *AuthorizeSecurityGroupIng
 }
 
 /*
-  CreateAddress creates address
+CreateAddress creates address
 
-  Create an Elastic IP address.
+Create an Elastic IP address.
 */
 func (a *Client) CreateAddress(params *CreateAddressParams) (*CreateAddressCreated, error) {
 	// TODO: Validate the params before sending
@@ -259,9 +259,9 @@ func (a *Client) CreateAddress(params *CreateAddressParams) (*CreateAddressCreat
 }
 
 /*
-  CreateSecurityGroup creates security group
+CreateSecurityGroup creates security group
 
-  Create a SecurityGroup.
+Create a SecurityGroup.
 */
 func (a *Client) CreateSecurityGroup(params *CreateSecurityGroupParams) (*CreateSecurityGroupCreated, error) {
 	// TODO: Validate the params before sending
@@ -295,9 +295,9 @@ func (a *Client) CreateSecurityGroup(params *CreateSecurityGroupParams) (*Create
 }
 
 /*
-  DeleteAddress deletes address
+DeleteAddress deletes address
 
-  Delete an Elastic IP address by ID.
+Delete an Elastic IP address by ID.
 */
 func (a *Client) DeleteAddress(params *DeleteAddressParams) (*DeleteAddressNoContent, error) {
 	// TODO: Validate the params before sending
@@ -331,9 +331,9 @@ func (a *Client) DeleteAddress(params *DeleteAddressParams) (*DeleteAddressNoCon
 }
 
 /*
-  DeleteAddresses deletes addresses
+DeleteAddresses deletes addresses
 
-  Delete all Elastic IP addresses.
+Delete all Elastic IP addresses.
 */
 func (a *Client) DeleteAddresses(params *DeleteAddressesParams) (*DeleteAddressesNoContent, error) {
 	// TODO: Validate the params before sending
@@ -367,9 +367,9 @@ func (a *Client) DeleteAddresses(params *DeleteAddressesParams) (*DeleteAddresse
 }
 
 /*
-  DeleteSecurityGroup deletes security group
+DeleteSecurityGroup deletes security group
 
-  Delete a SecurityGroup by ID.
+Delete a SecurityGroup by ID.
 */
 func (a *Client) DeleteSecurityGroup(params *DeleteSecurityGroupParams) (*DeleteSecurityGroupNoContent, error) {
 	// TODO: Validate the params before sending
@@ -403,9 +403,9 @@ func (a *Client) DeleteSecurityGroup(params *DeleteSecurityGroupParams) (*Delete
 }
 
 /*
-  DeleteSecurityGroups deletes security groups
+DeleteSecurityGroups deletes security groups
 
-  Delete all SecurityGroups.
+Delete all SecurityGroups.
 */
 func (a *Client) DeleteSecurityGroups(params *DeleteSecurityGroupsParams) (*DeleteSecurityGroupsNoContent, error) {
 	// TODO: Validate the params before sending
@@ -439,9 +439,9 @@ func (a *Client) DeleteSecurityGroups(params *DeleteSecurityGroupsParams) (*Dele
 }
 
 /*
-  DetachAutoscalingGroupInstances detaches instance
+DetachAutoscalingGroupInstances detaches instance
 
-  Detach instances from an autoscaling group.
+Detach instances from an autoscaling group.
 */
 func (a *Client) DetachAutoscalingGroupInstances(params *DetachAutoscalingGroupInstancesParams) (*DetachAutoscalingGroupInstancesNoContent, error) {
 	// TODO: Validate the params before sending
@@ -475,9 +475,9 @@ func (a *Client) DetachAutoscalingGroupInstances(params *DetachAutoscalingGroupI
 }
 
 /*
-  DisassociateAddress disassociates address
+DisassociateAddress disassociates address
 
-  Disassociate an Elastic IP from an instance or network interface.
+Disassociate an Elastic IP from an instance or network interface.
 */
 func (a *Client) DisassociateAddress(params *DisassociateAddressParams) (*DisassociateAddressNoContent, error) {
 	// TODO: Validate the params before sending
@@ -511,9 +511,9 @@ func (a *Client) DisassociateAddress(params *DisassociateAddressParams) (*Disass
 }
 
 /*
-  GetAddress gets address
+GetAddress gets address
 
-  Get an Elastic IP address by ID.
+Get an Elastic IP address by ID.
 */
 func (a *Client) GetAddress(params *GetAddressParams) (*GetAddressOK, error) {
 	// TODO: Validate the params before sending
@@ -547,9 +547,9 @@ func (a *Client) GetAddress(params *GetAddressParams) (*GetAddressOK, error) {
 }
 
 /*
-  GetAutoscalingGroup gets autoscaling group by name
+GetAutoscalingGroup gets autoscaling group by name
 
-  Get an AutoscalingGroup by its name.
+Get an AutoscalingGroup by its name.
 */
 func (a *Client) GetAutoscalingGroup(params *GetAutoscalingGroupParams) (*GetAutoscalingGroupOK, error) {
 	// TODO: Validate the params before sending
@@ -583,9 +583,9 @@ func (a *Client) GetAutoscalingGroup(params *GetAutoscalingGroupParams) (*GetAut
 }
 
 /*
-  GetInstance gets e c2 instance
+GetInstance gets e c2 instance
 
-  Get an AWS EC2 Instance by its ID.
+Get an AWS EC2 Instance by its ID.
 */
 func (a *Client) GetInstance(params *GetInstanceParams) (*GetInstanceOK, error) {
 	// TODO: Validate the params before sending
@@ -619,9 +619,9 @@ func (a *Client) GetInstance(params *GetInstanceParams) (*GetInstanceOK, error) 
 }
 
 /*
-  GetSecurityGroup gets security group by ID
+GetSecurityGroup gets security group by ID
 
-  Get a SecurityGroup by its ID.
+Get a SecurityGroup by its ID.
 */
 func (a *Client) GetSecurityGroup(params *GetSecurityGroupParams) (*GetSecurityGroupOK, error) {
 	// TODO: Validate the params before sending
@@ -655,9 +655,9 @@ func (a *Client) GetSecurityGroup(params *GetSecurityGroupParams) (*GetSecurityG
 }
 
 /*
-  ListAddresses gets addresses
+ListAddresses gets addresses
 
-  Get all Elastic IP addresses.
+Get all Elastic IP addresses.
 */
 func (a *Client) ListAddresses(params *ListAddressesParams) (*ListAddressesOK, error) {
 	// TODO: Validate the params before sending
@@ -691,9 +691,9 @@ func (a *Client) ListAddresses(params *ListAddressesParams) (*ListAddressesOK, e
 }
 
 /*
-  ListSecurityGroups gets security groups
+ListSecurityGroups gets security groups
 
-  Get all Security Groups manage by this service.
+Get all Security Groups manage by this service.
 */
 func (a *Client) ListSecurityGroups(params *ListSecurityGroupsParams) (*ListSecurityGroupsOK, error) {
 	// TODO: Validate the params before sending
@@ -727,9 +727,9 @@ func (a *Client) ListSecurityGroups(params *ListSecurityGroupsParams) (*ListSecu
 }
 
 /*
-  Ping pings
+Ping pings
 
-  Ping the server.
+Ping the server.
 */
 func (a *Client) Ping(params *PingParams) (*PingOK, error) {
 	// TODO: Validate the params before sending
@@ -763,9 +763,9 @@ func (a *Client) Ping(params *PingParams) (*PingOK, error) {
 }
 
 /*
-  RemoveSecurityGroup removes security group
+RemoveSecurityGroup removes security group
 
-  Remove a SecurityGroup from an EC2 Instance.
+Remove a SecurityGroup from an EC2 Instance.
 */
 func (a *Client) RemoveSecurityGroup(params *RemoveSecurityGroupParams) (*RemoveSecurityGroupNoContent, error) {
 	// TODO: Validate the params before sending
@@ -799,9 +799,9 @@ func (a *Client) RemoveSecurityGroup(params *RemoveSecurityGroupParams) (*Remove
 }
 
 /*
-  RevokeSecurityGroupEgress removes egress permission
+RevokeSecurityGroupEgress removes egress permission
 
-  Remove an Egress permission from a security group.
+Remove an Egress permission from a security group.
 */
 func (a *Client) RevokeSecurityGroupEgress(params *RevokeSecurityGroupEgressParams) (*RevokeSecurityGroupEgressNoContent, error) {
 	// TODO: Validate the params before sending
@@ -835,9 +835,9 @@ func (a *Client) RevokeSecurityGroupEgress(params *RevokeSecurityGroupEgressPara
 }
 
 /*
-  RevokeSecurityGroupIngress removes ingress permission
+RevokeSecurityGroupIngress removes ingress permission
 
-  Remove an Ingress permission from a security group.
+Remove an Ingress permission from a security group.
 */
 func (a *Client) RevokeSecurityGroupIngress(params *RevokeSecurityGroupIngressParams) (*RevokeSecurityGroupIngressNoContent, error) {
 	// TODO: Validate the params before sending
@@ -871,9 +871,9 @@ func (a *Client) RevokeSecurityGroupIngress(params *RevokeSecurityGroupIngressPa
 }
 
 /*
-  SetAutoscalingGroupDesiredCapacity sets desired capacity
+SetAutoscalingGroupDesiredCapacity sets desired capacity
 
-  Set an autoscaling group desired capacity.
+Set an autoscaling group desired capacity.
 */
 func (a *Client) SetAutoscalingGroupDesiredCapacity(params *SetAutoscalingGroupDesiredCapacityParams) (*SetAutoscalingGroupDesiredCapacityOK, error) {
 	// TODO: Validate the params before sending
@@ -907,9 +907,9 @@ func (a *Client) SetAutoscalingGroupDesiredCapacity(params *SetAutoscalingGroupD
 }
 
 /*
-  TerminateInstance terminates instance
+TerminateInstance terminates instance
 
-  Terminates an EC2 instance by ID.
+Terminates an EC2 instance by ID.
 */
 func (a *Client) TerminateInstance(params *TerminateInstanceParams) (*TerminateInstanceNoContent, error) {
 	// TODO: Validate the params before sending

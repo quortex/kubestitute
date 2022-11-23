@@ -57,7 +57,8 @@ func NewDetachAutoscalingGroupInstancesParamsWithHTTPClient(client *http.Client)
 	}
 }
 
-/*DetachAutoscalingGroupInstancesParams contains all the parameters to send to the API endpoint
+/*
+DetachAutoscalingGroupInstancesParams contains all the parameters to send to the API endpoint
 for the detach autoscaling group instances operation typically these are written to a http.Request
 */
 type DetachAutoscalingGroupInstancesParams struct {

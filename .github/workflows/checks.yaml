@@ -14,14 +14,14 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.17.*
+          go-version: 1.19
 
       # Instead of using our own CI, we uses https://golangci-lint.run/
       # It combines 48 linters and execute them in parallel
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.32
+          version: v1.49
           args: --timeout 5m
 
   test:
@@ -33,7 +33,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.17.*
+          go-version: 1.19
 
       # Execute tests
       - name: Execute tests

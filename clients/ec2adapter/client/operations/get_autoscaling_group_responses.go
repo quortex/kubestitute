@@ -64,7 +64,8 @@ func NewGetAutoscalingGroupOK() *GetAutoscalingGroupOK {
 	return &GetAutoscalingGroupOK{}
 }
 
-/*GetAutoscalingGroupOK handles this case with default header values.
+/*
+GetAutoscalingGroupOK handles this case with default header values.
 
 OK
 */
@@ -97,7 +98,8 @@ func NewGetAutoscalingGroupBadRequest() *GetAutoscalingGroupBadRequest {
 	return &GetAutoscalingGroupBadRequest{}
 }
 
-/*GetAutoscalingGroupBadRequest handles this case with default header values.
+/*
+GetAutoscalingGroupBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -130,7 +132,8 @@ func NewGetAutoscalingGroupForbidden() *GetAutoscalingGroupForbidden {
 	return &GetAutoscalingGroupForbidden{}
 }
 
-/*GetAutoscalingGroupForbidden handles this case with default header values.
+/*
+GetAutoscalingGroupForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -163,7 +166,8 @@ func NewGetAutoscalingGroupNotFound() *GetAutoscalingGroupNotFound {
 	return &GetAutoscalingGroupNotFound{}
 }
 
-/*GetAutoscalingGroupNotFound handles this case with default header values.
+/*
+GetAutoscalingGroupNotFound handles this case with default header values.
 
 Not Found
 */
@@ -196,7 +200,8 @@ func NewGetAutoscalingGroupInternalServerError() *GetAutoscalingGroupInternalSer
 	return &GetAutoscalingGroupInternalServerError{}
 }
 
-/*GetAutoscalingGroupInternalServerError handles this case with default header values.
+/*
+GetAutoscalingGroupInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

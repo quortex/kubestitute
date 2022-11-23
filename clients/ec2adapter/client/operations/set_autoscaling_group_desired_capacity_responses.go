@@ -64,7 +64,8 @@ func NewSetAutoscalingGroupDesiredCapacityOK() *SetAutoscalingGroupDesiredCapaci
 	return &SetAutoscalingGroupDesiredCapacityOK{}
 }
 
-/*SetAutoscalingGroupDesiredCapacityOK handles this case with default header values.
+/*
+SetAutoscalingGroupDesiredCapacityOK handles this case with default header values.
 
 OK
 */
@@ -97,7 +98,8 @@ func NewSetAutoscalingGroupDesiredCapacityBadRequest() *SetAutoscalingGroupDesir
 	return &SetAutoscalingGroupDesiredCapacityBadRequest{}
 }
 
-/*SetAutoscalingGroupDesiredCapacityBadRequest handles this case with default header values.
+/*
+SetAutoscalingGroupDesiredCapacityBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -130,7 +132,8 @@ func NewSetAutoscalingGroupDesiredCapacityForbidden() *SetAutoscalingGroupDesire
 	return &SetAutoscalingGroupDesiredCapacityForbidden{}
 }
 
-/*SetAutoscalingGroupDesiredCapacityForbidden handles this case with default header values.
+/*
+SetAutoscalingGroupDesiredCapacityForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -163,7 +166,8 @@ func NewSetAutoscalingGroupDesiredCapacityNotFound() *SetAutoscalingGroupDesired
 	return &SetAutoscalingGroupDesiredCapacityNotFound{}
 }
 
-/*SetAutoscalingGroupDesiredCapacityNotFound handles this case with default header values.
+/*
+SetAutoscalingGroupDesiredCapacityNotFound handles this case with default header values.
 
 Not Found
 */
@@ -196,7 +200,8 @@ func NewSetAutoscalingGroupDesiredCapacityInternalServerError() *SetAutoscalingG
 	return &SetAutoscalingGroupDesiredCapacityInternalServerError{}
 }
 
-/*SetAutoscalingGroupDesiredCapacityInternalServerError handles this case with default header values.
+/*
+SetAutoscalingGroupDesiredCapacityInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

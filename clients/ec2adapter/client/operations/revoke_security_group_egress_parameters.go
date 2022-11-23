@@ -57,7 +57,8 @@ func NewRevokeSecurityGroupEgressParamsWithHTTPClient(client *http.Client) *Revo
 	}
 }
 
-/*RevokeSecurityGroupEgressParams contains all the parameters to send to the API endpoint
+/*
+RevokeSecurityGroupEgressParams contains all the parameters to send to the API endpoint
 for the revoke security group egress operation typically these are written to a http.Request
 */
 type RevokeSecurityGroupEgressParams struct {

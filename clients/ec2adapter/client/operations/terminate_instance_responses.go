@@ -64,7 +64,8 @@ func NewTerminateInstanceNoContent() *TerminateInstanceNoContent {
 	return &TerminateInstanceNoContent{}
 }
 
-/*TerminateInstanceNoContent handles this case with default header values.
+/*
+TerminateInstanceNoContent handles this case with default header values.
 
 No Content
 */
@@ -95,7 +96,8 @@ func NewTerminateInstanceBadRequest() *TerminateInstanceBadRequest {
 	return &TerminateInstanceBadRequest{}
 }
 
-/*TerminateInstanceBadRequest handles this case with default header values.
+/*
+TerminateInstanceBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -128,7 +130,8 @@ func NewTerminateInstanceForbidden() *TerminateInstanceForbidden {
 	return &TerminateInstanceForbidden{}
 }
 
-/*TerminateInstanceForbidden handles this case with default header values.
+/*
+TerminateInstanceForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -161,7 +164,8 @@ func NewTerminateInstanceNotFound() *TerminateInstanceNotFound {
 	return &TerminateInstanceNotFound{}
 }
 
-/*TerminateInstanceNotFound handles this case with default header values.
+/*
+TerminateInstanceNotFound handles this case with default header values.
 
 Not Found
 */
@@ -194,7 +198,8 @@ func NewTerminateInstanceInternalServerError() *TerminateInstanceInternalServerE
 	return &TerminateInstanceInternalServerError{}
 }
 
-/*TerminateInstanceInternalServerError handles this case with default header values.
+/*
+TerminateInstanceInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

@@ -64,7 +64,8 @@ func NewGetSecurityGroupOK() *GetSecurityGroupOK {
 	return &GetSecurityGroupOK{}
 }
 
-/*GetSecurityGroupOK handles this case with default header values.
+/*
+GetSecurityGroupOK handles this case with default header values.
 
 OK
 */
@@ -97,7 +98,8 @@ func NewGetSecurityGroupBadRequest() *GetSecurityGroupBadRequest {
 	return &GetSecurityGroupBadRequest{}
 }
 
-/*GetSecurityGroupBadRequest handles this case with default header values.
+/*
+GetSecurityGroupBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -130,7 +132,8 @@ func NewGetSecurityGroupForbidden() *GetSecurityGroupForbidden {
 	return &GetSecurityGroupForbidden{}
 }
 
-/*GetSecurityGroupForbidden handles this case with default header values.
+/*
+GetSecurityGroupForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -163,7 +166,8 @@ func NewGetSecurityGroupNotFound() *GetSecurityGroupNotFound {
 	return &GetSecurityGroupNotFound{}
 }
 
-/*GetSecurityGroupNotFound handles this case with default header values.
+/*
+GetSecurityGroupNotFound handles this case with default header values.
 
 Not Found
 */
@@ -196,7 +200,8 @@ func NewGetSecurityGroupInternalServerError() *GetSecurityGroupInternalServerErr
 	return &GetSecurityGroupInternalServerError{}
 }
 
-/*GetSecurityGroupInternalServerError handles this case with default header values.
+/*
+GetSecurityGroupInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

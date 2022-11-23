@@ -58,7 +58,8 @@ func NewDeleteAddressesNoContent() *DeleteAddressesNoContent {
 	return &DeleteAddressesNoContent{}
 }
 
-/*DeleteAddressesNoContent handles this case with default header values.
+/*
+DeleteAddressesNoContent handles this case with default header values.
 
 No Content
 */
@@ -89,7 +90,8 @@ func NewDeleteAddressesBadRequest() *DeleteAddressesBadRequest {
 	return &DeleteAddressesBadRequest{}
 }
 
-/*DeleteAddressesBadRequest handles this case with default header values.
+/*
+DeleteAddressesBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -122,7 +124,8 @@ func NewDeleteAddressesForbidden() *DeleteAddressesForbidden {
 	return &DeleteAddressesForbidden{}
 }
 
-/*DeleteAddressesForbidden handles this case with default header values.
+/*
+DeleteAddressesForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -155,7 +158,8 @@ func NewDeleteAddressesInternalServerError() *DeleteAddressesInternalServerError
 	return &DeleteAddressesInternalServerError{}
 }
 
-/*DeleteAddressesInternalServerError handles this case with default header values.
+/*
+DeleteAddressesInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

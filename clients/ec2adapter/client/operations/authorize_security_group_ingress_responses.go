@@ -58,7 +58,8 @@ func NewAuthorizeSecurityGroupIngressCreated() *AuthorizeSecurityGroupIngressCre
 	return &AuthorizeSecurityGroupIngressCreated{}
 }
 
-/*AuthorizeSecurityGroupIngressCreated handles this case with default header values.
+/*
+AuthorizeSecurityGroupIngressCreated handles this case with default header values.
 
 Created
 */
@@ -91,7 +92,8 @@ func NewAuthorizeSecurityGroupIngressBadRequest() *AuthorizeSecurityGroupIngress
 	return &AuthorizeSecurityGroupIngressBadRequest{}
 }
 
-/*AuthorizeSecurityGroupIngressBadRequest handles this case with default header values.
+/*
+AuthorizeSecurityGroupIngressBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -124,7 +126,8 @@ func NewAuthorizeSecurityGroupIngressForbidden() *AuthorizeSecurityGroupIngressF
 	return &AuthorizeSecurityGroupIngressForbidden{}
 }
 
-/*AuthorizeSecurityGroupIngressForbidden handles this case with default header values.
+/*
+AuthorizeSecurityGroupIngressForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -157,7 +160,8 @@ func NewAuthorizeSecurityGroupIngressInternalServerError() *AuthorizeSecurityGro
 	return &AuthorizeSecurityGroupIngressInternalServerError{}
 }
 
-/*AuthorizeSecurityGroupIngressInternalServerError handles this case with default header values.
+/*
+AuthorizeSecurityGroupIngressInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

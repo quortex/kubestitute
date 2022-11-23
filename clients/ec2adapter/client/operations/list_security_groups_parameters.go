@@ -55,7 +55,8 @@ func NewListSecurityGroupsParamsWithHTTPClient(client *http.Client) *ListSecurit
 	}
 }
 
-/*ListSecurityGroupsParams contains all the parameters to send to the API endpoint
+/*
+ListSecurityGroupsParams contains all the parameters to send to the API endpoint
 for the list security groups operation typically these are written to a http.Request
 */
 type ListSecurityGroupsParams struct {
