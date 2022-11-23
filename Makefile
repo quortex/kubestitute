@@ -99,7 +99,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
 docker-build: test vendor ## Build docker image with the manager.
-	docker build -t ${IMG} --build-arg VERSION="$(VERSION)" .
+	docker build -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
@@ -118,7 +118,7 @@ docker-buildx: test vendor ## Build and push docker image for the manager for cr
 	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
 	- docker buildx create --name project-v3-builder
 	docker buildx use project-v3-builder
-	docker buildx build --push --platform=$(PLATFORMS) --tag ${IMG} --build-arg VERSION="$(VERSION)" -f Dockerfile.cross .
+	docker buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross .
 	- docker buildx rm project-v3-builder
 	rm Dockerfile.cross
 
