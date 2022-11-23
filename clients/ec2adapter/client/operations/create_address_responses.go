@@ -64,7 +64,8 @@ func NewCreateAddressCreated() *CreateAddressCreated {
 	return &CreateAddressCreated{}
 }
 
-/*CreateAddressCreated handles this case with default header values.
+/*
+CreateAddressCreated handles this case with default header values.
 
 Created
 */
@@ -97,7 +98,8 @@ func NewCreateAddressBadRequest() *CreateAddressBadRequest {
 	return &CreateAddressBadRequest{}
 }
 
-/*CreateAddressBadRequest handles this case with default header values.
+/*
+CreateAddressBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -130,7 +132,8 @@ func NewCreateAddressForbidden() *CreateAddressForbidden {
 	return &CreateAddressForbidden{}
 }
 
-/*CreateAddressForbidden handles this case with default header values.
+/*
+CreateAddressForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -163,7 +166,8 @@ func NewCreateAddressNotFound() *CreateAddressNotFound {
 	return &CreateAddressNotFound{}
 }
 
-/*CreateAddressNotFound handles this case with default header values.
+/*
+CreateAddressNotFound handles this case with default header values.
 
 Not Found
 */
@@ -196,7 +200,8 @@ func NewCreateAddressInternalServerError() *CreateAddressInternalServerError {
 	return &CreateAddressInternalServerError{}
 }
 
-/*CreateAddressInternalServerError handles this case with default header values.
+/*
+CreateAddressInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

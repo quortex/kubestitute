@@ -58,7 +58,8 @@ func NewListSecurityGroupsOK() *ListSecurityGroupsOK {
 	return &ListSecurityGroupsOK{}
 }
 
-/*ListSecurityGroupsOK handles this case with default header values.
+/*
+ListSecurityGroupsOK handles this case with default header values.
 
 OK
 */
@@ -89,7 +90,8 @@ func NewListSecurityGroupsBadRequest() *ListSecurityGroupsBadRequest {
 	return &ListSecurityGroupsBadRequest{}
 }
 
-/*ListSecurityGroupsBadRequest handles this case with default header values.
+/*
+ListSecurityGroupsBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -122,7 +124,8 @@ func NewListSecurityGroupsForbidden() *ListSecurityGroupsForbidden {
 	return &ListSecurityGroupsForbidden{}
 }
 
-/*ListSecurityGroupsForbidden handles this case with default header values.
+/*
+ListSecurityGroupsForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -155,7 +158,8 @@ func NewListSecurityGroupsInternalServerError() *ListSecurityGroupsInternalServe
 	return &ListSecurityGroupsInternalServerError{}
 }
 
-/*ListSecurityGroupsInternalServerError handles this case with default header values.
+/*
+ListSecurityGroupsInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

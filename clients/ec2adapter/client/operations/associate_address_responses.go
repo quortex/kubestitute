@@ -64,7 +64,8 @@ func NewAssociateAddressCreated() *AssociateAddressCreated {
 	return &AssociateAddressCreated{}
 }
 
-/*AssociateAddressCreated handles this case with default header values.
+/*
+AssociateAddressCreated handles this case with default header values.
 
 Created
 */
@@ -95,7 +96,8 @@ func NewAssociateAddressBadRequest() *AssociateAddressBadRequest {
 	return &AssociateAddressBadRequest{}
 }
 
-/*AssociateAddressBadRequest handles this case with default header values.
+/*
+AssociateAddressBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -128,7 +130,8 @@ func NewAssociateAddressForbidden() *AssociateAddressForbidden {
 	return &AssociateAddressForbidden{}
 }
 
-/*AssociateAddressForbidden handles this case with default header values.
+/*
+AssociateAddressForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -161,7 +164,8 @@ func NewAssociateAddressNotFound() *AssociateAddressNotFound {
 	return &AssociateAddressNotFound{}
 }
 
-/*AssociateAddressNotFound handles this case with default header values.
+/*
+AssociateAddressNotFound handles this case with default header values.
 
 Not Found
 */
@@ -194,7 +198,8 @@ func NewAssociateAddressInternalServerError() *AssociateAddressInternalServerErr
 	return &AssociateAddressInternalServerError{}
 }
 
-/*AssociateAddressInternalServerError handles this case with default header values.
+/*
+AssociateAddressInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

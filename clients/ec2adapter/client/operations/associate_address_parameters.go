@@ -55,7 +55,8 @@ func NewAssociateAddressParamsWithHTTPClient(client *http.Client) *AssociateAddr
 	}
 }
 
-/*AssociateAddressParams contains all the parameters to send to the API endpoint
+/*
+AssociateAddressParams contains all the parameters to send to the API endpoint
 for the associate address operation typically these are written to a http.Request
 */
 type AssociateAddressParams struct {

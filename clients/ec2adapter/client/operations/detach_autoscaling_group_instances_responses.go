@@ -64,7 +64,8 @@ func NewDetachAutoscalingGroupInstancesNoContent() *DetachAutoscalingGroupInstan
 	return &DetachAutoscalingGroupInstancesNoContent{}
 }
 
-/*DetachAutoscalingGroupInstancesNoContent handles this case with default header values.
+/*
+DetachAutoscalingGroupInstancesNoContent handles this case with default header values.
 
 No Content
 */
@@ -95,7 +96,8 @@ func NewDetachAutoscalingGroupInstancesBadRequest() *DetachAutoscalingGroupInsta
 	return &DetachAutoscalingGroupInstancesBadRequest{}
 }
 
-/*DetachAutoscalingGroupInstancesBadRequest handles this case with default header values.
+/*
+DetachAutoscalingGroupInstancesBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -128,7 +130,8 @@ func NewDetachAutoscalingGroupInstancesForbidden() *DetachAutoscalingGroupInstan
 	return &DetachAutoscalingGroupInstancesForbidden{}
 }
 
-/*DetachAutoscalingGroupInstancesForbidden handles this case with default header values.
+/*
+DetachAutoscalingGroupInstancesForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -161,7 +164,8 @@ func NewDetachAutoscalingGroupInstancesNotFound() *DetachAutoscalingGroupInstanc
 	return &DetachAutoscalingGroupInstancesNotFound{}
 }
 
-/*DetachAutoscalingGroupInstancesNotFound handles this case with default header values.
+/*
+DetachAutoscalingGroupInstancesNotFound handles this case with default header values.
 
 Not Found
 */
@@ -194,7 +198,8 @@ func NewDetachAutoscalingGroupInstancesInternalServerError() *DetachAutoscalingG
 	return &DetachAutoscalingGroupInstancesInternalServerError{}
 }
 
-/*DetachAutoscalingGroupInstancesInternalServerError handles this case with default header values.
+/*
+DetachAutoscalingGroupInstancesInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

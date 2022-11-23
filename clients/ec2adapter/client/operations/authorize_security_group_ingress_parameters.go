@@ -57,7 +57,8 @@ func NewAuthorizeSecurityGroupIngressParamsWithHTTPClient(client *http.Client) *
 	}
 }
 
-/*AuthorizeSecurityGroupIngressParams contains all the parameters to send to the API endpoint
+/*
+AuthorizeSecurityGroupIngressParams contains all the parameters to send to the API endpoint
 for the authorize security group ingress operation typically these are written to a http.Request
 */
 type AuthorizeSecurityGroupIngressParams struct {

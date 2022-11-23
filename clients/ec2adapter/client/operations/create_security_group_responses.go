@@ -64,7 +64,8 @@ func NewCreateSecurityGroupCreated() *CreateSecurityGroupCreated {
 	return &CreateSecurityGroupCreated{}
 }
 
-/*CreateSecurityGroupCreated handles this case with default header values.
+/*
+CreateSecurityGroupCreated handles this case with default header values.
 
 Created
 */
@@ -97,7 +98,8 @@ func NewCreateSecurityGroupBadRequest() *CreateSecurityGroupBadRequest {
 	return &CreateSecurityGroupBadRequest{}
 }
 
-/*CreateSecurityGroupBadRequest handles this case with default header values.
+/*
+CreateSecurityGroupBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -130,7 +132,8 @@ func NewCreateSecurityGroupForbidden() *CreateSecurityGroupForbidden {
 	return &CreateSecurityGroupForbidden{}
 }
 
-/*CreateSecurityGroupForbidden handles this case with default header values.
+/*
+CreateSecurityGroupForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -163,7 +166,8 @@ func NewCreateSecurityGroupConflict() *CreateSecurityGroupConflict {
 	return &CreateSecurityGroupConflict{}
 }
 
-/*CreateSecurityGroupConflict handles this case with default header values.
+/*
+CreateSecurityGroupConflict handles this case with default header values.
 
 Conflict
 */
@@ -196,7 +200,8 @@ func NewCreateSecurityGroupInternalServerError() *CreateSecurityGroupInternalSer
 	return &CreateSecurityGroupInternalServerError{}
 }
 
-/*CreateSecurityGroupInternalServerError handles this case with default header values.
+/*
+CreateSecurityGroupInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

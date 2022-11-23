@@ -64,7 +64,8 @@ func NewDeleteSecurityGroupNoContent() *DeleteSecurityGroupNoContent {
 	return &DeleteSecurityGroupNoContent{}
 }
 
-/*DeleteSecurityGroupNoContent handles this case with default header values.
+/*
+DeleteSecurityGroupNoContent handles this case with default header values.
 
 No Content
 */
@@ -95,7 +96,8 @@ func NewDeleteSecurityGroupBadRequest() *DeleteSecurityGroupBadRequest {
 	return &DeleteSecurityGroupBadRequest{}
 }
 
-/*DeleteSecurityGroupBadRequest handles this case with default header values.
+/*
+DeleteSecurityGroupBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -128,7 +130,8 @@ func NewDeleteSecurityGroupForbidden() *DeleteSecurityGroupForbidden {
 	return &DeleteSecurityGroupForbidden{}
 }
 
-/*DeleteSecurityGroupForbidden handles this case with default header values.
+/*
+DeleteSecurityGroupForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -161,7 +164,8 @@ func NewDeleteSecurityGroupNotFound() *DeleteSecurityGroupNotFound {
 	return &DeleteSecurityGroupNotFound{}
 }
 
-/*DeleteSecurityGroupNotFound handles this case with default header values.
+/*
+DeleteSecurityGroupNotFound handles this case with default header values.
 
 Not Found
 */
@@ -194,7 +198,8 @@ func NewDeleteSecurityGroupInternalServerError() *DeleteSecurityGroupInternalSer
 	return &DeleteSecurityGroupInternalServerError{}
 }
 
-/*DeleteSecurityGroupInternalServerError handles this case with default header values.
+/*
+DeleteSecurityGroupInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

@@ -55,7 +55,8 @@ func NewTerminateInstanceParamsWithHTTPClient(client *http.Client) *TerminateIns
 	}
 }
 
-/*TerminateInstanceParams contains all the parameters to send to the API endpoint
+/*
+TerminateInstanceParams contains all the parameters to send to the API endpoint
 for the terminate instance operation typically these are written to a http.Request
 */
 type TerminateInstanceParams struct {

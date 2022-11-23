@@ -55,7 +55,8 @@ func NewGetAddressParamsWithHTTPClient(client *http.Client) *GetAddressParams {
 	}
 }
 
-/*GetAddressParams contains all the parameters to send to the API endpoint
+/*
+GetAddressParams contains all the parameters to send to the API endpoint
 for the get address operation typically these are written to a http.Request
 */
 type GetAddressParams struct {

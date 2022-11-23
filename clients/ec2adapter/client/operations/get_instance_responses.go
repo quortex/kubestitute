@@ -64,7 +64,8 @@ func NewGetInstanceOK() *GetInstanceOK {
 	return &GetInstanceOK{}
 }
 
-/*GetInstanceOK handles this case with default header values.
+/*
+GetInstanceOK handles this case with default header values.
 
 OK
 */
@@ -97,7 +98,8 @@ func NewGetInstanceBadRequest() *GetInstanceBadRequest {
 	return &GetInstanceBadRequest{}
 }
 
-/*GetInstanceBadRequest handles this case with default header values.
+/*
+GetInstanceBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -130,7 +132,8 @@ func NewGetInstanceForbidden() *GetInstanceForbidden {
 	return &GetInstanceForbidden{}
 }
 
-/*GetInstanceForbidden handles this case with default header values.
+/*
+GetInstanceForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -163,7 +166,8 @@ func NewGetInstanceNotFound() *GetInstanceNotFound {
 	return &GetInstanceNotFound{}
 }
 
-/*GetInstanceNotFound handles this case with default header values.
+/*
+GetInstanceNotFound handles this case with default header values.
 
 Not Found
 */
@@ -196,7 +200,8 @@ func NewGetInstanceInternalServerError() *GetInstanceInternalServerError {
 	return &GetInstanceInternalServerError{}
 }
 
-/*GetInstanceInternalServerError handles this case with default header values.
+/*
+GetInstanceInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

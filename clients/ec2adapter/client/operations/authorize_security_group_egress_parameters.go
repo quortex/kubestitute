@@ -57,7 +57,8 @@ func NewAuthorizeSecurityGroupEgressParamsWithHTTPClient(client *http.Client) *A
 	}
 }
 
-/*AuthorizeSecurityGroupEgressParams contains all the parameters to send to the API endpoint
+/*
+AuthorizeSecurityGroupEgressParams contains all the parameters to send to the API endpoint
 for the authorize security group egress operation typically these are written to a http.Request
 */
 type AuthorizeSecurityGroupEgressParams struct {

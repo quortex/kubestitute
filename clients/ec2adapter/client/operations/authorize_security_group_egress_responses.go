@@ -64,7 +64,8 @@ func NewAuthorizeSecurityGroupEgressCreated() *AuthorizeSecurityGroupEgressCreat
 	return &AuthorizeSecurityGroupEgressCreated{}
 }
 
-/*AuthorizeSecurityGroupEgressCreated handles this case with default header values.
+/*
+AuthorizeSecurityGroupEgressCreated handles this case with default header values.
 
 Created
 */
@@ -97,7 +98,8 @@ func NewAuthorizeSecurityGroupEgressBadRequest() *AuthorizeSecurityGroupEgressBa
 	return &AuthorizeSecurityGroupEgressBadRequest{}
 }
 
-/*AuthorizeSecurityGroupEgressBadRequest handles this case with default header values.
+/*
+AuthorizeSecurityGroupEgressBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -130,7 +132,8 @@ func NewAuthorizeSecurityGroupEgressForbidden() *AuthorizeSecurityGroupEgressFor
 	return &AuthorizeSecurityGroupEgressForbidden{}
 }
 
-/*AuthorizeSecurityGroupEgressForbidden handles this case with default header values.
+/*
+AuthorizeSecurityGroupEgressForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -163,7 +166,8 @@ func NewAuthorizeSecurityGroupEgressNotFound() *AuthorizeSecurityGroupEgressNotF
 	return &AuthorizeSecurityGroupEgressNotFound{}
 }
 
-/*AuthorizeSecurityGroupEgressNotFound handles this case with default header values.
+/*
+AuthorizeSecurityGroupEgressNotFound handles this case with default header values.
 
 Not Found
 */
@@ -196,7 +200,8 @@ func NewAuthorizeSecurityGroupEgressInternalServerError() *AuthorizeSecurityGrou
 	return &AuthorizeSecurityGroupEgressInternalServerError{}
 }
 
-/*AuthorizeSecurityGroupEgressInternalServerError handles this case with default header values.
+/*
+AuthorizeSecurityGroupEgressInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

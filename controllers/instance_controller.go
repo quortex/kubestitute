@@ -696,6 +696,7 @@ func filterPods(pods []kcore_v1.Pod, filters ...PodFilter) []kcore_v1.Pod {
 }
 
 // daemonSetFilter filter dameonsets pods
+//
 //nolint:unused
 func (r *InstanceReconciler) daemonSetFilter(pods []kcore_v1.Pod) []kcore_v1.Pod {
 	// Note that we return false in cases where the pod is DaemonSet managed,

@@ -55,7 +55,8 @@ func NewDeleteSecurityGroupsParamsWithHTTPClient(client *http.Client) *DeleteSec
 	}
 }
 
-/*DeleteSecurityGroupsParams contains all the parameters to send to the API endpoint
+/*
+DeleteSecurityGroupsParams contains all the parameters to send to the API endpoint
 for the delete security groups operation typically these are written to a http.Request
 */
 type DeleteSecurityGroupsParams struct {

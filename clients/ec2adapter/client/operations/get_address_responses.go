@@ -64,7 +64,8 @@ func NewGetAddressOK() *GetAddressOK {
 	return &GetAddressOK{}
 }
 
-/*GetAddressOK handles this case with default header values.
+/*
+GetAddressOK handles this case with default header values.
 
 OK
 */
@@ -97,7 +98,8 @@ func NewGetAddressBadRequest() *GetAddressBadRequest {
 	return &GetAddressBadRequest{}
 }
 
-/*GetAddressBadRequest handles this case with default header values.
+/*
+GetAddressBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -130,7 +132,8 @@ func NewGetAddressForbidden() *GetAddressForbidden {
 	return &GetAddressForbidden{}
 }
 
-/*GetAddressForbidden handles this case with default header values.
+/*
+GetAddressForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -163,7 +166,8 @@ func NewGetAddressNotFound() *GetAddressNotFound {
 	return &GetAddressNotFound{}
 }
 
-/*GetAddressNotFound handles this case with default header values.
+/*
+GetAddressNotFound handles this case with default header values.
 
 Not Found
 */
@@ -196,7 +200,8 @@ func NewGetAddressInternalServerError() *GetAddressInternalServerError {
 	return &GetAddressInternalServerError{}
 }
 
-/*GetAddressInternalServerError handles this case with default header values.
+/*
+GetAddressInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

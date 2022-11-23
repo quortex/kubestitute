@@ -57,7 +57,8 @@ func NewSetAutoscalingGroupDesiredCapacityParamsWithHTTPClient(client *http.Clie
 	}
 }
 
-/*SetAutoscalingGroupDesiredCapacityParams contains all the parameters to send to the API endpoint
+/*
+SetAutoscalingGroupDesiredCapacityParams contains all the parameters to send to the API endpoint
 for the set autoscaling group desired capacity operation typically these are written to a http.Request
 */
 type SetAutoscalingGroupDesiredCapacityParams struct {

@@ -58,7 +58,8 @@ func NewPingOK() *PingOK {
 	return &PingOK{}
 }
 
-/*PingOK handles this case with default header values.
+/*
+PingOK handles this case with default header values.
 
 OK
 */
@@ -89,7 +90,8 @@ func NewPingBadRequest() *PingBadRequest {
 	return &PingBadRequest{}
 }
 
-/*PingBadRequest handles this case with default header values.
+/*
+PingBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -122,7 +124,8 @@ func NewPingForbidden() *PingForbidden {
 	return &PingForbidden{}
 }
 
-/*PingForbidden handles this case with default header values.
+/*
+PingForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -155,7 +158,8 @@ func NewPingInternalServerError() *PingInternalServerError {
 	return &PingInternalServerError{}
 }
 
-/*PingInternalServerError handles this case with default header values.
+/*
+PingInternalServerError handles this case with default header values.
 
 Internal Server Error
 */

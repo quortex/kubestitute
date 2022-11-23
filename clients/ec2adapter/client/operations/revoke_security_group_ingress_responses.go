@@ -64,7 +64,8 @@ func NewRevokeSecurityGroupIngressNoContent() *RevokeSecurityGroupIngressNoConte
 	return &RevokeSecurityGroupIngressNoContent{}
 }
 
-/*RevokeSecurityGroupIngressNoContent handles this case with default header values.
+/*
+RevokeSecurityGroupIngressNoContent handles this case with default header values.
 
 No Content
 */
@@ -95,7 +96,8 @@ func NewRevokeSecurityGroupIngressBadRequest() *RevokeSecurityGroupIngressBadReq
 	return &RevokeSecurityGroupIngressBadRequest{}
 }
 
-/*RevokeSecurityGroupIngressBadRequest handles this case with default header values.
+/*
+RevokeSecurityGroupIngressBadRequest handles this case with default header values.
 
 Bad Request
 */
@@ -128,7 +130,8 @@ func NewRevokeSecurityGroupIngressForbidden() *RevokeSecurityGroupIngressForbidd
 	return &RevokeSecurityGroupIngressForbidden{}
 }
 
-/*RevokeSecurityGroupIngressForbidden handles this case with default header values.
+/*
+RevokeSecurityGroupIngressForbidden handles this case with default header values.
 
 Forbidden
 */
@@ -161,7 +164,8 @@ func NewRevokeSecurityGroupIngressNotFound() *RevokeSecurityGroupIngressNotFound
 	return &RevokeSecurityGroupIngressNotFound{}
 }
 
-/*RevokeSecurityGroupIngressNotFound handles this case with default header values.
+/*
+RevokeSecurityGroupIngressNotFound handles this case with default header values.
 
 Not Found
 */
@@ -194,7 +198,8 @@ func NewRevokeSecurityGroupIngressInternalServerError() *RevokeSecurityGroupIngr
 	return &RevokeSecurityGroupIngressInternalServerError{}
 }
 
-/*RevokeSecurityGroupIngressInternalServerError handles this case with default header values.
+/*
+RevokeSecurityGroupIngressInternalServerError handles this case with default header values.
 
 Internal Server Error
 */
