@@ -1,6 +1,6 @@
 # kubestitute
 
-![Version: 1.1.1](https://img.shields.io/badge/Version-1.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.1.1](https://img.shields.io/badge/AppVersion-1.1.1-informational?style=flat-square)
+![Version: 2.0.0](https://img.shields.io/badge/Version-2.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0](https://img.shields.io/badge/AppVersion-2.0.0-informational?style=flat-square)
 
 Kubestitute is an event based instances lifecycle manager for Kubernetes.
 
@@ -73,14 +73,17 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| aws.region | string | `""` | The region in which the cluster resides. |
+| aws.accessKeyID | string | `""` | The access key id of a user with necessary permissions. |
+| aws.secretAccessKey | string | `""` | The secret access key of a user with necessary permissions. |
 | manager.clusterAutoscaler.namespace | string | `"kube-system"` | The Cluster Autoscaler namespace. |
 | manager.clusterAutoscaler.name | string | `"cluster-autoscaler-status"` | The Cluster Autoscaler status configmap name. |
 | manager.priorityExpander.enabled | bool | `false` |  |
-| manager.priorityExpander.name | string | `"priority-expander-default"` | All the following values should not be modified. -- Name of the Priority Expander object. |
+| manager.priorityExpander.name | string | `"priority-expander-default"` | Name of the Priority Expander object. |
 | manager.priorityExpander.namespace | string | `"kubestitute-system"` | Namespace of the Priority Expander object. |
 | manager.priorityExpander.clusterAutoscalerConfigMap | string | `"cluster-autoscaler-priority-expander"` | This name should not be changed. This is the exact name cluster autoscaler is looking for. |
 | manager.priorityExpander.template | string | `"5:\n - .*"` | Default template, no priorities. |
-| manager.logs.verbosity | int | `3` | Logs verbosity:  0 => panic  1 => error  2 => warning  3 => info  4 => debug |
+| manager.logs.verbosity | int | `3` | Logs verbosity:   0 => panic  1 => error  2 => warning  3 => info  4 => debug |
 | manager.logs.enableDevLogs | bool | `false` |  |
 | manager.asgPollInterval | int | `30` | AutoScaling Groups polling interval (used to generate custom metrics about ASGs). |
 | manager.evictionTimeout | int | `300` | The timeout in seconds for pods eviction on Instance deletion. |
@@ -96,14 +99,6 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | manager.readinessProbe.initialDelaySeconds | int | `5` | Number of seconds before the manager readiness probe is initiated. |
 | manager.readinessProbe.periodSeconds | int | `10` | How often (in seconds) to perform the manager readiness probe. |
 | manager.resources | object | `{}` | Kubestitute manager container required resources. |
-| awsEC2Plugin.enabled | bool | `true` | Wether to enable AWS EC2 plugin. |
-| awsEC2Plugin.secret | string | `"aws-ec2-plugin"` | A reference to a secret wit AWS credentials for AWS EC2 plugin. |
-| awsEC2Plugin.region | string | `""` | The AWS region. |
-| awsEC2Plugin.tags | object | `{}` | Tags for AWS EC2 plugin scope management. |
-| awsEC2Plugin.image.repository | string | `"quortexio/aws-ec2-adapter"` | AWS EC2 plugin image pull policy. |
-| awsEC2Plugin.image.tag | string | `"1.1.0"` | AWS EC2 plugin image pull policy. |
-| awsEC2Plugin.image.pullPolicy | string | `"IfNotPresent"` | AWS EC2 plugin image pull policy. |
-| awsEC2Plugin.resources | object | `{}` | AWS EC2 plugin container required resources. |
 | kubeRBACProxy.enabled | bool | `true` |  |
 | kubeRBACProxy.image.repository | string | `"gcr.io/kubebuilder/kube-rbac-proxy"` | kube-rbac-proxy image repository. |
 | kubeRBACProxy.image.tag | string | `"v0.8.0"` | kube-rbac-proxy image tag. |
@@ -115,6 +110,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | nameOverride | string | `""` | Helm's name computing override. |
 | fullnameOverride | string | `""` | Helm's fullname computing override. |
 | podAnnotations | object | `{}` | Annotations to be added to pods. |
+| serviceAccount | object | `{"annotations":{}}` | serviceAccount setup |
 | deploymentAnnotations | object | `{}` | Annotations to be added to deployment. |
 | terminationGracePeriod | int | `30` | How long to wait for pods to stop gracefully. |
 | nodeSelector | object | `{}` | Node labels for Kubestitute pod assignment. |
@@ -131,4 +127,4 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 
 | Name | Email | Url |
 | ---- | ------ | --- |
-| vincentmrg |  | https://github.com/vincentmrg |
+| vincentmrg |  | <https://github.com/vincentmrg> |

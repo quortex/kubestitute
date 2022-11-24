@@ -2,6 +2,14 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+aws:
+  # -- The region in which the cluster resides.
+  region: ""
+  # -- The access key id of a user with necessary permissions.
+  accessKeyID: ""
+  # -- The secret access key of a user with necessary permissions.
+  secretAccessKey: ""
+
 manager:
   clusterAutoscaler:
     # -- The Cluster Autoscaler namespace.
@@ -73,25 +81,6 @@ manager:
   # -- Kubestitute manager container required resources.
   resources: {}
 
-awsEC2Plugin:
-  # -- Wether to enable AWS EC2 plugin.
-  enabled: true
-  # -- A reference to a secret with AWS credentials for AWS EC2 plugin.
-  secret: ""
-  # -- The AWS region.
-  region: ""
-  # -- Tags for AWS EC2 plugin scope management.
-  tags: {}
-  image:
-    # -- AWS EC2 plugin image pull policy.
-    repository: quortexio/aws-ec2-adapter
-    # -- AWS EC2 plugin image pull policy.
-    tag: 1.1.0
-    # -- AWS EC2 plugin image pull policy.
-    pullPolicy: IfNotPresent
-  # --  AWS EC2 plugin container required resources.
-  resources: {}
-
 kubeRBACProxy:
   enabled: true
   image:
@@ -108,7 +97,8 @@ kubeRBACProxy:
 replicaCount: 1
 
 # -- Security contexts to set for all containers of the pod.
-securityContext: {}
+securityContext:
+  {}
   # runAsNonRoot: true
 
 # --  A list of secrets used to pull containers images.
