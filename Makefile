@@ -52,6 +52,10 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+.PHONY: vendor
+vendor: ## Download modules
+	go mod vendor
+
 .PHONY: lint
 lint: golangci-lint ## Run the linter used in CI against code.
 	$(GOLANG_CI_LINT) run -v
