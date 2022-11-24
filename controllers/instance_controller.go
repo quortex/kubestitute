@@ -46,10 +46,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/autoscaling"
 	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
-	ec2adapter "quortex.io/kubestitute/clients/ec2adapter/client"
-	"quortex.io/kubestitute/clients/ec2adapter/client/operations"
-	"quortex.io/kubestitute/clients/ec2adapter/models"
 	"quortex.io/kubestitute/metrics"
 	"quortex.io/kubestitute/utils/helper"
 )
@@ -67,6 +66,7 @@ type InstanceReconciler struct {
 	Configuration InstanceReconcilerConfiguration
 	Kubernetes    *kubernetes.Clientset
 	recorder      record.EventRecorder
+	Autoscaling   *autoscaling.AutoScaling
 }
 
 const (
@@ -143,48 +143,33 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, r.Status().Update(ctx, &instance)
 	}
 
-	// Instantiate aws-ec2-adapter client requirements
-	ec2adapterCli := ec2adapter.NewHTTPClientWithConfig(nil, &ec2adapter.TransportConfig{
-		Host:    "localhost:8008",
-		Schemes: []string{"http"},
-	})
-
-	// Check readiness of the ec2 adapter service and
-	// requeue until availability.
-	_, err := ec2adapterCli.Operations.Ping(&operations.PingParams{Context: ctx})
-	if err != nil {
-		log.Error(err, "EC2 adapter not available, retrying in 5 seconds")
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
-	}
-
 	// Retrieve AWS autoscaling group.
 	asgName := instance.Spec.ASG
-	res, err := ec2adapterCli.Operations.GetAutoscalingGroup(&operations.GetAutoscalingGroupParams{
-		Context: ctx,
-		Name:    asgName,
+	res, err := r.Autoscaling.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
+		AutoScalingGroupNames: []*string{&asgName},
 	})
+	if err == nil && len(res.AutoScalingGroups) == 0 {
+		err = fmt.Errorf("autoscaling group not found")
+	}
 	if err != nil {
 		log.Error(err, "Failed to get autoscaling group", "name", asgName)
 		return ctrl.Result{}, err
 	}
-	asg := res.Payload
+	asg := res.AutoScalingGroups[0]
 
 	// 2nd STEP
 	//
 	// Trigger a new Instance in the ASG
 	if instance.Status.State == corev1alpha1.InstanceStateTriggerScaling {
-		capacity := asg.DesiredCapacity + 1
+		capacity := *asg.DesiredCapacity + 1
 		log.Info("Incrementing autoscaling group desired capacity", "name", asgName, "capacity", capacity)
-		_, err := ec2adapterCli.Operations.SetAutoscalingGroupDesiredCapacity(&operations.SetAutoscalingGroupDesiredCapacityParams{
-			Context: ctx,
-			Name:    asg.Name,
-			Request: &models.SetDesiredCapacityRequest{
-				DesiredCapacity: capacity,
-				HonorCooldown:   instance.Spec.HonorCooldown,
-			},
+		_, err := r.Autoscaling.SetDesiredCapacity(&autoscaling.SetDesiredCapacityInput{
+			AutoScalingGroupName: asg.AutoScalingGroupName,
+			DesiredCapacity:      &capacity,
+			HonorCooldown:        &instance.Spec.HonorCooldown,
 		})
 		if err != nil {
-			log.Error(err, "Failed to set autoscaling group desired capacity", "name", asg.Name, "capacity", capacity)
+			log.Error(err, "Failed to set autoscaling group desired capacity", "name", asg.AutoScalingGroupName, "capacity", capacity)
 			return ctrl.Result{}, err
 		}
 
@@ -217,11 +202,11 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 			// Select only Pending or InService Instance
 			if !helper.ContainsString([]string{
-				models.AutoscalingGroupInstanceLifecycleStatePending,
-				models.AutoscalingGroupInstanceLifecycleStatePendingWait,
-				models.AutoscalingGroupInstanceLifecycleStatePendingProceed,
-				models.AutoscalingGroupInstanceLifecycleStateInService,
-			}, string(e.LifecycleState)) {
+				autoscaling.LifecycleStatePending,
+				autoscaling.LifecycleStatePendingWait,
+				autoscaling.LifecycleStatePendingProceed,
+				autoscaling.LifecycleStateInService,
+			}, aws.StringValue(e.LifecycleState)) {
 				continue
 			}
 
@@ -236,13 +221,13 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 					continue
 				}
 				// Already attached EC2 instance
-				if e.InstanceID == inst.Status.EC2InstanceID {
+				if aws.StringValue(e.InstanceId) == inst.Status.EC2InstanceID {
 					alreadyUsed = true
 				}
 			}
 
 			if !alreadyUsed {
-				instanceID = e.InstanceID
+				instanceID = aws.StringValue(e.InstanceId)
 				break
 			}
 		}
@@ -383,48 +368,31 @@ func (r *InstanceReconciler) reconcileDeletion(
 		return ctrl.Result{}, r.Status().Update(ctx, &instance)
 	}
 
-	// Instantiate aws-ec2-adapter client requirements
-	ec2adapterCli := ec2adapter.NewHTTPClientWithConfig(nil, &ec2adapter.TransportConfig{
-		Host:    "localhost:8008",
-		Schemes: []string{"http"},
-	})
-
-	// Check readiness of the ec2 adapter service and
-	// requeue until availability.
-	_, err := ec2adapterCli.Operations.Ping(&operations.PingParams{Context: ctx})
-	if err != nil {
-		log.Error(err, "EC2 adapter not available, retrying in 5 seconds")
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
-	}
-
 	// 3rd STEP
 	//
 	// We detach the EC2 instance from the Autoscaling Group.
 	if instance.Status.State == corev1alpha1.InstanceStateTerminateInstance {
 		// Retrieve AWS autoscaling group.
 		asgName := instance.Spec.ASG
-		res, err := ec2adapterCli.Operations.GetAutoscalingGroup(&operations.GetAutoscalingGroupParams{
-			Context: ctx,
-			Name:    asgName,
+		res, err := r.Autoscaling.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{
+			AutoScalingGroupNames: []*string{&asgName},
 		})
+		if err == nil && len(res.AutoScalingGroups) == 0 {
+			err = fmt.Errorf("autoscaling group not found")
+		}
 		if err != nil {
 			log.Error(err, "Failed to get autoscaling group", "name", asgName)
 			return ctrl.Result{}, err
 		}
-		asg := res.Payload
+		asg := res.AutoScalingGroups[0]
 
 		// Then, if instance is part of Autoscaling Group, we terminate it.
 		if i := instanceWithID(asg.Instances, instance.Status.EC2InstanceID); i != nil {
 			group := asgName
 			instanceID := instance.Status.EC2InstanceID
-			if _, err := ec2adapterCli.Operations.DetachAutoscalingGroupInstances(&operations.DetachAutoscalingGroupInstancesParams{
-				Context: ctx,
-				Name:    group,
-				Request: &models.DetachInstancesRequest{
-					InstanceIds:                    []string{instanceID},
-					ShouldDecrementDesiredCapacity: true,
-					ShouldTerminateInstances:       true,
-				},
+			if _, err := r.Autoscaling.TerminateInstanceInAutoScalingGroup(&autoscaling.TerminateInstanceInAutoScalingGroupInput{
+				InstanceId:                     aws.String(instanceID),
+				ShouldDecrementDesiredCapacity: aws.Bool(true),
 			}); err != nil {
 				log.Error(err, "Failed to terminate instance", "group", group, "instance", instanceID)
 				return ctrl.Result{}, err
@@ -452,9 +420,9 @@ func ec2InstanceID(node kcore_v1.Node) string {
 }
 
 // instanceWithID returns the instance with the given ID or nil
-func instanceWithID(slice []*models.AutoscalingGroupInstance, id string) *models.AutoscalingGroupInstance {
+func instanceWithID(slice []*autoscaling.Instance, id string) *autoscaling.Instance {
 	for _, e := range slice {
-		if e.InstanceID == id {
+		if aws.StringValue(e.InstanceId) == id {
 			return e
 		}
 	}

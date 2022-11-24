@@ -21,6 +21,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -87,6 +89,17 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(enableDevLogs), zap.Level(zapcore.Level(int8(zapcore.DPanicLevel)-int8(logVerbosity)))))
 
+	// AWS clients initialization with a default session.
+	// Session is created from SDK defaults, config files, environment, and user
+	// provided config files.
+	setupLog.Info("initializing aws session")
+	session, err := session.NewSession()
+	if err != nil {
+		setupLog.Error(err, "unable to init aws session")
+		os.Exit(1)
+	}
+	autoscaling := autoscaling.New(session)
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -112,7 +125,8 @@ func main() {
 		Configuration: controllers.InstanceReconcilerConfiguration{
 			EvictionGlobalTimeout: evictionGlobalTimeout,
 		},
-		Kubernetes: kubeClient,
+		Kubernetes:  kubeClient,
+		Autoscaling: autoscaling,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Instance")
 		os.Exit(1)
@@ -131,7 +145,7 @@ func main() {
 	if err = (&controllers.SupervisionReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
-		Supervisor: supervisor.New(time.Second*time.Duration(asgPollInterval), ctrl.Log.WithName("supervisor")),
+		Supervisor: supervisor.New(autoscaling, time.Second*time.Duration(asgPollInterval), ctrl.Log.WithName("supervisor")),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Supervision")
 		os.Exit(1)

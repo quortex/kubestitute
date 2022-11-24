@@ -52,6 +52,27 @@ spec:
             - --v={{ .logs.verbosity }}
             - --asg-poll-interval={{ .asgPollInterval }}
             - --eviction-timeout={{ .evictionTimeout }}
+          env:
+          {{- with $.Values.aws }}
+            {{- with .region }}
+            - name: AWS_REGION
+              value: {{ . }}
+            {{- end }}
+            {{- if .accessKeyID }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  key: accessKeyId
+                  name: {{ template "kubestitute.fullname" $ }}
+            {{- end }}
+            {{- if .secretAccessKey }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: secretAccessKey
+                  name: {{ template "kubestitute.fullname" $ }}
+            {{- end }}
+          {{- end }}
           {{- if not $.Values.kubeRBACProxy.enabled }}
           ports:
             - containerPort: 8080
@@ -65,36 +86,6 @@ spec:
             {{- toYaml .resources | nindent 12 }}
           securityContext:
             allowPrivilegeEscalation: false
-      {{- end }}
-      {{- with .Values.awsEC2Plugin }}
-        {{- if .enabled }}
-        - name: aws-ec2-adapter
-          image: "{{ .image.repository }}:{{ .image.tag }}"
-          args:
-            - --addr=127.0.0.1:8008
-          env:
-            - name: QX_CONFIGURATION_PATH
-              value: /config/config.yaml
-            {{- if .secret }}
-            - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  key: awsKeyId
-                  name: {{ .secret }}
-            - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  key: awsSecretKey
-                  name: {{ .secret }}
-            {{- end }}
-          imagePullPolicy: {{ .image.pullPolicy }}
-          resources:
-            {{- toYaml .resources | nindent 12 }}
-          volumeMounts:
-            - mountPath: /config/config.yaml
-              name: config
-              subPath: ec2Adapter.yaml
-        {{- end }}
       {{- end }}
       {{- with .Values.kubeRBACProxy }}
         {{- if .enabled }}

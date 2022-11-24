@@ -220,7 +220,7 @@ ScaleDownRules configures the scaling behavior for Instance scale downs.
 |===
 | Field | Description
 | *`stabilizationWindowSeconds`* __integer__ | A cooldown for consecutive scale down operations.
-| *`policies`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy[$$SchedulerPolicy$$]__ | Policies is a list of potential scaling polices which can be evaluated for scaling decisions. At least one policy must be specified. Instances will be scaled down one by one.
+| *`policies`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy[$$SchedulerPolicy$$] array__ | Policies is a list of potential scaling polices which can be evaluated for scaling decisions. At least one policy must be specified. Instances will be scaled down one by one.
 |===
 
 
