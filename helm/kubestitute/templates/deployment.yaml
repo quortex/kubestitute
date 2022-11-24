@@ -32,7 +32,7 @@ spec:
       containers:
       {{- with .Values.manager }}
         - name: manager
-          image: "{{ .image.repository }}:{{ .image.tag }}"
+          image: "{{ .image.repository }}:{{ .image.tag | default $.Chart.AppVersion }}"
           imagePullPolicy: {{ .image.pullPolicy }}
           command:
             - /manager
