@@ -135,8 +135,10 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	// update of Instances because most of the tasks carried out during these
 	// reconciliations (increment of the capacity of the ASGs, mapping of the ids
 	// of ec2 instances on the CRs. ..) do not support it.
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	if r.Configuration.MaxConcurrentReconciles > 1 {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+	}
 
 	// Add finalizer if there are none.
 	if !helper.ContainsString(instance.ObjectMeta.Finalizers, instanceFinalizer) {
