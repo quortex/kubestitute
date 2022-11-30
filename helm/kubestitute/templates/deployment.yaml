@@ -52,6 +52,7 @@ spec:
             - --v={{ .logs.verbosity }}
             - --asg-poll-interval={{ .asgPollInterval }}
             - --eviction-timeout={{ .evictionTimeout }}
+            - --instances-max-concurrent-reconciles={{ .instancesMaxConcurrentReconciles }}
           env:
           {{- with $.Values.aws }}
             {{- with .region }}

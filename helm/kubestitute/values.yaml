@@ -48,6 +48,9 @@ manager:
   # -- The timeout in seconds for pods eviction on Instance deletion.
   evictionTimeout: 300
 
+  # -- The maximum number of concurrent Reconciles which can be run for Instances.
+  instancesMaxConcurrentReconciles: 10
+
   image:
     # -- Kubestitute manager image repository.
     repository: quortexio/kubestitute
