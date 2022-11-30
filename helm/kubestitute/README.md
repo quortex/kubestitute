@@ -1,6 +1,6 @@
 # kubestitute
 
-![Version: 2.1.0](https://img.shields.io/badge/Version-2.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.0](https://img.shields.io/badge/AppVersion-2.0.0-informational?style=flat-square)
+![Version: 2.2.0](https://img.shields.io/badge/Version-2.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.1.0](https://img.shields.io/badge/AppVersion-2.1.0-informational?style=flat-square)
 
 Kubestitute is an event based instances lifecycle manager for Kubernetes.
 
@@ -87,6 +87,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | manager.logs.enableDevLogs | bool | `false` |  |
 | manager.asgPollInterval | int | `30` | AutoScaling Groups polling interval (used to generate custom metrics about ASGs). |
 | manager.evictionTimeout | int | `300` | The timeout in seconds for pods eviction on Instance deletion. |
+| manager.instancesMaxConcurrentReconciles | int | `10` | The maximum number of concurrent Reconciles which can be run for Instances. |
 | manager.image.repository | string | `"quortexio/kubestitute"` | Kubestitute manager image repository. |
 | manager.image.tag | string | `""` | Kubestitute manager image tag. |
 | manager.image.pullPolicy | string | `"IfNotPresent"` | Kubestitute manager image pull policy. |
