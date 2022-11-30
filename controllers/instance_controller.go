@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -41,6 +42,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -55,6 +57,8 @@ import (
 
 // InstanceReconcilerConfiguration wraps configuration for InstanceReconciler.
 type InstanceReconcilerConfiguration struct {
+	// The maximum number of concurrent Reconciles which can be run
+	MaxConcurrentReconciles int
 	// The global timeout for pods eviction
 	EvictionGlobalTimeout int
 }
@@ -67,6 +71,7 @@ type InstanceReconciler struct {
 	Kubernetes    *kubernetes.Clientset
 	recorder      record.EventRecorder
 	Autoscaling   *autoscaling.AutoScaling
+	mu            sync.Mutex
 }
 
 const (
@@ -122,9 +127,18 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return r.reconcileDeletion(ctx, instance, log)
 	}
 
-	// **********************************
-	// **** LIFECYCLE RECONCILIATION ****
-	// **********************************
+	// ******************************************
+	// **** CREATION / UPDATE RECONCILIATION ****
+	// ******************************************
+
+	// We do not allow concurrency on reconciliations related to the creation or
+	// update of Instances because most of the tasks carried out during these
+	// reconciliations (increment of the capacity of the ASGs, mapping of the ids
+	// of ec2 instances on the CRs. ..) do not support it.
+	if r.Configuration.MaxConcurrentReconciles > 1 {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+	}
 
 	// Add finalizer if there are none.
 	if !helper.ContainsString(instance.ObjectMeta.Finalizers, instanceFinalizer) {
@@ -731,6 +745,9 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.Instance{}).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: r.Configuration.MaxConcurrentReconciles,
+		}).
 		Watches(
 			&source.Kind{Type: &kcore_v1.Node{}},
 			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
