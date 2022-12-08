@@ -24,7 +24,7 @@ It will also drain fallback instances and detach them from the Auto Scaling Grou
 A Kubernetes cluster of version v1.11.3+ is required. If you are just starting out with Kubestitute, it is highly recommended to use the latest version.
 
 ### <a id="Prerequisites_AWS"></a>AWS
-To be used with AWS and interact with Auto Scaling Groups, an AWS service account with the following permissions on Auto Scaling Groups managed by Kubestitute is required:
+To be used with AWS and interact with Auto Scaling Groups, an AWS IAM user or role with the following permissions on Auto Scaling Groups managed by Kubestitute is required:
 ```json
 {
     "Version": "2012-10-17",
@@ -57,13 +57,7 @@ helm repo add kubestitute https://quortex.github.io/kubestitute
 kubectl create ns kubestitute-system
 ```
 
-3. Create a secret (`aws-ec2-plugin` by default) with credentials from AWS account with [necessary permissions](#Prerequisites_AWS).
-
-```sh
-kubectl create secret generic aws-ec2-plugin --from-literal=awsKeyId=$AWS_ACCESS_KEY_ID --from-literal=awsSecretKey=$AWS_SECRET_ACCESS_KEY -n kubestitute-system
-```
-
-4. Deploy the appropriate release.
+3. Deploy the appropriate release.
 
 ```sh
 helm install kubestitute kubestitute/kubestitute -n kubestitute-system
