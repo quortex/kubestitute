@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.313
 	github.com/go-logr/logr v1.2.4
 	github.com/go-test/deep v1.1.0
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.27.10
 	github.com/prometheus/client_golang v1.16.0
