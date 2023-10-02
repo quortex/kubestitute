@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # This step uses Github's checkout-action: https://github.com/actions/checkout
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # This step uses action-hub docker action: https://github.com/actions-hub/docker
       - name: Login to docker hub
