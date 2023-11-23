@@ -69,7 +69,14 @@ func (r *SupervisionReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		asgs = append(asgs, instance.Spec.ASG)
 	}
 	for _, scheduler := range schedulers.Items {
-		asgs = append(asgs, scheduler.Spec.ASGTarget, scheduler.Spec.ASGFallback)
+		if scheduler.Spec.ASGTarget != "" {
+			asgs = append(asgs, scheduler.Spec.ASGTarget)
+		}
+		asgs = append(asgs, scheduler.Spec.ASGTargets...)
+		if scheduler.Spec.ASGFallback != "" {
+			asgs = append(asgs, scheduler.Spec.ASGFallback)
+		}
+		asgs = append(asgs, scheduler.Spec.ASGFallbacks...)
 	}
 
 	// Give ASG names to supervisor.
