@@ -232,6 +232,13 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
+	// If the scale up is in state backoff, skip scale down. It is
+	// needed since in Backoff the cluster-autoscaler will not increase
+	// the cloudProviderTarget, e.g. : Backoff (ready=0 cloudProviderTarget=0).
+	if targetStatus.ScaleUp.Status == clusterautoscaler.ScaleUpBackoff {
+		down = 0
+	}
+
 	// List instances already deployed by this scheduler
 	instances := &corev1alpha1.InstanceList{}
 	if err := r.List(ctx, instances, client.InNamespace(req.Namespace), client.MatchingLabels(map[string]string{lblScheduler: req.Name})); err != nil {
