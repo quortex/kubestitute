@@ -124,13 +124,15 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// Get human readable status from configmap...
 	readableStatus, ok := cm.Data["status"]
 	if !ok {
-		err := fmt.Errorf("Invalid configmap: no status")
+		err := fmt.Errorf("invalid configmap: no status")
 		log.Error(
 			err,
 			"unable to parse ClusterAutoscaler status",
 			"namespace", r.Configuration.ClusterAutoscalerNamespace,
 			"name", r.Configuration.ClusterAutoscalerStatusName,
 		)
+
+		return ctrl.Result{}, err
 	}
 
 	// ... and parse it.
