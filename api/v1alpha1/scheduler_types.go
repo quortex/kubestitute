@@ -35,16 +35,34 @@ type SchedulerSpec struct {
 	//+kubebuilder:validation:Enum:={"ClusterAutoscaler"}
 	Trigger SchedulerTrigger `json:"trigger,omitempty"`
 
-	// The name of the autoscaling group, which the scheduler will use to
+	// Name of the autoscaling group which the scheduler will use to
 	// apply the rules.
-	//+kubebuilder:validation:Required
+	// Conflict with autoscalingGroupTargets.
+	//+kubebuilder:validation:Optional
 	ASGTarget string `json:"autoscalingGroupTarget"`
 
-	// The name of the autoscaling group, in which the scheduler will trigger
+	// List of autoscaling groups names which the scheduler will use
+	// to apply the rules. The values are summed.
+	// Conflict with autoscalingGroupTarget.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:validation:MinItems:=1
+	ASGTargets []string `json:"autoscalingGroupTargets"`
+
+	// Name of the autoscaling group in which the scheduler will trigger
 	// fallback instances.
-	// This autoscaling group must not be managed by the cluster-autoscaler !!!
-	//+kubebuilder:validation:Required
+	// This autoscaling group must not be managed by the cluster-autoscaler.
+	// These ASG must not be managed by the cluster-autoscaler.
+	// Conflict with autoscalingGroupFallbacks.
+	//+kubebuilder:validation:Optional
 	ASGFallback string `json:"autoscalingGroupFallback"`
+
+	// List of autoscaling groups names in which the scheduler will trigger
+	// fallback instances.
+	// These ASG must not be managed by the cluster-autoscaler.
+	// Conflict with autoscalingGroupFallback.
+	//+kubebuilder:validation:Optional
+	//+kubebuilder:validation:MinItems:=1
+	ASGFallbacks []string `json:"autoscalingGroupFallbacks"`
 
 	// Scheduler rules used to match criteria on Target ASG to trigger Scale Up
 	// on Fallback ASG.
