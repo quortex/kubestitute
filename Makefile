@@ -16,7 +16,7 @@ endif
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
-all: manifests build doc charts
+all: manifests build doc charts-generate charts-doc
 
 ##@ General
 
@@ -71,15 +71,6 @@ doc: crd-ref-docs ## Build api documentation.
 					--config=hack/doc-generation/config.yaml \
 					--templates-dir=hack/doc-generation/templates/asciidoctor \
 					--output-path=docs/api-docs.asciidoc
-
-charts: yq kustomize ## Generate helm chart crds, rbac from kustomize files and doc from helm values.
-	@TMPFILE=$$(mktemp) && \
-	${YQ} -y '.metadata.name = ("PREFIX-" + .metadata.name)' config/rbac/role.yaml | \
-		sed "s/PREFIX/{{ include \"kubestitute.fullname\" . }}/" > helm/kubestitute/templates/manager_role.yaml && \
-	${KUSTOMIZE} build config/default/ > $${TMPFILE} && \
-	${YQ} -y 'select(.kind=="CustomResourceDefinition")' $${TMPFILE} > helm/kubestitute/crds/crds.yaml && \
-	rm -rf $${TMPFILE}
-	@docker run --rm --volume "$$(pwd)/helm/kubestitute:/helm-docs" jnorwood/helm-docs:latest -s file
 
 ##@ Build
 
@@ -142,6 +133,26 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
+##@ Charts
+
+.PHONY: charts-generate
+charts-generate: TMP := $(shell mktemp -d)
+charts-generate: yq kustomize ## Generate helm charts
+	@$(YQ) '.metadata.name = ("PREFIX-" + .metadata.name)' config/rbac/role.yaml | \
+		sed "s/PREFIX/{{ include \"kubestitute.fullname\" . }}/" > helm/kubestitute/templates/manager_role.yaml
+	@$(KUSTOMIZE) build config/default/ > $(TMP)/result.yaml
+	@$(YQ) 'select(.kind=="CustomResourceDefinition")' $(TMP)/result.yaml > helm/kubestitute/crds/crds.yaml
+	@$(YQ) 'select(.kind=="ValidatingWebhookConfiguration" or .kind=="MutatingWebhookConfiguration")' $(TMP)/result.yaml | \
+		sed -e 's|name: kubestitute|name: {{ include \"kubestitute.fullname\" . }}|' \
+			-e 's|cert-manager.io/inject-ca-from: .*|cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include \"kubestitute.fullname\" . }}-serving-cert|' \
+			-e 's|namespace: .*|namespace: {{ .Release.Namespace }}|' > helm/kubestitute/templates/webhooks.yaml
+	@rm -rf $(TMP)
+
+
+.PHONY: charts-doc
+charts-doc: ## Generate helm charts documentations
+	@docker run --rm --volume "${PWD}/helm/kubestitute:/helm-docs" jnorwood/helm-docs:latest -s file
+
 ##@ Build Dependencies
 
 ## Location to install dependencies to
@@ -155,12 +166,14 @@ CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 CRD_REF_DOCS ?= $(LOCALBIN)/crd-ref-docs
 GOLANG_CI_LINT?= $(LOCALBIN)/golangci-lint
+YQ?= $(LOCALBIN)/yq
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v4.5.5
 CONTROLLER_TOOLS_VERSION ?= v0.9.2
 CRD_REF_DOCS_VERSION ?= v0.0.8
 GOLANG_CI_LINT_VERSION ?= v1.49.0
+YQ_VERSION ?= v4.31.1
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
@@ -188,8 +201,7 @@ golangci-lint: $(GOLANG_CI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANG_CI_LINT): $(LOCALBIN)
 	test -s $(LOCALBIN)/golangci-lint || GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
 
-yq: ## Download yq if necessary.
-ifeq (, $(shell which yq))
-	@pip3 install yq
-endif
-YQ=$(shell which yq)
+.PHONY: yq
+yq: $(YQ) ## Download yq locally if necessary.
+$(YQ): $(LOCALBIN)
+	test -s $(LOCALBIN)/yq || GOBIN=$(LOCALBIN) go install github.com/mikefarah/yq/v4@$(YQ_VERSION)
