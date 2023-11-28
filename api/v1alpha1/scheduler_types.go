@@ -39,14 +39,14 @@ type SchedulerSpec struct {
 	// apply the rules.
 	// Conflict with autoscalingGroupTargets.
 	//+kubebuilder:validation:Optional
-	ASGTarget string `json:"autoscalingGroupTarget"`
+	ASGTarget string `json:"autoscalingGroupTarget,omitempty"`
 
 	// List of autoscaling groups names which the scheduler will use
 	// to apply the rules. The values are summed.
 	// Conflict with autoscalingGroupTarget.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:validation:MinItems:=1
-	ASGTargets []string `json:"autoscalingGroupTargets"`
+	ASGTargets []string `json:"autoscalingGroupTargets,omitempty"`
 
 	// Name of the autoscaling group in which the scheduler will trigger
 	// fallback instances.
@@ -54,7 +54,7 @@ type SchedulerSpec struct {
 	// These ASG must not be managed by the cluster-autoscaler.
 	// Conflict with autoscalingGroupFallbacks.
 	//+kubebuilder:validation:Optional
-	ASGFallback string `json:"autoscalingGroupFallback"`
+	ASGFallback string `json:"autoscalingGroupFallback,omitempty"`
 
 	// List of autoscaling groups names in which the scheduler will trigger
 	// fallback instances.
@@ -62,7 +62,7 @@ type SchedulerSpec struct {
 	// Conflict with autoscalingGroupFallback.
 	//+kubebuilder:validation:Optional
 	//+kubebuilder:validation:MinItems:=1
-	ASGFallbacks []string `json:"autoscalingGroupFallbacks"`
+	ASGFallbacks []string `json:"autoscalingGroupFallbacks,omitempty"`
 
 	// Scheduler rules used to match criteria on Target ASG to trigger Scale Up
 	// on Fallback ASG.

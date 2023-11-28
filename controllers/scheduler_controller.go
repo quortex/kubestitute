@@ -281,8 +281,6 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				log.V(1).Info("Skipping scaleDown due to scaleUp in backoff")
 				down = 0
 				break
-			} else {
-				log.Info("DEBUG : did not skip scaleDown", "status", targetNodeGroups[i].ScaleUp.Status)
 			}
 		}
 	}
