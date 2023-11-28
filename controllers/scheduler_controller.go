@@ -21,10 +21,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
 	kcore_v1 "k8s.io/api/core/v1"
 	kmeta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,6 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
+	"quortex.io/kubestitute/metrics"
 	"quortex.io/kubestitute/utils/clusterautoscaler"
 )
 
@@ -156,6 +159,27 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	asgFallbacks := scheduler.Spec.ASGFallbacks
 	if len(asgFallbacks) == 0 {
 		asgFallbacks = []string{scheduler.Spec.ASGFallback}
+	}
+
+	// Update target statuses
+	for i := range targetNodeGroups {
+		for _, s := range []clusterautoscaler.ScaleUpStatus{
+			clusterautoscaler.ScaleUpNeeded,
+			clusterautoscaler.ScaleUpNotNeeded,
+			clusterautoscaler.ScaleUpInProgress,
+			clusterautoscaler.ScaleUpNoActivity,
+			clusterautoscaler.ScaleUpBackoff,
+		} {
+			targetNodeGroupStatus := metrics.SchedulerTargetNodeGroupStatus.With(prometheus.Labels{
+				"node_group_name": targetNodeGroups[i].Name,
+				"scale_up_status": strings.ToLower(string(s)),
+			})
+			if targetNodeGroups[i].ScaleUp.Status == s {
+				targetNodeGroupStatus.Set(1)
+			} else {
+				targetNodeGroupStatus.Set(0)
+			}
+		}
 	}
 
 	// Get last ScaleUp policies that matched.
