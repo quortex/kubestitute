@@ -1,0 +1,27 @@
+{{- range .Values.prometheus.additionalServiceMonitors }}
+---
+apiVersion: core.kubestitute.quortex.io/v1alpha1
+kind: Scheduler
+metadata:
+  name: {{ .name }}
+  labels:
+    {{- include "kubestitute.labels" . | nindent 4 }}
+spec:
+  {{- if .trigger }}
+    trigger: {{ .trigger }}
+  {{- end }}
+  {{- if .autoscalingGroupTarget }}
+    autoscalingGroupTarget: {{ .autoscalingGroupTarget }}
+  {{- end }}
+  {{- if .autoscalingGroupFallback }}
+    autoscalingGroupFallback: {{ .autoscalingGroupFallback }}
+  {{- end }}
+  {{- if .scaleUpRules }}
+    scaleUpRules:
+      {{- toYaml .scaleUpRules | indent 6 }}
+  {{- end }}
+  {{- if .scaleDownRules }}
+    scaleDownRules:
+      {{- toYaml .scaleDownRules | indent 6 }}
+  {{- end }}
+{{- end }}

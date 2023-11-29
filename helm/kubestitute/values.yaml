@@ -148,3 +148,35 @@ serviceMonitor:
   scrapeTimeout: ""
   # -- Relabellings to apply to samples before scraping.
   relabelings: []
+
+# -- List of schedulers to create
+schedulers: []
+  # - name: scheduler
+  #   trigger: ClusterAutoscaler
+  #   autoscalingGroupTarget: my-units-spot-group
+  #   autoscalingGroupFallback: my-units-fallback-group
+  #   scaleUpRules:
+  #     stabilizationWindowSeconds: 0
+  #     policies:
+  #       - leftOperand:
+  #           field: Ready
+  #         operator: lowerThan
+  #         rightOperand:
+  #           field: CloudProviderTarget
+  #         periodSeconds: 0
+  #         replicas:
+  #           operation:
+  #             leftOperand:
+  #               field: CloudProviderTarget
+  #             operator: minus
+  #             rightOperand:
+  #               field: Ready
+  #   scaleDownRules:
+  #     stabilizationWindowSeconds: 60
+  #     policies:
+  #       - leftOperand:
+  #           field: Ready
+  #         operator: equal
+  #         rightOperand:
+  #           field: CloudProviderTarget
+  #         periodSeconds: 120
