@@ -272,16 +272,20 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
-	// If any scale up is in state backoff, skip scale down. It is
-	// needed since in Backoff the cluster-autoscaler will not increase
+	// If all ASG scale up are in backoff, skip scale down.
+	// It is needed since in Backoff the cluster-autoscaler will not increase
 	// the cloudProviderTarget, e.g. : Backoff (ready=0 cloudProviderTarget=0).
 	if down > 0 {
+		scaleDownAllowed := false
 		for i := range targetNodeGroups {
-			if targetNodeGroups[i].ScaleUp.Status == clusterautoscaler.ScaleUpBackoff {
-				log.V(1).Info("Skipping scaleDown due to scaleUp in backoff")
-				down = 0
+			if targetNodeGroups[i].ScaleUp.Status != clusterautoscaler.ScaleUpBackoff {
+				scaleDownAllowed = true
 				break
 			}
+		}
+		if !scaleDownAllowed {
+			log.V(1).Info("Skipping scaleDown due to scaleUp in backoff")
+			down = 0
 		}
 	}
 
