@@ -1,3 +1,4 @@
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -5,7 +6,7 @@ metadata:
   name: {{ include "kubestitute.fullname" . }}-manager-role
 rules:
   - apiGroups:
-      - ''
+      - ""
     resources:
       - events
     verbs:
@@ -20,7 +21,7 @@ rules:
       - list
       - watch
   - apiGroups:
-      - ''
+      - ""
     resources:
       - configmaps
     verbs:
@@ -30,7 +31,7 @@ rules:
       - update
       - watch
   - apiGroups:
-      - ''
+      - ""
     resources:
       - nodes
     verbs:
@@ -39,7 +40,7 @@ rules:
       - patch
       - watch
   - apiGroups:
-      - ''
+      - ""
     resources:
       - pods
     verbs:
@@ -48,7 +49,7 @@ rules:
       - patch
       - watch
   - apiGroups:
-      - ''
+      - ""
     resources:
       - pods/eviction
     verbs:

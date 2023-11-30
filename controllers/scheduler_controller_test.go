@@ -139,7 +139,7 @@ func Test_getMatchedPolicy(t *testing.T) {
 							},
 							PeriodSeconds: 120,
 						},
-						Match: time.Date(2020, time.November, 25, 7, 46, 04, 409158551, time.UTC),
+						Match: time.Date(2020, time.November, 25, 7, 46, 0o4, 409158551, time.UTC),
 					},
 				},
 				p: corev1alpha1.SchedulerPolicy{
@@ -164,7 +164,7 @@ func Test_getMatchedPolicy(t *testing.T) {
 					},
 					PeriodSeconds: 120,
 				},
-				Match: time.Date(2020, time.November, 25, 7, 46, 04, 409158551, time.UTC),
+				Match: time.Date(2020, time.November, 25, 7, 46, 0o4, 409158551, time.UTC),
 			},
 		},
 	}
@@ -179,7 +179,7 @@ func Test_getMatchedPolicy(t *testing.T) {
 
 func Test_nodeGroupIntOrFieldValue(t *testing.T) {
 	type args struct {
-		ng  clusterautoscaler.NodeGroup
+		ngs []clusterautoscaler.NodeGroup
 		iof corev1alpha1.IntOrField
 	}
 	tests := []struct {
@@ -188,17 +188,26 @@ func Test_nodeGroupIntOrFieldValue(t *testing.T) {
 		want int32
 	}{
 		{
-			name: "no int no field should return zero",
+			name: "with 1 nodegroup, no int no field should return zero",
 			args: args{
-				ng:  ng,
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				iof: corev1alpha1.IntOrField{},
 			},
 			want: 0,
 		},
 		{
-			name: "an int no field should return the int value",
+			name: "with 2 nodegroups, no int no field should return zero",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				iof: corev1alpha1.IntOrField{},
+			},
+			want: 0,
+		},
+
+		{
+			name: "with 1 nodegroup, an int no field should return the int value",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				iof: corev1alpha1.IntOrField{
 					IntVal: 2,
 				},
@@ -206,9 +215,19 @@ func Test_nodeGroupIntOrFieldValue(t *testing.T) {
 			want: 2,
 		},
 		{
-			name: "field Ready should return the desired value",
+			name: "with 2 nodegroups, an int no field should return the int value",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				iof: corev1alpha1.IntOrField{
+					IntVal: 2,
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "with 1 nodegroup, field Ready should return the desired value",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				iof: corev1alpha1.IntOrField{
 					IntVal:   2,
 					FieldVal: fieldPointer(corev1alpha1.FieldReady),
@@ -217,9 +236,20 @@ func Test_nodeGroupIntOrFieldValue(t *testing.T) {
 			want: 1,
 		},
 		{
-			name: "field Unready should return the desired value",
+			name: "with 2 nodegroups, field Ready should return twice the desired value",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				iof: corev1alpha1.IntOrField{
+					IntVal:   2,
+					FieldVal: fieldPointer(corev1alpha1.FieldReady),
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "with 1 nodegroup, field Unready should return the desired value",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				iof: corev1alpha1.IntOrField{
 					IntVal:   2,
 					FieldVal: fieldPointer(corev1alpha1.FieldUnready),
@@ -228,9 +258,20 @@ func Test_nodeGroupIntOrFieldValue(t *testing.T) {
 			want: 2,
 		},
 		{
-			name: "field NotStarted should return the desired value",
+			name: "with 2 nodegroups, field Unready should return twice the desired value",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				iof: corev1alpha1.IntOrField{
+					IntVal:   2,
+					FieldVal: fieldPointer(corev1alpha1.FieldUnready),
+				},
+			},
+			want: 4,
+		},
+		{
+			name: "with 1 nodegroup, field NotStarted should return the desired value",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				iof: corev1alpha1.IntOrField{
 					IntVal:   2,
 					FieldVal: fieldPointer(corev1alpha1.FieldNotStarted),
@@ -239,9 +280,20 @@ func Test_nodeGroupIntOrFieldValue(t *testing.T) {
 			want: 3,
 		},
 		{
-			name: "field LongNotStarted should return the desired value",
+			name: "with 2 nodegroups, field NotStarted should return twice the desired value",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				iof: corev1alpha1.IntOrField{
+					IntVal:   2,
+					FieldVal: fieldPointer(corev1alpha1.FieldNotStarted),
+				},
+			},
+			want: 6,
+		},
+		{
+			name: "with 1 nodegroup, field LongNotStarted should return the desired value",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				iof: corev1alpha1.IntOrField{
 					IntVal:   2,
 					FieldVal: fieldPointer(corev1alpha1.FieldLongNotStarted),
@@ -250,9 +302,20 @@ func Test_nodeGroupIntOrFieldValue(t *testing.T) {
 			want: 4,
 		},
 		{
-			name: "field Registered should return the desired value",
+			name: "with 2 nodegroups, field LongNotStarted should return twice the desired value",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				iof: corev1alpha1.IntOrField{
+					IntVal:   2,
+					FieldVal: fieldPointer(corev1alpha1.FieldLongNotStarted),
+				},
+			},
+			want: 8,
+		},
+		{
+			name: "with 1 nodegroup, field Registered should return the desired value",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				iof: corev1alpha1.IntOrField{
 					IntVal:   2,
 					FieldVal: fieldPointer(corev1alpha1.FieldRegistered),
@@ -261,9 +324,20 @@ func Test_nodeGroupIntOrFieldValue(t *testing.T) {
 			want: 5,
 		},
 		{
-			name: "field LongUnregistered should return the desired value",
+			name: "with 2 nodegroups, field Registered should return twice the desired value",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				iof: corev1alpha1.IntOrField{
+					IntVal:   2,
+					FieldVal: fieldPointer(corev1alpha1.FieldRegistered),
+				},
+			},
+			want: 10,
+		},
+		{
+			name: "with 1 nodegroup, field LongUnregistered should return the desired value",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				iof: corev1alpha1.IntOrField{
 					IntVal:   2,
 					FieldVal: fieldPointer(corev1alpha1.FieldLongUnregistered),
@@ -272,9 +346,20 @@ func Test_nodeGroupIntOrFieldValue(t *testing.T) {
 			want: 6,
 		},
 		{
-			name: "field CloudProviderTarget should return the desired value",
+			name: "with 2 nodegroups, field LongUnregistered should return twice the desired value",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				iof: corev1alpha1.IntOrField{
+					IntVal:   2,
+					FieldVal: fieldPointer(corev1alpha1.FieldLongUnregistered),
+				},
+			},
+			want: 12,
+		},
+		{
+			name: "with 1 nodegroup, field CloudProviderTarget should return the desired value",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				iof: corev1alpha1.IntOrField{
 					IntVal:   2,
 					FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
@@ -282,10 +367,21 @@ func Test_nodeGroupIntOrFieldValue(t *testing.T) {
 			},
 			want: 7,
 		},
+		{
+			name: "with 2 nodegroups, field CloudProviderTarget should return twice the desired value",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				iof: corev1alpha1.IntOrField{
+					IntVal:   2,
+					FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
+				},
+			},
+			want: 14,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := nodeGroupIntOrFieldValue(tt.args.ng, tt.args.iof); got != tt.want {
+			if got := nodeGroupIntOrFieldValue(tt.args.ngs, tt.args.iof); got != tt.want {
 				t.Errorf("nodeGroupIntOrFieldValue() = %v, want %v", got, tt.want)
 			}
 		})
@@ -294,7 +390,7 @@ func Test_nodeGroupIntOrFieldValue(t *testing.T) {
 
 func Test_matchPolicy(t *testing.T) {
 	type args struct {
-		ng     clusterautoscaler.NodeGroup
+		ngs    []clusterautoscaler.NodeGroup
 		policy corev1alpha1.SchedulerPolicy
 	}
 	tests := []struct {
@@ -303,9 +399,9 @@ func Test_matchPolicy(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "invalid operator should fail",
+			name: "with 1 nodegroup, invalid operator should fail",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				policy: corev1alpha1.SchedulerPolicy{
 					LeftOperand: corev1alpha1.IntOrField{
 						IntVal: 1,
@@ -319,9 +415,25 @@ func Test_matchPolicy(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "from 1 / operator = / to field ready (1) should succeed",
+			name: "with 2 nodegroups, invalid operator should fail",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				policy: corev1alpha1.SchedulerPolicy{
+					LeftOperand: corev1alpha1.IntOrField{
+						IntVal: 1,
+					},
+					Operator: corev1alpha1.ComparisonOperator("foo"),
+					RightOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldReady),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "with 1 nodegroup, from 1 / operator = / to field ready (1) should succeed",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				policy: corev1alpha1.SchedulerPolicy{
 					LeftOperand: corev1alpha1.IntOrField{
 						IntVal: 1,
@@ -335,9 +447,25 @@ func Test_matchPolicy(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "from field ready / operator >= / to field ready should succeed",
+			name: "with 2 nodegroups, from 2 / operator = / to field ready (1 * 2) should succeed",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				policy: corev1alpha1.SchedulerPolicy{
+					LeftOperand: corev1alpha1.IntOrField{
+						IntVal: 2,
+					},
+					Operator: corev1alpha1.ComparisonOperatorEqual,
+					RightOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldReady),
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "with 1 nodegroup, from field ready / operator >= / to field ready should succeed",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				policy: corev1alpha1.SchedulerPolicy{
 					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
@@ -351,9 +479,25 @@ func Test_matchPolicy(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "from field ready (1) / operator = / to field unready (2) should fail",
+			name: "with 2 nodegroups, from field ready / operator >= / to field ready should succeed",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				policy: corev1alpha1.SchedulerPolicy{
+					LeftOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldReady),
+					},
+					Operator: corev1alpha1.ComparisonOperatorGreaterThanOrEqual,
+					RightOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldReady),
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "with 1 nodegroup, from field ready (1) / operator = / to field unready (2) should fail",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				policy: corev1alpha1.SchedulerPolicy{
 					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldReady),
@@ -367,9 +511,25 @@ func Test_matchPolicy(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "from field unready (2) / operator > / to field notstarted (3) should fail",
+			name: "with 2 nodegroups, from field ready (1) / operator = / to field unready (2 * 2) should fail",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				policy: corev1alpha1.SchedulerPolicy{
+					LeftOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldReady),
+					},
+					Operator: corev1alpha1.ComparisonOperatorGreaterThanOrEqual,
+					RightOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldUnready),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "with 1 nodegroup, from field unready (2) / operator > / to field notstarted (3) should fail",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				policy: corev1alpha1.SchedulerPolicy{
 					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldUnready),
@@ -383,9 +543,25 @@ func Test_matchPolicy(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "from field notstarted (3) / operator > / to field longnotstarted (4) should fail",
+			name: "with 2 nodegroups, from field unready (2 * 2) / operator > / to field notstarted (3 * 2) should fail",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				policy: corev1alpha1.SchedulerPolicy{
+					LeftOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldUnready),
+					},
+					Operator: corev1alpha1.ComparisonOperatorGreaterThan,
+					RightOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldNotStarted),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "with 1 nodegroup, from field notstarted (3) / operator > / to field longnotstarted (4) should fail",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				policy: corev1alpha1.SchedulerPolicy{
 					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldNotStarted),
@@ -399,9 +575,25 @@ func Test_matchPolicy(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "from field cloudProviderTarget (7) / operator <= / to field ready (1) should fail",
+			name: "with 2 nodegroups, from field notstarted (3 * 2) / operator > / to field longnotstarted (4 * 2) should fail",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				policy: corev1alpha1.SchedulerPolicy{
+					LeftOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldNotStarted),
+					},
+					Operator: corev1alpha1.ComparisonOperatorGreaterThan,
+					RightOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldNotStarted),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "with 1 nodegroup, from field cloudProviderTarget (7) / operator <= / to field ready (1) should fail",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				policy: corev1alpha1.SchedulerPolicy{
 					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
@@ -415,9 +607,25 @@ func Test_matchPolicy(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "from field cloudProviderTarget (7) / operator > / to field ready (1) should succeed",
+			name: "with 2 nodegroups, from field cloudProviderTarget (7 * 2) / operator <= / to field ready (1 * 2) should fail",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				policy: corev1alpha1.SchedulerPolicy{
+					LeftOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
+					},
+					Operator: corev1alpha1.ComparisonOperatorLowerThanOrEqual,
+					RightOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldReady),
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "with 1 nodegroup, from field cloudProviderTarget (7) / operator > / to field ready (1) should succeed",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				policy: corev1alpha1.SchedulerPolicy{
 					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
@@ -431,9 +639,25 @@ func Test_matchPolicy(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "from field cloudProviderTarget (7) / operator != / to field ready (1) should succeed",
+			name: "with 2 nodegroups, from field cloudProviderTarget (7 * 2) / operator > / to field ready (1 * 2) should succeed",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				policy: corev1alpha1.SchedulerPolicy{
+					LeftOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
+					},
+					Operator: corev1alpha1.ComparisonOperatorGreaterThan,
+					RightOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldReady),
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "with 1 nodegroup, from field cloudProviderTarget (7) / operator != / to field ready (1) should succeed",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				policy: corev1alpha1.SchedulerPolicy{
 					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
@@ -447,9 +671,41 @@ func Test_matchPolicy(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "from field cloudProviderTarget (7) / operator < / to field ready (1) should succeed",
+			name: "with 2 nodegroups, from field cloudProviderTarget (7 * 2) / operator != / to field ready (1 * 2) should succeed",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				policy: corev1alpha1.SchedulerPolicy{
+					LeftOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
+					},
+					Operator: corev1alpha1.ComparisonOperatorNotEqual,
+					RightOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldReady),
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "with 1 nodegroup, from field cloudProviderTarget (7) / operator < / to field ready (1) should succeed",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
+				policy: corev1alpha1.SchedulerPolicy{
+					LeftOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldLongUnregistered),
+					},
+					Operator: corev1alpha1.ComparisonOperatorLowerThan,
+					RightOperand: corev1alpha1.IntOrField{
+						FieldVal: fieldPointer(corev1alpha1.FieldCloudProviderTarget),
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "with 2 nodegroups, from field cloudProviderTarget (7 * 2) / operator < / to field ready (1 * 2) should succeed",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
 				policy: corev1alpha1.SchedulerPolicy{
 					LeftOperand: corev1alpha1.IntOrField{
 						FieldVal: fieldPointer(corev1alpha1.FieldLongUnregistered),
@@ -465,7 +721,7 @@ func Test_matchPolicy(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := matchPolicy(tt.args.ng, tt.args.policy); got != tt.want {
+			if got := matchPolicy(tt.args.ngs, tt.args.policy); got != tt.want {
 				t.Errorf("matchPolicy() = %v, want %v", got, tt.want)
 			}
 		})
@@ -474,7 +730,7 @@ func Test_matchPolicy(t *testing.T) {
 
 func Test_nodeGroupReplicas(t *testing.T) {
 	type args struct {
-		ng        clusterautoscaler.NodeGroup
+		ngs       []clusterautoscaler.NodeGroup
 		operation corev1alpha1.IntOrArithmeticOperation
 	}
 	tests := []struct {
@@ -483,9 +739,9 @@ func Test_nodeGroupReplicas(t *testing.T) {
 		want int32
 	}{
 		{
-			name: "no operation should return int value",
+			name: "with 1 nodegroup, no operation should return int value",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				operation: corev1alpha1.IntOrArithmeticOperation{
 					IntVal:       3,
 					OperationVal: nil,
@@ -494,9 +750,20 @@ func Test_nodeGroupReplicas(t *testing.T) {
 			want: 3,
 		},
 		{
-			name: "mixed operands / plus operation should work",
+			name: "with 2 nodegroups, no operation should return int value",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				operation: corev1alpha1.IntOrArithmeticOperation{
+					IntVal:       3,
+					OperationVal: nil,
+				},
+			},
+			want: 3,
+		},
+		{
+			name: "with 1 nodegroup, mixed operands / plus operation should work",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				operation: corev1alpha1.IntOrArithmeticOperation{
 					// Operation has higher priority than int value
 					IntVal: 12,
@@ -514,9 +781,29 @@ func Test_nodeGroupReplicas(t *testing.T) {
 			want: 4,
 		},
 		{
-			name: "mixed operands / minus operation should work",
+			name: "with 2 nodegroups, mixed operands / plus operation should work",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				operation: corev1alpha1.IntOrArithmeticOperation{
+					// Operation has higher priority than int value
+					IntVal: 12,
+					OperationVal: &corev1alpha1.ArithmeticOperation{
+						LeftOperand: corev1alpha1.IntOrField{
+							FieldVal: fieldPointer(corev1alpha1.FieldUnready),
+						},
+						Operator: corev1alpha1.ArithmeticOperatorPlus,
+						RightOperand: corev1alpha1.IntOrField{
+							IntVal: 2,
+						},
+					},
+				},
+			},
+			want: 6,
+		},
+		{
+			name: "with 1 nodegroup, mixed operands / minus operation should work",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				operation: corev1alpha1.IntOrArithmeticOperation{
 					IntVal: 0,
 					OperationVal: &corev1alpha1.ArithmeticOperation{
@@ -533,9 +820,28 @@ func Test_nodeGroupReplicas(t *testing.T) {
 			want: 3,
 		},
 		{
-			name: "mixed operands / multiply operation should work",
+			name: "with 2 nodegroups, mixed operands / minus operation should work",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				operation: corev1alpha1.IntOrArithmeticOperation{
+					IntVal: 0,
+					OperationVal: &corev1alpha1.ArithmeticOperation{
+						LeftOperand: corev1alpha1.IntOrField{
+							IntVal: 4,
+						},
+						Operator: corev1alpha1.ArithmeticOperatorMinus,
+						RightOperand: corev1alpha1.IntOrField{
+							FieldVal: fieldPointer(corev1alpha1.FieldReady),
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "with 1 nodegroup, mixed operands / multiply operation should work",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				operation: corev1alpha1.IntOrArithmeticOperation{
 					IntVal: 0,
 					OperationVal: &corev1alpha1.ArithmeticOperation{
@@ -552,9 +858,28 @@ func Test_nodeGroupReplicas(t *testing.T) {
 			want: 12,
 		},
 		{
-			name: "mixed operands / multiply operation should work",
+			name: "with 2 nodegroups, mixed operands / multiply operation should work",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				operation: corev1alpha1.IntOrArithmeticOperation{
+					IntVal: 0,
+					OperationVal: &corev1alpha1.ArithmeticOperation{
+						LeftOperand: corev1alpha1.IntOrField{
+							FieldVal: fieldPointer(corev1alpha1.FieldLongUnregistered),
+						},
+						Operator: corev1alpha1.ArithmeticOperatorMultiply,
+						RightOperand: corev1alpha1.IntOrField{
+							IntVal: 2,
+						},
+					},
+				},
+			},
+			want: 24,
+		},
+		{
+			name: "with 1 nodegroup, mixed operands / divide operation should work",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				operation: corev1alpha1.IntOrArithmeticOperation{
 					IntVal: 0,
 					OperationVal: &corev1alpha1.ArithmeticOperation{
@@ -571,9 +896,28 @@ func Test_nodeGroupReplicas(t *testing.T) {
 			want: 3,
 		},
 		{
-			name: "negative result should return zero",
+			name: "with 2 nodegroups, mixed operands / divide operation should work",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				operation: corev1alpha1.IntOrArithmeticOperation{
+					IntVal: 0,
+					OperationVal: &corev1alpha1.ArithmeticOperation{
+						LeftOperand: corev1alpha1.IntOrField{
+							IntVal: 12,
+						},
+						Operator: corev1alpha1.ArithmeticOperatorDivide,
+						RightOperand: corev1alpha1.IntOrField{
+							FieldVal: fieldPointer(corev1alpha1.FieldLongNotStarted),
+						},
+					},
+				},
+			},
+			want: 1,
+		},
+		{
+			name: "with 1 nodegroup, negative result should return zero",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
 				operation: corev1alpha1.IntOrArithmeticOperation{
 					IntVal: 0,
 					OperationVal: &corev1alpha1.ArithmeticOperation{
@@ -590,9 +934,47 @@ func Test_nodeGroupReplicas(t *testing.T) {
 			want: 0,
 		},
 		{
-			name: "zero division should return zero",
+			name: "with 2 nodegroups, negative result should return zero",
 			args: args{
-				ng: ng,
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
+				operation: corev1alpha1.IntOrArithmeticOperation{
+					IntVal: 0,
+					OperationVal: &corev1alpha1.ArithmeticOperation{
+						LeftOperand: corev1alpha1.IntOrField{
+							IntVal: 1,
+						},
+						Operator: corev1alpha1.ArithmeticOperatorMinus,
+						RightOperand: corev1alpha1.IntOrField{
+							IntVal: 2,
+						},
+					},
+				},
+			},
+			want: 0,
+		},
+		{
+			name: "with 1 nodegroup, zero division should return zero",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng},
+				operation: corev1alpha1.IntOrArithmeticOperation{
+					IntVal: 0,
+					OperationVal: &corev1alpha1.ArithmeticOperation{
+						LeftOperand: corev1alpha1.IntOrField{
+							IntVal: 1,
+						},
+						Operator: corev1alpha1.ArithmeticOperatorDivide,
+						RightOperand: corev1alpha1.IntOrField{
+							IntVal: 0,
+						},
+					},
+				},
+			},
+			want: 0,
+		},
+		{
+			name: "with 2 nodegroups, zero division should return zero",
+			args: args{
+				ngs: []clusterautoscaler.NodeGroup{ng, ng},
 				operation: corev1alpha1.IntOrArithmeticOperation{
 					IntVal: 0,
 					OperationVal: &corev1alpha1.ArithmeticOperation{
@@ -611,7 +993,7 @@ func Test_nodeGroupReplicas(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := nodeGroupReplicas(tt.args.ng, tt.args.operation); got != tt.want {
+			if got := nodeGroupReplicas(tt.args.ngs, tt.args.operation); got != tt.want {
 				t.Errorf("nodeGroupReplicas() = %v, want %v", got, tt.want)
 			}
 		})

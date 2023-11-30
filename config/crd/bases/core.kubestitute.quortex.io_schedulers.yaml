@@ -36,14 +36,31 @@ spec:
             description: SchedulerSpec defines the desired state of Scheduler
             properties:
               autoscalingGroupFallback:
-                description: The name of the autoscaling group, in which the scheduler
+                description: Name of the autoscaling group in which the scheduler
                   will trigger fallback instances. This autoscaling group must not
-                  be managed by the cluster-autoscaler !!!
+                  be managed by the cluster-autoscaler. These ASG must not be managed
+                  by the cluster-autoscaler. Conflict with autoscalingGroupFallbacks.
                 type: string
+              autoscalingGroupFallbacks:
+                description: List of autoscaling groups names in which the scheduler
+                  will trigger fallback instances. These ASG must not be managed by
+                  the cluster-autoscaler. Conflict with autoscalingGroupFallback.
+                items:
+                  type: string
+                minItems: 1
+                type: array
               autoscalingGroupTarget:
-                description: The name of the autoscaling group, which the scheduler
-                  will use to apply the rules.
+                description: Name of the autoscaling group which the scheduler will
+                  use to apply the rules. Conflict with autoscalingGroupTargets.
                 type: string
+              autoscalingGroupTargets:
+                description: List of autoscaling groups names which the scheduler
+                  will use to apply the rules. The values are summed. Conflict with
+                  autoscalingGroupTarget.
+                items:
+                  type: string
+                minItems: 1
+                type: array
               scaleDownRules:
                 description: Scheduler rules used to match criteria on Target ASG
                   to trigger Scale Down on Fallback ASG.
@@ -278,9 +295,6 @@ spec:
                 enum:
                 - ClusterAutoscaler
                 type: string
-            required:
-            - autoscalingGroupFallback
-            - autoscalingGroupTarget
             type: object
           status:
             description: SchedulerStatus defines the observed state of Scheduler

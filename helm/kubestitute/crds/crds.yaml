@@ -33,15 +33,10 @@ spec:
           description: Instance is the Schema for the instances API
           properties:
             apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
               type: string
             kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
               type: string
             metadata:
               type: object
@@ -52,11 +47,7 @@ spec:
                   description: The AutoScaling Group name.
                   type: string
                 honorCooldown:
-                  description: Indicates whether Amazon EC2 Auto Scaling waits for
-                    the cooldown period to complete before initiating a scaling activity
-                    to set your Auto Scaling group to its new capacity. By default,
-                    Amazon EC2 Auto Scaling does not honor the cooldown period during
-                    manual scaling activities.
+                  description: Indicates whether Amazon EC2 Auto Scaling waits for the cooldown period to complete before initiating a scaling activity to set your Auto Scaling group to its new capacity. By default, Amazon EC2 Auto Scaling does not honor the cooldown period during manual scaling activities.
                   type: boolean
               required:
                 - autoscalingGroup
@@ -109,15 +100,10 @@ spec:
           description: PriorityExpander is the Schema for the priorityexpanders API
           properties:
             apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
               type: string
             kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
               type: string
             metadata:
               type: object
@@ -125,8 +111,7 @@ spec:
               description: PriorityExpanderSpec defines the desired state of PriorityExpander
               properties:
                 template:
-                  description: The Go template to parse, which will generate the priority
-                    expander config map for cluster autoscaler to use.
+                  description: The Go template to parse, which will generate the priority expander config map for cluster autoscaler to use.
                   type: string
               required:
                 - template
@@ -135,8 +120,7 @@ spec:
               description: PriorityExpanderStatus defines the observed state of PriorityExpander
               properties:
                 configMapPath:
-                  description: namespace/configmapname of the created priorityexpander
-                    ConfigMap
+                  description: namespace/configmapname of the created priorityexpander ConfigMap
                   type: string
                 lastSuccessfulUpdate:
                   description: The last time the prioriry exchanger was updated.
@@ -174,15 +158,10 @@ spec:
           description: Scheduler is the Schema for the schedulers API
           properties:
             apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
               type: string
             kind:
-              description: 'Kind is a string value representing the REST resource
-                this object represents. Servers may infer this from the endpoint the
-                client submits requests to. Cannot be updated. In CamelCase. More
-                info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
               type: string
             metadata:
               type: object
@@ -190,31 +169,33 @@ spec:
               description: SchedulerSpec defines the desired state of Scheduler
               properties:
                 autoscalingGroupFallback:
-                  description: The name of the autoscaling group, in which the scheduler
-                    will trigger fallback instances. This autoscaling group must not
-                    be managed by the cluster-autoscaler !!!
+                  description: Name of the autoscaling group in which the scheduler will trigger fallback instances. This autoscaling group must not be managed by the cluster-autoscaler. These ASG must not be managed by the cluster-autoscaler. Conflict with autoscalingGroupFallbacks.
                   type: string
+                autoscalingGroupFallbacks:
+                  description: List of autoscaling groups names in which the scheduler will trigger fallback instances. These ASG must not be managed by the cluster-autoscaler. Conflict with autoscalingGroupFallback.
+                  items:
+                    type: string
+                  minItems: 1
+                  type: array
                 autoscalingGroupTarget:
-                  description: The name of the autoscaling group, which the scheduler
-                    will use to apply the rules.
+                  description: Name of the autoscaling group which the scheduler will use to apply the rules. Conflict with autoscalingGroupTargets.
                   type: string
+                autoscalingGroupTargets:
+                  description: List of autoscaling groups names which the scheduler will use to apply the rules. The values are summed. Conflict with autoscalingGroupTarget.
+                  items:
+                    type: string
+                  minItems: 1
+                  type: array
                 scaleDownRules:
-                  description: Scheduler rules used to match criteria on Target ASG
-                    to trigger Scale Down on Fallback ASG.
+                  description: Scheduler rules used to match criteria on Target ASG to trigger Scale Down on Fallback ASG.
                   properties:
                     policies:
-                      description: Policies is a list of potential scaling polices
-                        which can be evaluated for scaling decisions. At least one
-                        policy must be specified. Instances will be scaled down one
-                        by one.
+                      description: Policies is a list of potential scaling polices which can be evaluated for scaling decisions. At least one policy must be specified. Instances will be scaled down one by one.
                       items:
-                        description: SchedulerPolicy is a single policy which must
-                          hold true for a specified past interval.
+                        description: SchedulerPolicy is a single policy which must hold true for a specified past interval.
                         properties:
                           leftOperand:
-                            description: LeftOperand is the left operand of the comparison.
-                              It could be the target ASG Health field from which this
-                              policy is applied or an integer.
+                            description: LeftOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
                             properties:
                               field:
                                 description: An Field for value.
@@ -233,8 +214,7 @@ spec:
                                 type: integer
                             type: object
                           operator:
-                            description: A comparison operator used to apply policy
-                              between From and To.
+                            description: A comparison operator used to apply policy between From and To.
                             enum:
                               - equal
                               - notEqual
@@ -244,14 +224,11 @@ spec:
                               - lowerThanOrEqual
                             type: string
                           periodSeconds:
-                            description: PeriodSeconds specifies the window of time
-                              for which the policy should hold true.
+                            description: PeriodSeconds specifies the window of time for which the policy should hold true.
                             format: int32
                             type: integer
                           rightOperand:
-                            description: RightOperand is the left operand of the comparison.
-                              It could be the target ASG Health field from which this
-                              policy is applied or an integer.
+                            description: RightOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
                             properties:
                               field:
                                 description: An Field for value.
@@ -281,22 +258,15 @@ spec:
                       type: integer
                   type: object
                 scaleUpRules:
-                  description: Scheduler rules used to match criteria on Target ASG
-                    to trigger Scale Up on Fallback ASG.
+                  description: Scheduler rules used to match criteria on Target ASG to trigger Scale Up on Fallback ASG.
                   properties:
                     policies:
-                      description: Policies is a list of potential scaling polices
-                        which can be evaluated for scaling decisions. At least one
-                        policy must be specified. For scale ups the matching policy
-                        which triggers the highest number of replicas will be used.
+                      description: Policies is a list of potential scaling polices which can be evaluated for scaling decisions. At least one policy must be specified. For scale ups the matching policy which triggers the highest number of replicas will be used.
                       items:
-                        description: AdvancedSchedulerPolicy is a policy that allow
-                          arithmetic operation to compute replicas.
+                        description: AdvancedSchedulerPolicy is a policy that allow arithmetic operation to compute replicas.
                         properties:
                           leftOperand:
-                            description: LeftOperand is the left operand of the comparison.
-                              It could be the target ASG Health field from which this
-                              policy is applied or an integer.
+                            description: LeftOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
                             properties:
                               field:
                                 description: An Field for value.
@@ -315,8 +285,7 @@ spec:
                                 type: integer
                             type: object
                           operator:
-                            description: A comparison operator used to apply policy
-                              between From and To.
+                            description: A comparison operator used to apply policy between From and To.
                             enum:
                               - equal
                               - notEqual
@@ -326,8 +295,7 @@ spec:
                               - lowerThanOrEqual
                             type: string
                           periodSeconds:
-                            description: PeriodSeconds specifies the window of time
-                              for which the policy should hold true.
+                            description: PeriodSeconds specifies the window of time for which the policy should hold true.
                             format: int32
                             type: integer
                           replicas:
@@ -341,8 +309,7 @@ spec:
                                 description: An arithmetic operation..
                                 properties:
                                   leftOperand:
-                                    description: LeftOperand is the left operand of
-                                      the operation.
+                                    description: LeftOperand is the left operand of the operation.
                                     properties:
                                       field:
                                         description: An Field for value.
@@ -361,8 +328,7 @@ spec:
                                         type: integer
                                     type: object
                                   operator:
-                                    description: An arithmetic operator used to apply
-                                      policy between From and To.
+                                    description: An arithmetic operator used to apply policy between From and To.
                                     enum:
                                       - plus
                                       - minus
@@ -370,8 +336,7 @@ spec:
                                       - divide
                                     type: string
                                   rightOperand:
-                                    description: RightOperand is the right operand
-                                      of the operation.
+                                    description: RightOperand is the right operand of the operation.
                                     properties:
                                       field:
                                         description: An Field for value.
@@ -396,9 +361,7 @@ spec:
                                 type: object
                             type: object
                           rightOperand:
-                            description: RightOperand is the left operand of the comparison.
-                              It could be the target ASG Health field from which this
-                              policy is applied or an integer.
+                            description: RightOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
                             properties:
                               field:
                                 description: An Field for value.
@@ -433,9 +396,6 @@ spec:
                   enum:
                     - ClusterAutoscaler
                   type: string
-              required:
-                - autoscalingGroupFallback
-                - autoscalingGroupTarget
               type: object
             status:
               description: SchedulerStatus defines the observed state of Scheduler

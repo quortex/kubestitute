@@ -295,8 +295,10 @@ SchedulerSpec defines the desired state of Scheduler
 |===
 | Field | Description
 | *`trigger`* __SchedulerTrigger__ | The Scheduler Trigger
-| *`autoscalingGroupTarget`* __string__ | The name of the autoscaling group, which the scheduler will use to apply the rules.
-| *`autoscalingGroupFallback`* __string__ | The name of the autoscaling group, in which the scheduler will trigger fallback instances. This autoscaling group must not be managed by the cluster-autoscaler !!!
+| *`autoscalingGroupTarget`* __string__ | Name of the autoscaling group which the scheduler will use to apply the rules. Conflict with autoscalingGroupTargets.
+| *`autoscalingGroupTargets`* __string array__ | List of autoscaling groups names which the scheduler will use to apply the rules. The values are summed. Conflict with autoscalingGroupTarget.
+| *`autoscalingGroupFallback`* __string__ | Name of the autoscaling group in which the scheduler will trigger fallback instances. This autoscaling group must not be managed by the cluster-autoscaler. These ASG must not be managed by the cluster-autoscaler. Conflict with autoscalingGroupFallbacks.
+| *`autoscalingGroupFallbacks`* __string array__ | List of autoscaling groups names in which the scheduler will trigger fallback instances. These ASG must not be managed by the cluster-autoscaler. Conflict with autoscalingGroupFallback.
 | *`scaleUpRules`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaleuprules[$$ScaleUpRules$$]__ | Scheduler rules used to match criteria on Target ASG to trigger Scale Up on Fallback ASG.
 | *`scaleDownRules`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaledownrules[$$ScaleDownRules$$]__ | Scheduler rules used to match criteria on Target ASG to trigger Scale Down on Fallback ASG.
 |===

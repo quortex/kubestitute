@@ -92,6 +92,14 @@ var (
 			Help:      "Is 1 if template is unparsable.",
 		},
 	)
+	SchedulerTargetNodeGroupStatus = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "scheduler_node_group_status",
+			Help:      "Represents status of the target node group.",
+		},
+		[]string{"node_group_name", "scale_up_status"},
+	)
 )
 
 func init() {
@@ -105,5 +113,6 @@ func init() {
 		AutoscalingGroupMinSize,
 		AutoscalingGroupMaxSize,
 		PriorityExpanderTemplateError,
+		SchedulerTargetNodeGroupStatus,
 	)
 }

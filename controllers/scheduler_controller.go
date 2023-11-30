@@ -21,10 +21,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
 	kcore_v1 "k8s.io/api/core/v1"
 	kmeta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,6 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
+	"quortex.io/kubestitute/metrics"
 	"quortex.io/kubestitute/utils/clusterautoscaler"
 )
 
@@ -135,13 +138,48 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	// ... and parse it.
+	// Parse it and retrieve NodeGroups from targets and fallbacks
 	status := clusterautoscaler.ParseReadableString(readableStatus)
-	targetStatus := clusterautoscaler.GetNodeGroupWithName(status.NodeGroups, scheduler.Spec.ASGTarget)
-	if targetStatus == nil {
-		err := fmt.Errorf("node group not in cluster autoscaler status: %s", scheduler.Spec.ASGTarget)
-		log.Error(err, "Invalid autoscalingGroupTarget", "autoscalingGroupTarget", scheduler.Spec.ASGTarget)
-		return ctrl.Result{}, err
+
+	asgTargets := scheduler.Spec.ASGTargets
+	if len(asgTargets) == 0 {
+		asgTargets = []string{scheduler.Spec.ASGTarget}
+	}
+	targetNodeGroups := make([]clusterautoscaler.NodeGroup, 0, len(asgTargets))
+	for _, target := range asgTargets {
+		targetNodeGroup := clusterautoscaler.GetNodeGroupWithName(status.NodeGroups, target)
+		if targetNodeGroup == nil {
+			err := fmt.Errorf("node group not in cluster autoscaler status: %s", target)
+			log.Error(err, "Invalid autoscalingGroupTarget", "autoscalingGroupTarget", target)
+			return ctrl.Result{}, err
+		}
+		targetNodeGroups = append(targetNodeGroups, *targetNodeGroup)
+	}
+
+	asgFallbacks := scheduler.Spec.ASGFallbacks
+	if len(asgFallbacks) == 0 {
+		asgFallbacks = []string{scheduler.Spec.ASGFallback}
+	}
+
+	// Update target statuses
+	for i := range targetNodeGroups {
+		for _, s := range []clusterautoscaler.ScaleUpStatus{
+			clusterautoscaler.ScaleUpNeeded,
+			clusterautoscaler.ScaleUpNotNeeded,
+			clusterautoscaler.ScaleUpInProgress,
+			clusterautoscaler.ScaleUpNoActivity,
+			clusterautoscaler.ScaleUpBackoff,
+		} {
+			targetNodeGroupStatus := metrics.SchedulerTargetNodeGroupStatus.With(prometheus.Labels{
+				"node_group_name": targetNodeGroups[i].Name,
+				"scale_up_status": strings.ToLower(string(s)),
+			})
+			if targetNodeGroups[i].ScaleUp.Status == s {
+				targetNodeGroupStatus.Set(1)
+			} else {
+				targetNodeGroupStatus.Set(0)
+			}
+		}
 	}
 
 	// Get last ScaleUp policies that matched.
@@ -163,7 +201,7 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	for _, e := range scheduler.Spec.ScaleUpRules.Policies {
 		// Here, we control that NodeGroup match desired Scheduler policy.
-		match := matchPolicy(*targetStatus, e.SchedulerPolicy)
+		match := matchPolicy(targetNodeGroups, e.SchedulerPolicy)
 		if !match {
 			log.V(1).Info("ScaleUp policy did not match", "policy", e.SchedulerPolicy)
 			continue
@@ -184,7 +222,7 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		period := time.Duration(e.PeriodSeconds) * time.Second
 		log.V(1).Info("ScaleUp policy matched", "policy", policy, "since", since, "period", period)
 		if since >= period {
-			r := nodeGroupReplicas(*targetStatus, e.Replicas)
+			r := nodeGroupReplicas(targetNodeGroups, e.Replicas)
 			// The desired replicas is the highest replicas of a matching policy.
 			if replicas < r {
 				replicas = r
@@ -208,7 +246,7 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	for _, e := range scheduler.Spec.ScaleDownRules.Policies {
 		// Here, we control that NodeGroup match desired Scheduler policy.
-		match := matchPolicy(*targetStatus, e)
+		match := matchPolicy(targetNodeGroups, e)
 		if !match {
 			log.V(1).Info("ScaleDown policy did not match", "policy", e)
 			continue
@@ -234,11 +272,21 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
-	// If the scale up is in state backoff, skip scale down. It is
-	// needed since in Backoff the cluster-autoscaler will not increase
+	// If all ASG scale up are in backoff, skip scale down.
+	// It is needed since in Backoff the cluster-autoscaler will not increase
 	// the cloudProviderTarget, e.g. : Backoff (ready=0 cloudProviderTarget=0).
-	if targetStatus.ScaleUp.Status == clusterautoscaler.ScaleUpBackoff {
-		down = 0
+	if down > 0 {
+		scaleDownAllowed := false
+		for i := range targetNodeGroups {
+			if targetNodeGroups[i].ScaleUp.Status != clusterautoscaler.ScaleUpBackoff {
+				scaleDownAllowed = true
+				break
+			}
+		}
+		if !scaleDownAllowed {
+			log.V(1).Info("Skipping scaleDown due to scaleUp in backoff")
+			down = 0
+		}
 	}
 
 	// List instances already deployed by this scheduler
@@ -282,25 +330,49 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			}
 		}
 
-		// For each new replica, we create an instance.
-		asg := scheduler.Spec.ASGFallback
-		log.Info("Scaling up", "autoscalingGroup", asg, "count", up)
-		for i := 0; i < int(up); i++ {
-			if err := r.Create(ctx, &corev1alpha1.Instance{
-				ObjectMeta: kmeta_v1.ObjectMeta{
-					GenerateName: scheduler.Name + "-",
-					Namespace:    scheduler.Namespace,
-					Labels:       map[string]string{lblScheduler: scheduler.Name},
-				},
-				Spec: corev1alpha1.InstanceSpec{
-					ASG: asg,
-				},
-			}); err != nil {
-				log.Error(err, "Unable to create Instance", "autoscalingGroup", asg)
-				r.recorder.Eventf(&scheduler, kcore_v1.EventTypeWarning, "FailedScaleUp", "Instance creation failed err: %s", err.Error())
-				return ctrl.Result{}, err
+		// Count fallback instances per ASG
+		instancePerASG := make([]int32, len(asgFallbacks))
+		for i := range asgFallbacks {
+			for j := range instances.Items {
+				if instances.Items[j].Spec.ASG == asgFallbacks[i] {
+					instancePerASG[i] += 1
+				}
 			}
-			r.recorder.Event(&scheduler, kcore_v1.EventTypeNormal, "SuccessfulScaleUp", "New instance created")
+		}
+
+		// Distribute the scaleUp over all fallbacks
+		scaleUpPerASG := make([]int32, len(asgFallbacks))
+		for i := 0; i < int(up); i++ {
+			// Search the ASG containing the lower number of instances
+			idx := 0
+			for j := range asgFallbacks {
+				if instancePerASG[j]+scaleUpPerASG[j] < instancePerASG[idx]+scaleUpPerASG[idx] {
+					idx = j
+				}
+			}
+			scaleUpPerASG[idx] += 1
+		}
+
+		// For each new replica, we create an instance.
+		for i := range asgFallbacks {
+			for j := 0; j < int(scaleUpPerASG[i]); j++ {
+				log.Info("Scaling up", "autoscalingGroup", asgFallbacks[i], "count", up)
+				if err := r.Create(ctx, &corev1alpha1.Instance{
+					ObjectMeta: kmeta_v1.ObjectMeta{
+						GenerateName: scheduler.Name + "-",
+						Namespace:    scheduler.Namespace,
+						Labels:       map[string]string{lblScheduler: scheduler.Name},
+					},
+					Spec: corev1alpha1.InstanceSpec{
+						ASG: asgFallbacks[i],
+					},
+				}); err != nil {
+					log.Error(err, "Unable to create Instance", "autoscalingGroup", asgFallbacks[i])
+					r.recorder.Eventf(&scheduler, kcore_v1.EventTypeWarning, "FailedScaleUp", "Instance creation failed err: %s", err.Error())
+					return ctrl.Result{}, err
+				}
+				r.recorder.Event(&scheduler, kcore_v1.EventTypeNormal, "SuccessfulScaleUp", "New instance created")
+			}
 		}
 
 		// Scheduler Status for scaling up :
@@ -350,7 +422,7 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				r.recorder.Eventf(&scheduler, kcore_v1.EventTypeWarning, "FailedScaleDown", "Instance deletion failed err: %s", err.Error())
 				return ctrl.Result{}, err
 			}
-			r.recorder.Event(&scheduler, kcore_v1.EventTypeNormal, "SuccessfulScaleDown", "Instance succesfuly deleted")
+			r.recorder.Event(&scheduler, kcore_v1.EventTypeNormal, "SuccessfulScaleDown", "Instance successfully deleted")
 		}
 
 		// Scheduler Status for scaling down :
@@ -440,35 +512,50 @@ func getMatchedPolicy(m []matchedPolicy, p corev1alpha1.SchedulerPolicy) *matche
 // nodeGroupIntOrFieldValue returns the desired value matching IntOrField.
 // Field returns the NodeGroup Field value ans has priority over Int if a valid
 // Field is given.
-func nodeGroupIntOrFieldValue(ng clusterautoscaler.NodeGroup, iof corev1alpha1.IntOrField) int32 {
+func nodeGroupIntOrFieldValue(ngs []clusterautoscaler.NodeGroup, iof corev1alpha1.IntOrField) int32 {
 	if iof.FieldVal == nil {
 		return iof.IntVal
 	}
 
+	var val int32
 	switch *iof.FieldVal {
 	case corev1alpha1.FieldReady:
-		return ng.Health.Ready
+		for i := range ngs {
+			val += ngs[i].Health.Ready
+		}
 	case corev1alpha1.FieldUnready:
-		return ng.Health.Unready
+		for i := range ngs {
+			val += ngs[i].Health.Unready
+		}
 	case corev1alpha1.FieldNotStarted:
-		return ng.Health.NotStarted
+		for i := range ngs {
+			val += ngs[i].Health.NotStarted
+		}
 	case corev1alpha1.FieldLongNotStarted:
-		return ng.Health.LongNotStarted
+		for i := range ngs {
+			val += ngs[i].Health.LongNotStarted
+		}
 	case corev1alpha1.FieldRegistered:
-		return ng.Health.Registered
+		for i := range ngs {
+			val += ngs[i].Health.Registered
+		}
 	case corev1alpha1.FieldLongUnregistered:
-		return ng.Health.LongUnregistered
+		for i := range ngs {
+			val += ngs[i].Health.LongUnregistered
+		}
 	case corev1alpha1.FieldCloudProviderTarget:
-		return ng.Health.CloudProviderTarget
+		for i := range ngs {
+			val += ngs[i].Health.CloudProviderTarget
+		}
 	}
 
-	return iof.IntVal
+	return val
 }
 
 // matchPolicy returns if given NodeGroup match desired Scheduler policy.
-func matchPolicy(ng clusterautoscaler.NodeGroup, policy corev1alpha1.SchedulerPolicy) bool {
-	left := nodeGroupIntOrFieldValue(ng, policy.LeftOperand)
-	right := nodeGroupIntOrFieldValue(ng, policy.RightOperand)
+func matchPolicy(ngs []clusterautoscaler.NodeGroup, policy corev1alpha1.SchedulerPolicy) bool {
+	left := nodeGroupIntOrFieldValue(ngs, policy.LeftOperand)
+	right := nodeGroupIntOrFieldValue(ngs, policy.RightOperand)
 
 	// Perform comparison to compute Scheduler policy.
 	switch policy.Operator {
@@ -490,13 +577,13 @@ func matchPolicy(ng clusterautoscaler.NodeGroup, policy corev1alpha1.SchedulerPo
 }
 
 // replicas returns the number of required replicas.
-func nodeGroupReplicas(ng clusterautoscaler.NodeGroup, operation corev1alpha1.IntOrArithmeticOperation) int32 {
+func nodeGroupReplicas(ngs []clusterautoscaler.NodeGroup, operation corev1alpha1.IntOrArithmeticOperation) int32 {
 	if operation.OperationVal == nil {
 		return operation.IntVal
 	}
 
-	left := nodeGroupIntOrFieldValue(ng, operation.OperationVal.LeftOperand)
-	right := nodeGroupIntOrFieldValue(ng, operation.OperationVal.RightOperand)
+	left := nodeGroupIntOrFieldValue(ngs, operation.OperationVal.LeftOperand)
+	right := nodeGroupIntOrFieldValue(ngs, operation.OperationVal.RightOperand)
 
 	// a simple func to get the biggest int32
 	max := func(x, y int32) int32 {
