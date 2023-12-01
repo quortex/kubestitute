@@ -9,7 +9,7 @@ require (
 	github.com/go-test/deep v1.1.0
 	github.com/google/uuid v1.3.1
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.29.0
+	github.com/onsi/gomega v1.30.0
 	github.com/prometheus/client_golang v1.17.0
 	go.uber.org/zap v1.26.0
 	k8s.io/api v0.25.12
