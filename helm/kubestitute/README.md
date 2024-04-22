@@ -117,6 +117,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | serviceMonitor.interval | string | `""` | Override prometheus operator scrapping interval. |
 | serviceMonitor.scrapeTimeout | string | `""` | Override prometheus operator scrapping timeout. |
 | serviceMonitor.relabelings | list | `[]` | Relabellings to apply to samples before scraping. |
+| extraObjects | list | `[]` | Extra objects to deploy (value evaluated as a template). |
 
 ## Maintainers
 
