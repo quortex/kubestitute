@@ -51,3 +51,14 @@ app.kubernetes.io/name: {{ include "kubestitute.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 control-plane: controller-manager
 {{- end -}}
+
+{{/*
+Renders a complete tree, even values that contains template.
+*/}}
+{{- define "kubestitute.render" -}}
+  {{- if typeIs "string" .value }}
+    {{- tpl .value .context }}
+  {{ else }}
+    {{- tpl (.value | toYaml) .context }}
+  {{- end }}
+{{- end -}}

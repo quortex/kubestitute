@@ -148,3 +148,6 @@ serviceMonitor:
   scrapeTimeout: ""
   # -- Relabellings to apply to samples before scraping.
   relabelings: []
+
+# -- Extra objects to deploy (value evaluated as a template).
+extraObjects: []

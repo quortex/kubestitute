@@ -1,6 +1,6 @@
 # kubestitute
 
-![Version: 2.3.0](https://img.shields.io/badge/Version-2.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.2.0](https://img.shields.io/badge/AppVersion-2.2.0-informational?style=flat-square)
+![Version: 3.0.0](https://img.shields.io/badge/Version-3.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.2.0](https://img.shields.io/badge/AppVersion-2.2.0-informational?style=flat-square)
 
 Kubestitute is an event based instances lifecycle manager for Kubernetes.
 
@@ -117,6 +117,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | serviceMonitor.interval | string | `""` | Override prometheus operator scrapping interval. |
 | serviceMonitor.scrapeTimeout | string | `""` | Override prometheus operator scrapping timeout. |
 | serviceMonitor.relabelings | list | `[]` | Relabellings to apply to samples before scraping. |
+| extraObjects | list | `[]` | Extra objects to deploy (value evaluated as a template). |
 
 ## Maintainers
 

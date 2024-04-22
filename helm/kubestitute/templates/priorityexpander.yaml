@@ -6,6 +6,6 @@ metadata:
   name: {{ .name }}
   namespace: {{ .namespace }}
 spec:
-  template: {{ toYaml .template | indent 4 }}
+  template: {{ toYaml (tpl .template $) | indent 4 }}
 {{- end }}
 {{- end }}
