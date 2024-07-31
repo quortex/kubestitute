@@ -62,6 +62,7 @@ func main() {
 
 	var clusterAutoscalerNamespace string
 	var clusterAutoscalerStatusName string
+	var clusterAutoscalerStatusLegacyFormat bool
 	var clusterAutoscalerPEConfigMapName string
 	var priorityExpanderNamespace string
 	var priorityExpanderName string
@@ -81,6 +82,7 @@ func main() {
 
 	flag.StringVar(&clusterAutoscalerNamespace, "clusterautoscaler-namespace", "kube-system", "The namespace the clusterautoscaler belongs to.")
 	flag.StringVar(&clusterAutoscalerStatusName, "clusterautoscaler-status-name", "cluster-autoscaler-status", "The name of the clusterautoscaler status configmap.")
+	flag.BoolVar(&clusterAutoscalerStatusLegacyFormat, "clusterautoscaler-status-legacy-format", false, "Whether the clusterautoscaler status configmap if formatted in the legacy readable format (for version older than 1.30.0).")
 	flag.StringVar(&clusterAutoscalerPEConfigMapName, "cluster-autoscaler-priority-expander-config-map", "cluster-autoscaler-priority-expander", "The name of the clusterautoscaler priority expander config map.")
 	flag.StringVar(&priorityExpanderNamespace, "priority-expander-namespace", "kubestitute-system", "The namespace the _unique_ priority expander object belongs to.")
 	flag.StringVar(&priorityExpanderName, "priority-expander-name", "priority-expander-default", "The only accepted name for the priority expander object.")
@@ -105,9 +107,9 @@ func main() {
 	autoscaling := autoscaling.New(session)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
+		Scheme: scheme,
 		Metrics: metricsserver.Options{
-			BindAddress:   metricsAddr,
+			BindAddress: metricsAddr,
 		},
 		WebhookServer:          webhook.NewServer(webhook.Options{}),
 		HealthProbeBindAddress: probeAddr,
@@ -142,8 +144,9 @@ func main() {
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 		Configuration: controllers.SchedulerReconcilerConfiguration{
-			ClusterAutoscalerNamespace:  clusterAutoscalerNamespace,
-			ClusterAutoscalerStatusName: clusterAutoscalerStatusName,
+			ClusterAutoscalerNamespace:          clusterAutoscalerNamespace,
+			ClusterAutoscalerStatusName:         clusterAutoscalerStatusName,
+			ClusterAutoscalerStatusLegacyFormat: clusterAutoscalerStatusLegacyFormat,
 		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Scheduler")
@@ -162,11 +165,12 @@ func main() {
 			Client: mgr.GetClient(),
 			Scheme: mgr.GetScheme(),
 			Configuration: controllers.PriorityExpanderReconcilerConfiguration{
-				ClusterAutoscalerNamespace:       clusterAutoscalerNamespace,
-				ClusterAutoscalerStatusName:      clusterAutoscalerStatusName,
-				ClusterAutoscalerPEConfigMapName: clusterAutoscalerPEConfigMapName,
-				PriorityExpanderNamespace:        priorityExpanderNamespace,
-				PriorityExpanderName:             priorityExpanderName,
+				ClusterAutoscalerNamespace:          clusterAutoscalerNamespace,
+				ClusterAutoscalerStatusName:         clusterAutoscalerStatusName,
+				ClusterAutoscalerStatusLegacyFormat: clusterAutoscalerStatusLegacyFormat,
+				ClusterAutoscalerPEConfigMapName:    clusterAutoscalerPEConfigMapName,
+				PriorityExpanderNamespace:           priorityExpanderNamespace,
+				PriorityExpanderName:                priorityExpanderName,
 			},
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create controller", "controller", "PriorityExpander")

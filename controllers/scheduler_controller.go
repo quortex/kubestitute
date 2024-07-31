@@ -55,8 +55,9 @@ const (
 
 // SchedulerReconcilerConfiguration wraps configuration for the SchedulerReconciler.
 type SchedulerReconcilerConfiguration struct {
-	ClusterAutoscalerNamespace  string
-	ClusterAutoscalerStatusName string
+	ClusterAutoscalerNamespace          string
+	ClusterAutoscalerStatusName         string
+	ClusterAutoscalerStatusLegacyFormat bool
 }
 
 // SchedulerReconciler reconciles a Scheduler object
@@ -138,7 +139,17 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// Parse it and retrieve NodeGroups from targets and fallbacks
-	status := clusterautoscaler.ParseReadableString(readableStatus)
+	var status *clusterautoscaler.Status
+	if !r.Configuration.ClusterAutoscalerStatusLegacyFormat {
+		s, err := clusterautoscaler.ParseYamlStatus(readableStatus)
+		if err != nil {
+			log.Error(err, "Unable to parse status configmap yaml content")
+			return ctrl.Result{}, fmt.Errorf("unable to parse status configmap yaml content: %w", err)
+		}
+		status = s
+	} else {
+		status = clusterautoscaler.ParseReadableStatus(readableStatus)
+	}
 
 	asgTargets := scheduler.Spec.ASGTargets
 	if len(asgTargets) == 0 {

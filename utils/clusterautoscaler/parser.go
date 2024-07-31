@@ -2,12 +2,96 @@ package clusterautoscaler
 
 import (
 	"bufio"
+	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v2"
 )
+
+// ParseReadableString parses the cluster autoscaler status
+// in readable format into a ClusterAutoscaler Status struct.
+func ParseYamlStatus(s string) (*Status, error) {
+	var clusterAutoscalerStatus ClusterAutoscalerStatus
+	if err := yaml.Unmarshal([]byte(s), &clusterAutoscalerStatus); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal status: %v", err)
+	}
+
+	status := Status{
+		Time:        parseDate(clusterAutoscalerStatus.Time),
+		ClusterWide: convertClusterWideStatus(clusterAutoscalerStatus.ClusterWide),
+		NodeGroups:  make([]NodeGroup, len(clusterAutoscalerStatus.NodeGroups)),
+	}
+
+	for i := range clusterAutoscalerStatus.NodeGroups {
+		status.NodeGroups[i] = convertNodeGroupStatus(clusterAutoscalerStatus.NodeGroups[i])
+	}
+
+	return &status, nil
+}
+
+func convertClusterWideStatus(status ClusterWideStatus) ClusterWide {
+	return ClusterWide{
+		Health: Health{
+			Status:             HealthStatus(status.Health.Status),
+			Ready:              int32(status.Health.NodeCounts.Registered.Ready),
+			Unready:            int32(status.Health.NodeCounts.Registered.Unready.Total),
+			NotStarted:         int32(status.Health.NodeCounts.Registered.NotStarted),
+			LongNotStarted:     0, // FIXME: field does not exist anymore
+			Registered:         int32(status.Health.NodeCounts.Registered.Total),
+			LongUnregistered:   int32(status.Health.NodeCounts.LongUnregistered),
+			LastProbeTime:      status.Health.LastProbeTime.Time,
+			LastTransitionTime: status.Health.LastTransitionTime.Time,
+		},
+		ScaleDown: ScaleDown{
+			Status:             ScaleDownStatus(status.ScaleDown.Status),
+			Candidates:         int32(status.ScaleDown.Candidates),
+			LastProbeTime:      status.ScaleDown.LastProbeTime.Time,
+			LastTransitionTime: status.ScaleDown.LastTransitionTime.Time,
+		},
+		ScaleUp: ScaleUp{
+			Status:             ScaleUpStatus(status.ScaleUp.Status),
+			LastProbeTime:      status.ScaleUp.LastProbeTime.Time,
+			LastTransitionTime: status.ScaleUp.LastTransitionTime.Time,
+		},
+	}
+}
+
+func convertNodeGroupStatus(status NodeGroupStatus) NodeGroup {
+	return NodeGroup{
+		Name: status.Name,
+		Health: NodeGroupHealth{
+			Health: Health{
+				Status:             HealthStatus(status.Health.Status),
+				Ready:              int32(status.Health.NodeCounts.Registered.Ready),
+				Unready:            int32(status.Health.NodeCounts.Registered.Unready.Total),
+				NotStarted:         int32(status.Health.NodeCounts.Registered.NotStarted),
+				LongNotStarted:     0, // FIXME: field does not exist anymore
+				Registered:         int32(status.Health.NodeCounts.Registered.Total),
+				LongUnregistered:   int32(status.Health.NodeCounts.LongUnregistered),
+				LastProbeTime:      status.Health.LastProbeTime.Time,
+				LastTransitionTime: status.Health.LastTransitionTime.Time,
+			},
+			CloudProviderTarget: int32(status.Health.CloudProviderTarget),
+			MinSize:             int32(status.Health.MinSize),
+			MaxSize:             int32(status.Health.MaxSize),
+		},
+		ScaleDown: ScaleDown{
+			Status:             ScaleDownStatus(status.ScaleDown.Status),
+			Candidates:         int32(status.ScaleDown.Candidates),
+			LastProbeTime:      status.ScaleDown.LastProbeTime.Time,
+			LastTransitionTime: status.ScaleDown.LastTransitionTime.Time,
+		},
+		ScaleUp: ScaleUp{
+			Status:             ScaleUpStatus(status.ScaleUp.Status),
+			LastProbeTime:      status.ScaleUp.LastProbeTime.Time,
+			LastTransitionTime: status.ScaleUp.LastTransitionTime.Time,
+		},
+	}
+}
 
 const (
 	// configMapLastUpdateFormat it the timestamp format used for last update annotation in status ConfigMap
@@ -39,10 +123,9 @@ var (
 	regexDate                      = regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(.\d*)? \+\d* [A-Z]*)`)
 )
 
-// ParseReadableString parses the cluster autoscaler status
+// ParseReadableStatus parses the cluster autoscaler status
 // in readable format into a ClusterAutoscaler Status struct.
-func ParseReadableString(s string) *Status {
-
+func ParseReadableStatus(s string) *Status {
 	var currentMajor interface{}
 	var currentMinor interface{}
 
