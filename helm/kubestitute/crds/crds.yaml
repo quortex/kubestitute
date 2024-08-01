@@ -2,8 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: instances.core.kubestitute.quortex.io
 spec:
   group: core.kubestitute.quortex.io
@@ -33,10 +32,19 @@ spec:
           description: Instance is the Schema for the instances API
           properties:
             apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              description: |-
+                APIVersion defines the versioned schema of this representation of an object.
+                Servers should convert recognized schemas to the latest internal value, and
+                may reject unrecognized values.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
               type: string
             kind:
-              description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              description: |-
+                Kind is a string value representing the REST resource this object represents.
+                Servers may infer this from the endpoint the client submits requests to.
+                Cannot be updated.
+                In CamelCase.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
               type: string
             metadata:
               type: object
@@ -47,7 +55,11 @@ spec:
                   description: The AutoScaling Group name.
                   type: string
                 honorCooldown:
-                  description: Indicates whether Amazon EC2 Auto Scaling waits for the cooldown period to complete before initiating a scaling activity to set your Auto Scaling group to its new capacity. By default, Amazon EC2 Auto Scaling does not honor the cooldown period during manual scaling activities.
+                  description: |-
+                    Indicates whether Amazon EC2 Auto Scaling waits for the cooldown period to
+                    complete before initiating a scaling activity to set your Auto Scaling group
+                    to its new capacity. By default, Amazon EC2 Auto Scaling does not honor the
+                    cooldown period during manual scaling activities.
                   type: boolean
               required:
                 - autoscalingGroup
@@ -75,8 +87,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: priorityexpanders.core.kubestitute.quortex.io
 spec:
   group: core.kubestitute.quortex.io
@@ -100,10 +111,19 @@ spec:
           description: PriorityExpander is the Schema for the priorityexpanders API
           properties:
             apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              description: |-
+                APIVersion defines the versioned schema of this representation of an object.
+                Servers should convert recognized schemas to the latest internal value, and
+                may reject unrecognized values.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
               type: string
             kind:
-              description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              description: |-
+                Kind is a string value representing the REST resource this object represents.
+                Servers may infer this from the endpoint the client submits requests to.
+                Cannot be updated.
+                In CamelCase.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
               type: string
             metadata:
               type: object
@@ -111,7 +131,9 @@ spec:
               description: PriorityExpanderSpec defines the desired state of PriorityExpander
               properties:
                 template:
-                  description: The Go template to parse, which will generate the priority expander config map for cluster autoscaler to use.
+                  description: |-
+                    The Go template to parse, which will generate the priority expander
+                    config map for cluster autoscaler to use.
                   type: string
               required:
                 - template
@@ -140,8 +162,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: schedulers.core.kubestitute.quortex.io
 spec:
   group: core.kubestitute.quortex.io
@@ -158,10 +179,19 @@ spec:
           description: Scheduler is the Schema for the schedulers API
           properties:
             apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              description: |-
+                APIVersion defines the versioned schema of this representation of an object.
+                Servers should convert recognized schemas to the latest internal value, and
+                may reject unrecognized values.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
               type: string
             kind:
-              description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              description: |-
+                Kind is a string value representing the REST resource this object represents.
+                Servers may infer this from the endpoint the client submits requests to.
+                Cannot be updated.
+                In CamelCase.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
               type: string
             metadata:
               type: object
@@ -169,33 +199,55 @@ spec:
               description: SchedulerSpec defines the desired state of Scheduler
               properties:
                 autoscalingGroupFallback:
-                  description: Name of the autoscaling group in which the scheduler will trigger fallback instances. This autoscaling group must not be managed by the cluster-autoscaler. These ASG must not be managed by the cluster-autoscaler. Conflict with autoscalingGroupFallbacks.
+                  description: |-
+                    Name of the autoscaling group in which the scheduler will trigger
+                    fallback instances.
+                    This autoscaling group must not be managed by the cluster-autoscaler.
+                    These ASG must not be managed by the cluster-autoscaler.
+                    Conflict with autoscalingGroupFallbacks.
                   type: string
                 autoscalingGroupFallbacks:
-                  description: List of autoscaling groups names in which the scheduler will trigger fallback instances. These ASG must not be managed by the cluster-autoscaler. Conflict with autoscalingGroupFallback.
+                  description: |-
+                    List of autoscaling groups names in which the scheduler will trigger
+                    fallback instances.
+                    These ASG must not be managed by the cluster-autoscaler.
+                    Conflict with autoscalingGroupFallback.
                   items:
                     type: string
                   minItems: 1
                   type: array
                 autoscalingGroupTarget:
-                  description: Name of the autoscaling group which the scheduler will use to apply the rules. Conflict with autoscalingGroupTargets.
+                  description: |-
+                    Name of the autoscaling group which the scheduler will use to
+                    apply the rules.
+                    Conflict with autoscalingGroupTargets.
                   type: string
                 autoscalingGroupTargets:
-                  description: List of autoscaling groups names which the scheduler will use to apply the rules. The values are summed. Conflict with autoscalingGroupTarget.
+                  description: |-
+                    List of autoscaling groups names which the scheduler will use
+                    to apply the rules. The values are summed.
+                    Conflict with autoscalingGroupTarget.
                   items:
                     type: string
                   minItems: 1
                   type: array
                 scaleDownRules:
-                  description: Scheduler rules used to match criteria on Target ASG to trigger Scale Down on Fallback ASG.
+                  description: |-
+                    Scheduler rules used to match criteria on Target ASG to trigger Scale Down
+                    on Fallback ASG.
                   properties:
                     policies:
-                      description: Policies is a list of potential scaling polices which can be evaluated for scaling decisions. At least one policy must be specified. Instances will be scaled down one by one.
+                      description: |-
+                        Policies is a list of potential scaling polices which can be evaluated for scaling decisions.
+                        At least one policy must be specified.
+                        Instances will be scaled down one by one.
                       items:
                         description: SchedulerPolicy is a single policy which must hold true for a specified past interval.
                         properties:
                           leftOperand:
-                            description: LeftOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
+                            description: |-
+                              LeftOperand is the left operand of the comparison. It could be the target ASG Health field from
+                              which this policy is applied or an integer.
                             properties:
                               field:
                                 description: An Field for value.
@@ -228,7 +280,9 @@ spec:
                             format: int32
                             type: integer
                           rightOperand:
-                            description: RightOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
+                            description: |-
+                              RightOperand is the left operand of the comparison. It could be the target ASG Health field from
+                              which this policy is applied or an integer.
                             properties:
                               field:
                                 description: An Field for value.
@@ -258,15 +312,23 @@ spec:
                       type: integer
                   type: object
                 scaleUpRules:
-                  description: Scheduler rules used to match criteria on Target ASG to trigger Scale Up on Fallback ASG.
+                  description: |-
+                    Scheduler rules used to match criteria on Target ASG to trigger Scale Up
+                    on Fallback ASG.
                   properties:
                     policies:
-                      description: Policies is a list of potential scaling polices which can be evaluated for scaling decisions. At least one policy must be specified. For scale ups the matching policy which triggers the highest number of replicas will be used.
+                      description: |-
+                        Policies is a list of potential scaling polices which can be evaluated for scaling decisions.
+                        At least one policy must be specified.
+                        For scale ups the matching policy which triggers the highest number of replicas
+                        will be used.
                       items:
                         description: AdvancedSchedulerPolicy is a policy that allow arithmetic operation to compute replicas.
                         properties:
                           leftOperand:
-                            description: LeftOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
+                            description: |-
+                              LeftOperand is the left operand of the comparison. It could be the target ASG Health field from
+                              which this policy is applied or an integer.
                             properties:
                               field:
                                 description: An Field for value.
@@ -361,7 +423,9 @@ spec:
                                 type: object
                             type: object
                           rightOperand:
-                            description: RightOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
+                            description: |-
+                              RightOperand is the left operand of the comparison. It could be the target ASG Health field from
+                              which this policy is applied or an integer.
                             properties:
                               field:
                                 description: An Field for value.

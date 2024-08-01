@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: instances.core.kubestitute.quortex.io
 spec:
   group: core.kubestitute.quortex.io
@@ -34,14 +33,19 @@ spec:
         description: Instance is the Schema for the instances API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -52,11 +56,11 @@ spec:
                 description: The AutoScaling Group name.
                 type: string
               honorCooldown:
-                description: Indicates whether Amazon EC2 Auto Scaling waits for the
-                  cooldown period to complete before initiating a scaling activity
-                  to set your Auto Scaling group to its new capacity. By default,
-                  Amazon EC2 Auto Scaling does not honor the cooldown period during
-                  manual scaling activities.
+                description: |-
+                  Indicates whether Amazon EC2 Auto Scaling waits for the cooldown period to
+                  complete before initiating a scaling activity to set your Auto Scaling group
+                  to its new capacity. By default, Amazon EC2 Auto Scaling does not honor the
+                  cooldown period during manual scaling activities.
                 type: boolean
             required:
             - autoscalingGroup
