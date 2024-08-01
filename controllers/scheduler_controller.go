@@ -41,7 +41,6 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
 	"quortex.io/kubestitute/metrics"
@@ -619,9 +618,8 @@ func (r *SchedulerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.Scheduler{}).
 		Watches(
-			&source.Kind{Type: &kcore_v1.ConfigMap{}},
-			handler.EnqueueRequestsFromMapFunc(func(_ client.Object) []reconcile.Request {
-				ctx := context.Background()
+			&kcore_v1.ConfigMap{},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []reconcile.Request {
 				log := ctrllog.Log.WithName("schedulermapper")
 
 				// List Schedulers

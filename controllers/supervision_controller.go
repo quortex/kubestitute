@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
 	"quortex.io/kubestitute/utils/supervisor"
@@ -89,6 +88,6 @@ func (r *SupervisionReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 func (r *SupervisionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.Instance{}).
-		Watches(&source.Kind{Type: &corev1alpha1.Scheduler{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&corev1alpha1.Scheduler{}, &handler.EnqueueRequestForObject{}).
 		Complete(r)
 }
