@@ -10,86 +10,99 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ParseReadableString parses the cluster autoscaler status
 // in readable format into a ClusterAutoscaler Status struct.
-// TODO invert conversion.
-func ParseYamlStatus(s string) (*Status, error) {
-	var clusterAutoscalerStatus ClusterAutoscalerStatus
-	if err := yaml.Unmarshal([]byte(s), &clusterAutoscalerStatus); err != nil {
+func ParseYamlStatus(s string) (*ClusterAutoscalerStatus, error) {
+	var res ClusterAutoscalerStatus
+	if err := yaml.Unmarshal([]byte(s), &res); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal status: %v", err)
 	}
 
-	status := Status{
-		Time:        parseDate(clusterAutoscalerStatus.Time),
-		ClusterWide: convertClusterWideStatus(clusterAutoscalerStatus.ClusterWide),
-		NodeGroups:  make([]NodeGroup, len(clusterAutoscalerStatus.NodeGroups)),
-	}
-
-	for i := range clusterAutoscalerStatus.NodeGroups {
-		status.NodeGroups[i] = convertNodeGroupStatus(clusterAutoscalerStatus.NodeGroups[i])
-	}
-
-	return &status, nil
+	return &res, nil
 }
 
-func convertClusterWideStatus(status ClusterWideStatus) ClusterWide {
-	return ClusterWide{
-		Health: Health{
-			Status:             HealthStatus(status.Health.Status),
-			Ready:              int32(status.Health.NodeCounts.Registered.Ready),
-			Unready:            int32(status.Health.NodeCounts.Registered.Unready.Total),
-			NotStarted:         int32(status.Health.NodeCounts.Registered.NotStarted),
-			Registered:         int32(status.Health.NodeCounts.Registered.Total),
-			LongUnregistered:   int32(status.Health.NodeCounts.LongUnregistered),
-			LastProbeTime:      status.Health.LastProbeTime.Time,
-			LastTransitionTime: status.Health.LastTransitionTime.Time,
-		},
-		ScaleDown: ScaleDown{
-			Status:             ScaleDownStatus(status.ScaleDown.Status),
-			Candidates:         int32(status.ScaleDown.Candidates),
-			LastProbeTime:      status.ScaleDown.LastProbeTime.Time,
-			LastTransitionTime: status.ScaleDown.LastTransitionTime.Time,
-		},
-		ScaleUp: ScaleUp{
-			Status:             ScaleUpStatus(status.ScaleUp.Status),
-			LastProbeTime:      status.ScaleUp.LastProbeTime.Time,
-			LastTransitionTime: status.ScaleUp.LastTransitionTime.Time,
-		},
-	}
-}
-
-func convertNodeGroupStatus(status NodeGroupStatus) NodeGroup {
-	return NodeGroup{
-		Name: status.Name,
-		Health: NodeGroupHealth{
-			Health: Health{
-				Status:             HealthStatus(status.Health.Status),
-				Ready:              int32(status.Health.NodeCounts.Registered.Ready),
-				Unready:            int32(status.Health.NodeCounts.Registered.Unready.Total),
-				NotStarted:         int32(status.Health.NodeCounts.Registered.NotStarted),
-				Registered:         int32(status.Health.NodeCounts.Registered.Total),
-				LongUnregistered:   int32(status.Health.NodeCounts.LongUnregistered),
-				LastProbeTime:      status.Health.LastProbeTime.Time,
-				LastTransitionTime: status.Health.LastTransitionTime.Time,
+func convertToClusterWideStatus(status Status) *ClusterAutoscalerStatus {
+	res := ClusterAutoscalerStatus{
+		Time: status.Time.Format(configMapLastUpdateFormat),
+		ClusterWide: ClusterWideStatus{
+			Health: ClusterHealthCondition{
+				Status: ClusterAutoscalerConditionStatus(status.ClusterWide.Health.Status),
+				NodeCounts: NodeCount{
+					Registered: RegisteredNodeCount{
+						Total:        int(status.ClusterWide.Health.Registered),
+						Ready:        int(status.ClusterWide.Health.Ready),
+						NotStarted:   int(status.ClusterWide.Health.NotStarted),
+						BeingDeleted: 0, // Not present in the old status format
+						Unready: RegisteredUnreadyNodeCount{
+							Total:           int(status.ClusterWide.Health.Unready),
+							ResourceUnready: 0, // Present but not parsed in the old configmap
+						},
+					},
+					LongUnregistered: int(status.ClusterWide.Health.LongUnregistered),
+					Unregistered:     0, // Not present in the old status format
+				},
+				LastProbeTime:      metav1.NewTime(status.ClusterWide.Health.LastProbeTime),
+				LastTransitionTime: metav1.NewTime(status.ClusterWide.Health.LastTransitionTime),
 			},
-			CloudProviderTarget: int32(status.Health.CloudProviderTarget),
-			MinSize:             int32(status.Health.MinSize),
-			MaxSize:             int32(status.Health.MaxSize),
+			ScaleUp: ClusterScaleUpCondition{
+				Status:             ClusterAutoscalerConditionStatus(status.ClusterWide.ScaleUp.Status),
+				LastProbeTime:      metav1.NewTime(status.ClusterWide.ScaleUp.LastProbeTime),
+				LastTransitionTime: metav1.NewTime(status.ClusterWide.ScaleUp.LastTransitionTime),
+			},
+			ScaleDown: ScaleDownCondition{
+				Status:             ClusterAutoscalerConditionStatus(status.ClusterWide.ScaleDown.Status),
+				Candidates:         int(status.ClusterWide.ScaleDown.Candidates),
+				LastProbeTime:      metav1.NewTime(status.ClusterWide.ScaleDown.LastProbeTime),
+				LastTransitionTime: metav1.NewTime(status.ClusterWide.ScaleDown.LastTransitionTime),
+			},
 		},
-		ScaleDown: ScaleDown{
-			Status:             ScaleDownStatus(status.ScaleDown.Status),
-			Candidates:         int32(status.ScaleDown.Candidates),
-			LastProbeTime:      status.ScaleDown.LastProbeTime.Time,
-			LastTransitionTime: status.ScaleDown.LastTransitionTime.Time,
-		},
-		ScaleUp: ScaleUp{
-			Status:             ScaleUpStatus(status.ScaleUp.Status),
-			LastProbeTime:      status.ScaleUp.LastProbeTime.Time,
-			LastTransitionTime: status.ScaleUp.LastTransitionTime.Time,
-		},
+		NodeGroups: make([]NodeGroupStatus, len(status.NodeGroups)),
 	}
+
+	for i := range status.NodeGroups {
+		res.NodeGroups[i] = NodeGroupStatus{
+			Name: status.NodeGroups[i].Name,
+			Health: NodeGroupHealthCondition{
+				Status: ClusterAutoscalerConditionStatus(status.NodeGroups[i].Health.Status),
+				NodeCounts: NodeCount{
+					Registered: RegisteredNodeCount{
+						Total:        int(status.NodeGroups[i].Health.Registered),
+						Ready:        int(status.NodeGroups[i].Health.Ready),
+						NotStarted:   int(status.NodeGroups[i].Health.NotStarted),
+						BeingDeleted: 0, // Not present in the old status format
+						Unready: RegisteredUnreadyNodeCount{
+							Total:           int(status.NodeGroups[i].Health.Unready),
+							ResourceUnready: 0, // Present but not parsed in the old configmap
+						},
+					},
+					LongUnregistered: int(status.NodeGroups[i].Health.LongUnregistered),
+					Unregistered:     0, // Not present in the old status format
+				},
+				CloudProviderTarget: int(status.NodeGroups[i].Health.CloudProviderTarget),
+				MinSize:             int(status.NodeGroups[i].Health.MinSize),
+				MaxSize:             int(status.NodeGroups[i].Health.MaxSize),
+				LastProbeTime:       metav1.NewTime(status.NodeGroups[i].Health.LastProbeTime),
+				LastTransitionTime:  metav1.NewTime(status.NodeGroups[i].Health.LastTransitionTime),
+			},
+			ScaleUp: NodeGroupScaleUpCondition{
+				Status:             ClusterAutoscalerConditionStatus(status.NodeGroups[i].ScaleUp.Status),
+				BackoffInfo:        BackoffInfo{}, // Not present in the old status format
+				LastProbeTime:      metav1.NewTime(status.NodeGroups[i].ScaleUp.LastProbeTime),
+				LastTransitionTime: metav1.NewTime(status.NodeGroups[i].ScaleUp.LastTransitionTime),
+			},
+			ScaleDown: ScaleDownCondition{
+				Status:             ClusterAutoscalerConditionStatus(status.NodeGroups[i].ScaleDown.Status),
+				Candidates:         int(status.NodeGroups[i].ScaleDown.Candidates),
+				LastProbeTime:      metav1.NewTime(status.NodeGroups[i].ScaleDown.LastProbeTime),
+				LastTransitionTime: metav1.NewTime(status.NodeGroups[i].ScaleDown.LastTransitionTime),
+			},
+		}
+	}
+
+	return &res
 }
 
 const (
@@ -123,11 +136,11 @@ var (
 
 // ParseReadableStatus parses the cluster autoscaler status
 // in readable format into a ClusterAutoscaler Status struct.
-func ParseReadableStatus(s string) *Status {
+func ParseReadableStatus(s string) *ClusterAutoscalerStatus {
 	var currentMajor interface{}
 	var currentMinor interface{}
 
-	res := &Status{}
+	res := Status{}
 	scanner := bufio.NewScanner(strings.NewReader(s))
 
 	for scanner.Scan() {
@@ -239,7 +252,7 @@ func ParseReadableStatus(s string) *Status {
 		}
 	}
 
-	return res
+	return convertToClusterWideStatus(res)
 }
 
 // parseHealthStatus extract HealthStatus from readable string

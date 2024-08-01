@@ -5,7 +5,10 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var lastProbingTime = metav1.NewTime(time.Date(2020, time.November, 25, 8, 19, 44, 88071148, time.UTC))
 
 const yamlStatus = `
 time: 2020-11-25 08:19:44.090873082 +0000 UTC
@@ -22,7 +25,7 @@ clusterWide:
           total: 2
           resourceUnready: 0
       longUnregistered: 5
-      unregistered: 0
+      unregistered: 6
     lastProbeTime: "2020-11-25T08:19:44.088071148Z"
     lastTransitionTime: "2020-11-25T07:46:04.409158551Z"
   scaleUp:
@@ -47,7 +50,7 @@ nodeGroups:
           total: 2
           resourceUnready: 0
       longUnregistered: 6
-      unregistered: 0
+      unregistered: 7
     cloudProviderTarget: 2
     minSize: 1
     maxSize: 3
@@ -97,7 +100,7 @@ func TestParseYamlStatus(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *Status
+		want    *ClusterAutoscalerStatus
 		wantErr bool
 	}{
 		{
@@ -105,86 +108,114 @@ func TestParseYamlStatus(t *testing.T) {
 			args: args{
 				s: yamlStatus,
 			},
-			want: &Status{
-				Time: time.Date(2020, time.November, 25, 8, 19, 44, 90873082, time.UTC),
-				ClusterWide: ClusterWide{
-					Health: Health{
-						Status:             HealthStatusHealthy,
-						Ready:              4,
-						Unready:            2,
-						NotStarted:         1,
-						Registered:         5,
-						LongUnregistered:   5,
-						LastProbeTime:      lpt,
-						LastTransitionTime: time.Date(2020, time.November, 25, 7, 46, 04, 409158551, time.UTC),
+			want: &ClusterAutoscalerStatus{
+				Time:             "2020-11-25 08:19:44.090873082 +0000 UTC",
+				AutoscalerStatus: ClusterAutoscalerRunning,
+				ClusterWide: ClusterWideStatus{
+					Health: ClusterHealthCondition{
+						Status: ClusterAutoscalerHealthy,
+						NodeCounts: NodeCount{
+							Registered: RegisteredNodeCount{
+								Total: 5,
+								Ready: 4,
+								Unready: RegisteredUnreadyNodeCount{
+									Total:           2,
+									ResourceUnready: 0,
+								},
+								NotStarted:   1,
+								BeingDeleted: 0,
+							},
+							LongUnregistered: 5,
+							Unregistered:     6,
+						},
+						LastProbeTime:      lastProbingTime,
+						LastTransitionTime: metav1.Date(2020, time.November, 25, 7, 46, 0o4, 409158551, time.UTC),
 					},
-					ScaleDown: ScaleDown{
-						Status:             ScaleDownCandidatesPresent,
+					ScaleUp: ClusterScaleUpCondition{
+						Status:             ClusterAutoscalerInProgress,
+						LastProbeTime:      lastProbingTime,
+						LastTransitionTime: metav1.Date(2020, time.November, 25, 8, 18, 33, 613103712, time.UTC),
+					},
+					ScaleDown: ScaleDownCondition{
+						Status:             ClusterAutoscalerCandidatesPresent,
 						Candidates:         1,
-						LastProbeTime:      lpt,
-						LastTransitionTime: time.Date(2020, time.November, 25, 8, 19, 34, 73648791, time.UTC),
-					},
-					ScaleUp: ScaleUp{
-						Status:             ScaleUpInProgress,
-						LastProbeTime:      lpt,
-						LastTransitionTime: time.Date(2020, time.November, 25, 8, 18, 33, 613103712, time.UTC),
+						LastProbeTime:      lastProbingTime,
+						LastTransitionTime: metav1.Date(2020, time.November, 25, 8, 19, 34, 73648791, time.UTC),
 					},
 				},
-				NodeGroups: []NodeGroup{
+				NodeGroups: []NodeGroupStatus{
 					{
 						Name: "foo",
-						Health: NodeGroupHealth{
-							Health: Health{
-								Status:             HealthStatusHealthy,
-								Ready:              1,
-								Unready:            2,
-								NotStarted:         3,
-								Registered:         5,
-								LongUnregistered:   6,
-								LastProbeTime:      lpt,
-								LastTransitionTime: time.Date(2020, time.November, 25, 7, 46, 4, 409158551, time.UTC),
+						Health: NodeGroupHealthCondition{
+							Status: ClusterAutoscalerHealthy,
+							NodeCounts: NodeCount{
+								Registered: RegisteredNodeCount{
+									Total: 5,
+									Ready: 1,
+									Unready: RegisteredUnreadyNodeCount{
+										Total:           2,
+										ResourceUnready: 0,
+									},
+									NotStarted:   3,
+									BeingDeleted: 0,
+								},
+								LongUnregistered: 6,
+								Unregistered:     7,
 							},
 							CloudProviderTarget: 2,
 							MinSize:             1,
 							MaxSize:             3,
+							LastProbeTime:       lastProbingTime,
+							LastTransitionTime:  metav1.Date(2020, time.November, 25, 7, 46, 4, 409158551, time.UTC),
 						},
-						ScaleDown: ScaleDown{
-							Status:             ScaleDownCandidatesPresent,
+						ScaleUp: NodeGroupScaleUpCondition{
+							Status:             ClusterAutoscalerInProgress,
+							BackoffInfo:        BackoffInfo{},
+							LastProbeTime:      lastProbingTime,
+							LastTransitionTime: metav1.Date(2020, time.November, 25, 8, 18, 33, 613103712, time.UTC),
+						},
+						ScaleDown: ScaleDownCondition{
+							Status:             ClusterAutoscalerCandidatesPresent,
 							Candidates:         1,
-							LastProbeTime:      lpt,
-							LastTransitionTime: time.Date(2020, time.November, 25, 8, 19, 34, 73648791, time.UTC),
-						},
-						ScaleUp: ScaleUp{
-							Status:             ScaleUpInProgress,
-							LastProbeTime:      lpt,
-							LastTransitionTime: time.Date(2020, time.November, 25, 8, 18, 33, 613103712, time.UTC),
+							LastProbeTime:      lastProbingTime,
+							LastTransitionTime: metav1.Date(2020, time.November, 25, 8, 19, 34, 73648791, time.UTC),
 						},
 					},
 					{
 						Name: "bar",
-						Health: NodeGroupHealth{
-							Health: Health{
-								Status:             HealthStatusHealthy,
-								Ready:              2,
-								Unready:            1,
-								NotStarted:         2,
-								Registered:         2,
-								LongUnregistered:   4,
-								LastProbeTime:      lpt,
-								LastTransitionTime: time.Time{}},
+						Health: NodeGroupHealthCondition{
+							Status: ClusterAutoscalerHealthy,
+							NodeCounts: NodeCount{
+								Registered: RegisteredNodeCount{
+									Total: 2,
+									Ready: 2,
+									Unready: RegisteredUnreadyNodeCount{
+										Total:           1,
+										ResourceUnready: 0,
+									},
+									NotStarted:   2,
+									BeingDeleted: 0,
+								},
+								LongUnregistered: 4,
+								Unregistered:     0,
+							},
 							CloudProviderTarget: 2,
 							MinSize:             0,
 							MaxSize:             3,
+							LastProbeTime:       lastProbingTime,
+							LastTransitionTime:  metav1.Time{},
 						},
-						ScaleDown: ScaleDown{
-							Status:             ScaleDownNoCandidates,
-							LastProbeTime:      lpt,
-							LastTransitionTime: time.Date(2020, time.November, 25, 8, 14, 52, 480583803, time.UTC),
+						ScaleUp: NodeGroupScaleUpCondition{
+							Status:             ClusterAutoscalerNoActivity,
+							BackoffInfo:        BackoffInfo{},
+							LastProbeTime:      lastProbingTime,
+							LastTransitionTime: metav1.Date(2020, time.November, 25, 8, 14, 42, 467240558, time.UTC),
 						},
-						ScaleUp: ScaleUp{
-							Status:             ScaleUpNoActivity,
-							LastProbeTime:      lpt,
-							LastTransitionTime: time.Date(2020, time.November, 25, 8, 14, 42, 467240558, time.UTC),
+						ScaleDown: ScaleDownCondition{
+							Status:             ClusterAutoscalerNoCandidates,
+							Candidates:         0,
+							LastProbeTime:      lastProbingTime,
+							LastTransitionTime: metav1.Date(2020, time.November, 25, 8, 14, 52, 480583803, time.UTC),
 						},
 					},
 				},
@@ -242,8 +273,6 @@ NodeGroups:
 								LastTransitionTime: 2020-11-25 08:14:52.480583803 +0000 UTC m=+1738.413227454
 `
 
-var lpt = time.Date(2020, time.November, 25, 8, 19, 44, 88071148, time.UTC)
-
 func TestParseReadableStatus(t *testing.T) {
 	type args struct {
 		s string
@@ -251,93 +280,121 @@ func TestParseReadableStatus(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *Status
+		want *ClusterAutoscalerStatus
 	}{
 		{
 			name: "a fully functional status",
 			args: args{
 				s: readableStatus,
 			},
-			want: &Status{
-				Time: time.Date(2020, time.November, 25, 8, 19, 44, 90873082, time.UTC),
-				ClusterWide: ClusterWide{
-					Health: Health{
-						Status:             HealthStatusHealthy,
-						Ready:              4,
-						Unready:            2,
-						NotStarted:         1,
-						Registered:         5,
-						LongUnregistered:   5,
-						LastProbeTime:      lpt,
-						LastTransitionTime: time.Date(2020, time.November, 25, 7, 46, 04, 409158551, time.UTC),
+			want: &ClusterAutoscalerStatus{
+				Time:             "2020-11-25 08:19:44.090873082 +0000 UTC",
+				AutoscalerStatus: "", // Present in readable status but not parsed
+				ClusterWide: ClusterWideStatus{
+					Health: ClusterHealthCondition{
+						Status: ClusterAutoscalerHealthy,
+						NodeCounts: NodeCount{
+							Registered: RegisteredNodeCount{
+								Total: 5,
+								Ready: 4,
+								Unready: RegisteredUnreadyNodeCount{
+									Total:           2,
+									ResourceUnready: 0,
+								},
+								NotStarted:   1,
+								BeingDeleted: 0,
+							},
+							LongUnregistered: 5,
+							Unregistered:     0, // Not present in readable status
+						},
+						LastProbeTime:      lastProbingTime,
+						LastTransitionTime: metav1.NewTime(time.Date(2020, time.November, 25, 7, 46, 0o4, 409158551, time.UTC)),
 					},
-					ScaleDown: ScaleDown{
-						Status:             ScaleDownCandidatesPresent,
+					ScaleUp: ClusterScaleUpCondition{
+						Status:             ClusterAutoscalerInProgress,
+						LastProbeTime:      lastProbingTime,
+						LastTransitionTime: metav1.NewTime(time.Date(2020, time.November, 25, 8, 18, 33, 613103712, time.UTC)),
+					},
+					ScaleDown: ScaleDownCondition{
+						Status:             ClusterAutoscalerCandidatesPresent,
 						Candidates:         1,
-						LastProbeTime:      lpt,
-						LastTransitionTime: time.Date(2020, time.November, 25, 8, 19, 34, 73648791, time.UTC),
-					},
-					ScaleUp: ScaleUp{
-						Status:             ScaleUpInProgress,
-						LastProbeTime:      lpt,
-						LastTransitionTime: time.Date(2020, time.November, 25, 8, 18, 33, 613103712, time.UTC),
+						LastProbeTime:      lastProbingTime,
+						LastTransitionTime: metav1.NewTime(time.Date(2020, time.November, 25, 8, 19, 34, 73648791, time.UTC)),
 					},
 				},
-				NodeGroups: []NodeGroup{
+				NodeGroups: []NodeGroupStatus{
 					{
 						Name: "foo",
-						Health: NodeGroupHealth{
-							Health: Health{
-								Status:             HealthStatusHealthy,
-								Ready:              1,
-								Unready:            2,
-								NotStarted:         3,
-								Registered:         5,
-								LongUnregistered:   6,
-								LastProbeTime:      lpt,
-								LastTransitionTime: time.Date(2020, time.November, 25, 7, 46, 4, 409158551, time.UTC),
+						Health: NodeGroupHealthCondition{
+							Status: ClusterAutoscalerHealthy,
+							NodeCounts: NodeCount{
+								Registered: RegisteredNodeCount{
+									Total: 5,
+									Ready: 1,
+									Unready: RegisteredUnreadyNodeCount{
+										Total:           2,
+										ResourceUnready: 0,
+									},
+									NotStarted:   3,
+									BeingDeleted: 0,
+								},
+								LongUnregistered: 6,
+								Unregistered:     0, // Not present in readable status
 							},
 							CloudProviderTarget: 2,
 							MinSize:             1,
 							MaxSize:             3,
+							LastProbeTime:       lastProbingTime,
+							LastTransitionTime:  metav1.NewTime(time.Date(2020, time.November, 25, 7, 46, 4, 409158551, time.UTC)),
 						},
-						ScaleDown: ScaleDown{
-							Status:             ScaleDownCandidatesPresent,
+						ScaleUp: NodeGroupScaleUpCondition{
+							Status:             ClusterAutoscalerInProgress,
+							BackoffInfo:        BackoffInfo{},
+							LastProbeTime:      lastProbingTime,
+							LastTransitionTime: metav1.NewTime(time.Date(2020, time.November, 25, 8, 18, 33, 613103712, time.UTC)),
+						},
+						ScaleDown: ScaleDownCondition{
+							Status:             ClusterAutoscalerCandidatesPresent,
 							Candidates:         1,
-							LastProbeTime:      lpt,
-							LastTransitionTime: time.Date(2020, time.November, 25, 8, 19, 34, 73648791, time.UTC),
-						},
-						ScaleUp: ScaleUp{
-							Status:             ScaleUpInProgress,
-							LastProbeTime:      lpt,
-							LastTransitionTime: time.Date(2020, time.November, 25, 8, 18, 33, 613103712, time.UTC),
+							LastProbeTime:      lastProbingTime,
+							LastTransitionTime: metav1.NewTime(time.Date(2020, time.November, 25, 8, 19, 34, 73648791, time.UTC)),
 						},
 					},
 					{
 						Name: "bar",
-						Health: NodeGroupHealth{
-							Health: Health{
-								Status:             HealthStatusHealthy,
-								Ready:              2,
-								Unready:            1,
-								NotStarted:         2,
-								Registered:         2,
-								LongUnregistered:   4,
-								LastProbeTime:      lpt,
-								LastTransitionTime: time.Time{}},
+						Health: NodeGroupHealthCondition{
+							Status: ClusterAutoscalerHealthy,
+							NodeCounts: NodeCount{
+								Registered: RegisteredNodeCount{
+									Total: 2,
+									Ready: 2,
+									Unready: RegisteredUnreadyNodeCount{
+										Total:           1,
+										ResourceUnready: 0,
+									},
+									NotStarted:   2,
+									BeingDeleted: 0,
+								},
+								LongUnregistered: 4,
+								Unregistered:     0, // Not present in readable status
+							},
 							CloudProviderTarget: 2,
 							MinSize:             0,
 							MaxSize:             3,
+							LastProbeTime:       lastProbingTime,
+							LastTransitionTime:  metav1.NewTime(time.Time{}),
 						},
-						ScaleDown: ScaleDown{
-							Status:             ScaleDownNoCandidates,
-							LastProbeTime:      lpt,
-							LastTransitionTime: time.Date(2020, time.November, 25, 8, 14, 52, 480583803, time.UTC),
+						ScaleUp: NodeGroupScaleUpCondition{
+							Status:             ClusterAutoscalerNoActivity,
+							BackoffInfo:        BackoffInfo{},
+							LastProbeTime:      lastProbingTime,
+							LastTransitionTime: metav1.NewTime(time.Date(2020, time.November, 25, 8, 14, 42, 467240558, time.UTC)),
 						},
-						ScaleUp: ScaleUp{
-							Status:             ScaleUpNoActivity,
-							LastProbeTime:      lpt,
-							LastTransitionTime: time.Date(2020, time.November, 25, 8, 14, 42, 467240558, time.UTC),
+						ScaleDown: ScaleDownCondition{
+							Status:             ClusterAutoscalerNoCandidates,
+							Candidates:         0,
+							LastProbeTime:      lastProbingTime,
+							LastTransitionTime: metav1.NewTime(time.Date(2020, time.November, 25, 8, 14, 52, 480583803, time.UTC)),
 						},
 					},
 				},

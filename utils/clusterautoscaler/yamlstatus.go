@@ -46,9 +46,9 @@ const (
 
 	// Statuses for ScaleDown condition type.
 
-	//ClusterAutoscalerCandidatesPresent status means that there are candidates for scale down.
+	// ClusterAutoscalerCandidatesPresent status means that there are candidates for scale down.
 	ClusterAutoscalerCandidatesPresent ClusterAutoscalerConditionStatus = "CandidatesPresent"
-	//ClusterAutoscalerNoCandidates status means that there are no candidates for scale down.
+	// ClusterAutoscalerNoCandidates status means that there are no candidates for scale down.
 	ClusterAutoscalerNoCandidates ClusterAutoscalerConditionStatus = "NoCandidates"
 
 	// Statuses for ScaleUp condition type.
