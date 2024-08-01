@@ -42,10 +42,10 @@ const (
 // Health describes the cluster wide cluster autoscaler
 // Health condition.
 type Health struct {
-	Status                                                                   HealthStatus
-	Ready, Unready, NotStarted, LongNotStarted, Registered, LongUnregistered int32
-	LastProbeTime                                                            time.Time
-	LastTransitionTime                                                       time.Time
+	Status                                                   HealthStatus
+	Ready, Unready, NotStarted, Registered, LongUnregistered int32
+	LastProbeTime                                            time.Time
+	LastTransitionTime                                       time.Time
 }
 
 // NodeGroupHealth describes the individual node group cluster autoscaler

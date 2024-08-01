@@ -145,7 +145,6 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		oroot[node.Name]["Ready"] = node.Health.Ready
 		oroot[node.Name]["Unready"] = node.Health.Unready
 		oroot[node.Name]["NotStarted"] = node.Health.NotStarted
-		oroot[node.Name]["LongNotStarted"] = node.Health.LongNotStarted
 		oroot[node.Name]["Registered"] = node.Health.Registered
 		oroot[node.Name]["LongUnregistered"] = node.Health.LongUnregistered
 		oroot[node.Name]["MinSize"] = node.Health.MinSize

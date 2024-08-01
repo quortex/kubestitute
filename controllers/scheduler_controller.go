@@ -542,9 +542,7 @@ func nodeGroupIntOrFieldValue(ngs []clusterautoscaler.NodeGroup, iof corev1alpha
 			val += ngs[i].Health.NotStarted
 		}
 	case corev1alpha1.FieldLongNotStarted:
-		for i := range ngs {
-			val += ngs[i].Health.LongNotStarted
-		}
+		// Field deprecated, do nothing.
 	case corev1alpha1.FieldRegistered:
 		for i := range ngs {
 			val += ngs[i].Health.Registered

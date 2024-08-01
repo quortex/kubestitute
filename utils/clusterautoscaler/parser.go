@@ -14,6 +14,7 @@ import (
 
 // ParseReadableString parses the cluster autoscaler status
 // in readable format into a ClusterAutoscaler Status struct.
+// TODO invert conversion.
 func ParseYamlStatus(s string) (*Status, error) {
 	var clusterAutoscalerStatus ClusterAutoscalerStatus
 	if err := yaml.Unmarshal([]byte(s), &clusterAutoscalerStatus); err != nil {
@@ -40,7 +41,6 @@ func convertClusterWideStatus(status ClusterWideStatus) ClusterWide {
 			Ready:              int32(status.Health.NodeCounts.Registered.Ready),
 			Unready:            int32(status.Health.NodeCounts.Registered.Unready.Total),
 			NotStarted:         int32(status.Health.NodeCounts.Registered.NotStarted),
-			LongNotStarted:     0, // FIXME: field does not exist anymore
 			Registered:         int32(status.Health.NodeCounts.Registered.Total),
 			LongUnregistered:   int32(status.Health.NodeCounts.LongUnregistered),
 			LastProbeTime:      status.Health.LastProbeTime.Time,
@@ -69,7 +69,6 @@ func convertNodeGroupStatus(status NodeGroupStatus) NodeGroup {
 				Ready:              int32(status.Health.NodeCounts.Registered.Ready),
 				Unready:            int32(status.Health.NodeCounts.Registered.Unready.Total),
 				NotStarted:         int32(status.Health.NodeCounts.Registered.NotStarted),
-				LongNotStarted:     0, // FIXME: field does not exist anymore
 				Registered:         int32(status.Health.NodeCounts.Registered.Total),
 				LongUnregistered:   int32(status.Health.NodeCounts.LongUnregistered),
 				LastProbeTime:      status.Health.LastProbeTime.Time,
@@ -111,7 +110,6 @@ var (
 	regexHealthReady               = regexp.MustCompile(`[\( ]ready=(\d*)`)
 	regexHealthUnready             = regexp.MustCompile(`[\( ]unready=(\d*)`)
 	regexHealthNotStarted          = regexp.MustCompile(`[\( ]notStarted=(\d*)`)
-	regexHealthLongNotStarted      = regexp.MustCompile(`[\( ]longNotStarted=(\d*)`)
 	regexHealthRegistered          = regexp.MustCompile(`[\( ]registered=(\d*)`)
 	regexHealthLongUnregistered    = regexp.MustCompile(`[\( ]longUnregistered=(\d*)`)
 	regexHealthCloudProviderTarget = regexp.MustCompile(`[\( ]cloudProviderTarget=(\d*)`)
@@ -263,7 +261,6 @@ func parseHealth(s string) Health {
 		Ready:            parseToInt32(regexHealthReady, s),
 		Unready:          parseToInt32(regexHealthUnready, s),
 		NotStarted:       parseToInt32(regexHealthNotStarted, s),
-		LongNotStarted:   parseToInt32(regexHealthLongNotStarted, s),
 		Registered:       parseToInt32(regexHealthRegistered, s),
 		LongUnregistered: parseToInt32(regexHealthLongUnregistered, s),
 	}
