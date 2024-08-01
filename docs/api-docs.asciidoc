@@ -38,7 +38,12 @@ AdvancedSchedulerPolicy is a policy that allow arithmetic operation to compute r
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`SchedulerPolicy`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy[$$SchedulerPolicy$$]__ | 
+| *`leftOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | LeftOperand is the left operand of the comparison. It could be the target ASG Health field from
+which this policy is applied or an integer.
+| *`operator`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-comparisonoperator[$$ComparisonOperator$$]__ | A comparison operator used to apply policy between From and To.
+| *`rightOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | RightOperand is the left operand of the comparison. It could be the target ASG Health field from
+which this policy is applied or an integer.
+| *`periodSeconds`* __integer__ | PeriodSeconds specifies the window of time for which the policy should hold true.
 | *`replicas`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorarithmeticoperation[$$IntOrArithmeticOperation$$]__ | Replicas specify the replicas to Scale.
 |===
 
@@ -81,6 +86,7 @@ ComparisonOperator describes comparison operators
 
 .Appears In:
 ****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-advancedschedulerpolicy[$$AdvancedSchedulerPolicy$$]
 - xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy[$$SchedulerPolicy$$]
 ****
 
@@ -89,7 +95,8 @@ ComparisonOperator describes comparison operators
 [id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-field"]
 === Field(string)
 
-Field describes a SchedulerPolicy Field. It is based on ASG health status.
+Field describes a SchedulerPolicy Field.
+It is based on ASG health status.
 
 .Appears In:
 ****
@@ -130,14 +137,20 @@ InstanceSpec defines the desired state of Instance
 |===
 | Field | Description
 | *`autoscalingGroup`* __string__ | The AutoScaling Group name.
-| *`honorCooldown`* __boolean__ | Indicates whether Amazon EC2 Auto Scaling waits for the cooldown period to complete before initiating a scaling activity to set your Auto Scaling group to its new capacity. By default, Amazon EC2 Auto Scaling does not honor the cooldown period during manual scaling activities.
+| *`honorCooldown`* __boolean__ | Indicates whether Amazon EC2 Auto Scaling waits for the cooldown period to
+complete before initiating a scaling activity to set your Auto Scaling group
+to its new capacity. By default, Amazon EC2 Auto Scaling does not honor the
+cooldown period during manual scaling activities.
 |===
+
+
 
 
 [id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorarithmeticoperation"]
 === IntOrArithmeticOperation
 
-IntOrArithmeticOperation is a type that can hold an int32 or an arithmetic operation.
+IntOrArithmeticOperation is a type that can hold an int32 or
+an arithmetic operation.
 
 .Appears In:
 ****
@@ -159,6 +172,7 @@ IntOrField is a type that can hold an int32 or a Field.
 
 .Appears In:
 ****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-advancedschedulerpolicy[$$AdvancedSchedulerPolicy$$]
 - xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-arithmeticoperation[$$ArithmeticOperation$$]
 - xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy[$$SchedulerPolicy$$]
 ****
@@ -202,8 +216,11 @@ PriorityExpanderSpec defines the desired state of PriorityExpander
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`template`* __string__ | The Go template to parse, which will generate the priority expander config map for cluster autoscaler to use.
+| *`template`* __string__ | The Go template to parse, which will generate the priority expander
+config map for cluster autoscaler to use.
 |===
+
+
 
 
 [id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaledownrules"]
@@ -220,7 +237,9 @@ ScaleDownRules configures the scaling behavior for Instance scale downs.
 |===
 | Field | Description
 | *`stabilizationWindowSeconds`* __integer__ | A cooldown for consecutive scale down operations.
-| *`policies`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy[$$SchedulerPolicy$$] array__ | Policies is a list of potential scaling polices which can be evaluated for scaling decisions. At least one policy must be specified. Instances will be scaled down one by one.
+| *`policies`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerpolicy[$$SchedulerPolicy$$] array__ | Policies is a list of potential scaling polices which can be evaluated for scaling decisions.
+At least one policy must be specified.
+Instances will be scaled down one by one.
 |===
 
 
@@ -238,7 +257,10 @@ ScaleUpRules configures the scaling behavior for Instance scale ups.
 |===
 | Field | Description
 | *`stabilizationWindowSeconds`* __integer__ | A cooldown for consecutive scale up operations.
-| *`policies`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-advancedschedulerpolicy[$$AdvancedSchedulerPolicy$$] array__ | Policies is a list of potential scaling polices which can be evaluated for scaling decisions. At least one policy must be specified. For scale ups the matching policy which triggers the highest number of replicas will be used.
+| *`policies`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-advancedschedulerpolicy[$$AdvancedSchedulerPolicy$$] array__ | Policies is a list of potential scaling polices which can be evaluated for scaling decisions.
+At least one policy must be specified.
+For scale ups the matching policy which triggers the highest number of replicas
+will be used.
 |===
 
 
@@ -274,9 +296,11 @@ SchedulerPolicy is a single policy which must hold true for a specified past int
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`leftOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | LeftOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
+| *`leftOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | LeftOperand is the left operand of the comparison. It could be the target ASG Health field from
+which this policy is applied or an integer.
 | *`operator`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-comparisonoperator[$$ComparisonOperator$$]__ | A comparison operator used to apply policy between From and To.
-| *`rightOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | RightOperand is the left operand of the comparison. It could be the target ASG Health field from which this policy is applied or an integer.
+| *`rightOperand`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-intorfield[$$IntOrField$$]__ | RightOperand is the left operand of the comparison. It could be the target ASG Health field from
+which this policy is applied or an integer.
 | *`periodSeconds`* __integer__ | PeriodSeconds specifies the window of time for which the policy should hold true.
 |===
 
@@ -294,13 +318,38 @@ SchedulerSpec defines the desired state of Scheduler
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`trigger`* __SchedulerTrigger__ | The Scheduler Trigger
-| *`autoscalingGroupTarget`* __string__ | Name of the autoscaling group which the scheduler will use to apply the rules. Conflict with autoscalingGroupTargets.
-| *`autoscalingGroupTargets`* __string array__ | List of autoscaling groups names which the scheduler will use to apply the rules. The values are summed. Conflict with autoscalingGroupTarget.
-| *`autoscalingGroupFallback`* __string__ | Name of the autoscaling group in which the scheduler will trigger fallback instances. This autoscaling group must not be managed by the cluster-autoscaler. These ASG must not be managed by the cluster-autoscaler. Conflict with autoscalingGroupFallbacks.
-| *`autoscalingGroupFallbacks`* __string array__ | List of autoscaling groups names in which the scheduler will trigger fallback instances. These ASG must not be managed by the cluster-autoscaler. Conflict with autoscalingGroupFallback.
-| *`scaleUpRules`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaleuprules[$$ScaleUpRules$$]__ | Scheduler rules used to match criteria on Target ASG to trigger Scale Up on Fallback ASG.
-| *`scaleDownRules`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaledownrules[$$ScaleDownRules$$]__ | Scheduler rules used to match criteria on Target ASG to trigger Scale Down on Fallback ASG.
+| *`trigger`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulertrigger[$$SchedulerTrigger$$]__ | The Scheduler Trigger
+| *`autoscalingGroupTarget`* __string__ | Name of the autoscaling group which the scheduler will use to
+apply the rules.
+Conflict with autoscalingGroupTargets.
+| *`autoscalingGroupTargets`* __string array__ | List of autoscaling groups names which the scheduler will use
+to apply the rules. The values are summed.
+Conflict with autoscalingGroupTarget.
+| *`autoscalingGroupFallback`* __string__ | Name of the autoscaling group in which the scheduler will trigger
+fallback instances.
+This autoscaling group must not be managed by the cluster-autoscaler.
+These ASG must not be managed by the cluster-autoscaler.
+Conflict with autoscalingGroupFallbacks.
+| *`autoscalingGroupFallbacks`* __string array__ | List of autoscaling groups names in which the scheduler will trigger
+fallback instances.
+These ASG must not be managed by the cluster-autoscaler.
+Conflict with autoscalingGroupFallback.
+| *`scaleUpRules`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaleuprules[$$ScaleUpRules$$]__ | Scheduler rules used to match criteria on Target ASG to trigger Scale Up
+on Fallback ASG.
+| *`scaleDownRules`* __xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-scaledownrules[$$ScaleDownRules$$]__ | Scheduler rules used to match criteria on Target ASG to trigger Scale Down
+on Fallback ASG.
 |===
+
+
+[id="{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulertrigger"]
+=== SchedulerTrigger(string)
+
+SchedulerTrigger describe a trigger for the Scheduler.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-quortex-io-kubestitute-api-v1alpha1-schedulerspec[$$SchedulerSpec$$]
+****
+
 
 
