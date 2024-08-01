@@ -172,7 +172,7 @@ YQ?= $(LOCALBIN)/yq
 KUSTOMIZE_VERSION ?= v4.5.5
 CONTROLLER_TOOLS_VERSION ?= v0.15.0
 CRD_REF_DOCS_VERSION ?= v0.0.8
-GOLANG_CI_LINT_VERSION ?= v1.49.0
+GOLANG_CI_LINT_VERSION ?= v1.59.1
 YQ_VERSION ?= v4.31.1
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
