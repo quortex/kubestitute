@@ -46,7 +46,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
@@ -636,7 +635,7 @@ func deleteTimeout(pods []kcore_v1.Pod) time.Duration {
 // waitForDelete poll pods to check their deletion.
 // This code is largely inspired by kubectl cli source code.
 func (r *InstanceReconciler) waitForDelete(ctx context.Context, pods []kcore_v1.Pod) ([]kcore_v1.Pod, error) {
-	err := wait.PollImmediate(pollInterval, deleteTimeout(pods), func() (bool, error) {
+	err := wait.PollUntilContextTimeout(ctx, pollInterval, deleteTimeout(pods), true, func(ctx context.Context) (done bool, err error) {
 		pendingPods := []kcore_v1.Pod{}
 		for i, pod := range pods {
 			p := &kcore_v1.Pod{}
@@ -749,9 +748,8 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			MaxConcurrentReconciles: r.Configuration.MaxConcurrentReconciles,
 		}).
 		Watches(
-			&source.Kind{Type: &kcore_v1.Node{}},
-			handler.EnqueueRequestsFromMapFunc(func(o client.Object) []reconcile.Request {
-				ctx := context.Background()
+			&kcore_v1.Node{},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, o client.Object) []reconcile.Request {
 				log := ctrllog.Log.WithName("instancemapper")
 
 				// Obtain the modified node

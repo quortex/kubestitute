@@ -37,7 +37,6 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	corev1alpha1 "quortex.io/kubestitute/api/v1alpha1"
 	"quortex.io/kubestitute/metrics"
@@ -224,8 +223,8 @@ func (r *PriorityExpanderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1alpha1.PriorityExpander{}).
 		Watches(
-			&source.Kind{Type: &kcore_v1.ConfigMap{}},
-			handler.EnqueueRequestsFromMapFunc(func(_ client.Object) []reconcile.Request {
+			&kcore_v1.ConfigMap{},
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, _ client.Object) []reconcile.Request {
 				return []reconcile.Request{
 					{
 						NamespacedName: types.NamespacedName{
