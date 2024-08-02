@@ -2,12 +2,108 @@ package clusterautoscaler
 
 import (
 	"bufio"
+	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// ParseReadableString parses the cluster autoscaler status
+// in readable format into a ClusterAutoscaler Status struct.
+func ParseYamlStatus(s string) (*ClusterAutoscalerStatus, error) {
+	var res ClusterAutoscalerStatus
+	if err := yaml.Unmarshal([]byte(s), &res); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal status: %v", err)
+	}
+
+	return &res, nil
+}
+
+func convertToClusterWideStatus(status Status) *ClusterAutoscalerStatus {
+	res := ClusterAutoscalerStatus{
+		Time: status.Time.Format(configMapLastUpdateFormat),
+		ClusterWide: ClusterWideStatus{
+			Health: ClusterHealthCondition{
+				Status: ClusterAutoscalerConditionStatus(status.ClusterWide.Health.Status),
+				NodeCounts: NodeCount{
+					Registered: RegisteredNodeCount{
+						Total:        int(status.ClusterWide.Health.Registered),
+						Ready:        int(status.ClusterWide.Health.Ready),
+						NotStarted:   int(status.ClusterWide.Health.NotStarted),
+						BeingDeleted: 0, // Not present in the old status format
+						Unready: RegisteredUnreadyNodeCount{
+							Total:           int(status.ClusterWide.Health.Unready),
+							ResourceUnready: 0, // Present but not parsed in the old configmap
+						},
+					},
+					LongUnregistered: int(status.ClusterWide.Health.LongUnregistered),
+					Unregistered:     0, // Not present in the old status format
+				},
+				LastProbeTime:      metav1.NewTime(status.ClusterWide.Health.LastProbeTime),
+				LastTransitionTime: metav1.NewTime(status.ClusterWide.Health.LastTransitionTime),
+			},
+			ScaleUp: ClusterScaleUpCondition{
+				Status:             ClusterAutoscalerConditionStatus(status.ClusterWide.ScaleUp.Status),
+				LastProbeTime:      metav1.NewTime(status.ClusterWide.ScaleUp.LastProbeTime),
+				LastTransitionTime: metav1.NewTime(status.ClusterWide.ScaleUp.LastTransitionTime),
+			},
+			ScaleDown: ScaleDownCondition{
+				Status:             ClusterAutoscalerConditionStatus(status.ClusterWide.ScaleDown.Status),
+				Candidates:         int(status.ClusterWide.ScaleDown.Candidates),
+				LastProbeTime:      metav1.NewTime(status.ClusterWide.ScaleDown.LastProbeTime),
+				LastTransitionTime: metav1.NewTime(status.ClusterWide.ScaleDown.LastTransitionTime),
+			},
+		},
+		NodeGroups: make([]NodeGroupStatus, len(status.NodeGroups)),
+	}
+
+	for i := range status.NodeGroups {
+		res.NodeGroups[i] = NodeGroupStatus{
+			Name: status.NodeGroups[i].Name,
+			Health: NodeGroupHealthCondition{
+				Status: ClusterAutoscalerConditionStatus(status.NodeGroups[i].Health.Status),
+				NodeCounts: NodeCount{
+					Registered: RegisteredNodeCount{
+						Total:        int(status.NodeGroups[i].Health.Registered),
+						Ready:        int(status.NodeGroups[i].Health.Ready),
+						NotStarted:   int(status.NodeGroups[i].Health.NotStarted),
+						BeingDeleted: 0, // Not present in the old status format
+						Unready: RegisteredUnreadyNodeCount{
+							Total:           int(status.NodeGroups[i].Health.Unready),
+							ResourceUnready: 0, // Present but not parsed in the old configmap
+						},
+					},
+					LongUnregistered: int(status.NodeGroups[i].Health.LongUnregistered),
+					Unregistered:     0, // Not present in the old status format
+				},
+				CloudProviderTarget: int(status.NodeGroups[i].Health.CloudProviderTarget),
+				MinSize:             int(status.NodeGroups[i].Health.MinSize),
+				MaxSize:             int(status.NodeGroups[i].Health.MaxSize),
+				LastProbeTime:       metav1.NewTime(status.NodeGroups[i].Health.LastProbeTime),
+				LastTransitionTime:  metav1.NewTime(status.NodeGroups[i].Health.LastTransitionTime),
+			},
+			ScaleUp: NodeGroupScaleUpCondition{
+				Status:             ClusterAutoscalerConditionStatus(status.NodeGroups[i].ScaleUp.Status),
+				BackoffInfo:        BackoffInfo{}, // Not present in the old status format
+				LastProbeTime:      metav1.NewTime(status.NodeGroups[i].ScaleUp.LastProbeTime),
+				LastTransitionTime: metav1.NewTime(status.NodeGroups[i].ScaleUp.LastTransitionTime),
+			},
+			ScaleDown: ScaleDownCondition{
+				Status:             ClusterAutoscalerConditionStatus(status.NodeGroups[i].ScaleDown.Status),
+				Candidates:         int(status.NodeGroups[i].ScaleDown.Candidates),
+				LastProbeTime:      metav1.NewTime(status.NodeGroups[i].ScaleDown.LastProbeTime),
+				LastTransitionTime: metav1.NewTime(status.NodeGroups[i].ScaleDown.LastTransitionTime),
+			},
+		}
+	}
+
+	return &res
+}
 
 const (
 	// configMapLastUpdateFormat it the timestamp format used for last update annotation in status ConfigMap
@@ -27,7 +123,6 @@ var (
 	regexHealthReady               = regexp.MustCompile(`[\( ]ready=(\d*)`)
 	regexHealthUnready             = regexp.MustCompile(`[\( ]unready=(\d*)`)
 	regexHealthNotStarted          = regexp.MustCompile(`[\( ]notStarted=(\d*)`)
-	regexHealthLongNotStarted      = regexp.MustCompile(`[\( ]longNotStarted=(\d*)`)
 	regexHealthRegistered          = regexp.MustCompile(`[\( ]registered=(\d*)`)
 	regexHealthLongUnregistered    = regexp.MustCompile(`[\( ]longUnregistered=(\d*)`)
 	regexHealthCloudProviderTarget = regexp.MustCompile(`[\( ]cloudProviderTarget=(\d*)`)
@@ -39,14 +134,13 @@ var (
 	regexDate                      = regexp.MustCompile(`(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(.\d*)? \+\d* [A-Z]*)`)
 )
 
-// ParseReadableString parses the cluster autoscaler status
+// ParseReadableStatus parses the cluster autoscaler status
 // in readable format into a ClusterAutoscaler Status struct.
-func ParseReadableString(s string) *Status {
-
+func ParseReadableStatus(s string) *ClusterAutoscalerStatus {
 	var currentMajor interface{}
 	var currentMinor interface{}
 
-	res := &Status{}
+	res := Status{}
 	scanner := bufio.NewScanner(strings.NewReader(s))
 
 	for scanner.Scan() {
@@ -158,7 +252,7 @@ func ParseReadableString(s string) *Status {
 		}
 	}
 
-	return res
+	return convertToClusterWideStatus(res)
 }
 
 // parseHealthStatus extract HealthStatus from readable string
@@ -180,7 +274,6 @@ func parseHealth(s string) Health {
 		Ready:            parseToInt32(regexHealthReady, s),
 		Unready:          parseToInt32(regexHealthUnready, s),
 		NotStarted:       parseToInt32(regexHealthNotStarted, s),
-		LongNotStarted:   parseToInt32(regexHealthLongNotStarted, s),
 		Registered:       parseToInt32(regexHealthRegistered, s),
 		LongUnregistered: parseToInt32(regexHealthLongUnregistered, s),
 	}

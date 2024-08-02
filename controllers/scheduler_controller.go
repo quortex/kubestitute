@@ -55,8 +55,9 @@ const (
 
 // SchedulerReconcilerConfiguration wraps configuration for the SchedulerReconciler.
 type SchedulerReconcilerConfiguration struct {
-	ClusterAutoscalerNamespace  string
-	ClusterAutoscalerStatusName string
+	ClusterAutoscalerNamespace          string
+	ClusterAutoscalerStatusName         string
+	ClusterAutoscalerStatusLegacyFormat bool
 }
 
 // SchedulerReconciler reconciles a Scheduler object
@@ -138,13 +139,23 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// Parse it and retrieve NodeGroups from targets and fallbacks
-	status := clusterautoscaler.ParseReadableString(readableStatus)
+	var status *clusterautoscaler.ClusterAutoscalerStatus
+	if !r.Configuration.ClusterAutoscalerStatusLegacyFormat {
+		s, err := clusterautoscaler.ParseYamlStatus(readableStatus)
+		if err != nil {
+			log.Error(err, "Unable to parse status configmap yaml content")
+			return ctrl.Result{}, fmt.Errorf("unable to parse status configmap yaml content: %w", err)
+		}
+		status = s
+	} else {
+		status = clusterautoscaler.ParseReadableStatus(readableStatus)
+	}
 
 	asgTargets := scheduler.Spec.ASGTargets
 	if len(asgTargets) == 0 {
 		asgTargets = []string{scheduler.Spec.ASGTarget}
 	}
-	targetNodeGroups := make([]clusterautoscaler.NodeGroup, 0, len(asgTargets))
+	targetNodeGroups := make([]clusterautoscaler.NodeGroupStatus, 0, len(asgTargets))
 	for _, target := range asgTargets {
 		targetNodeGroup := clusterautoscaler.GetNodeGroupWithName(status.NodeGroups, target)
 		if targetNodeGroup == nil {
@@ -162,12 +173,12 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// Update target statuses
 	for i := range targetNodeGroups {
-		for _, s := range []clusterautoscaler.ScaleUpStatus{
-			clusterautoscaler.ScaleUpNeeded,
-			clusterautoscaler.ScaleUpNotNeeded,
-			clusterautoscaler.ScaleUpInProgress,
-			clusterautoscaler.ScaleUpNoActivity,
-			clusterautoscaler.ScaleUpBackoff,
+		for _, s := range []clusterautoscaler.ClusterAutoscalerConditionStatus{
+			clusterautoscaler.ClusterAutoscalerNeeded,
+			clusterautoscaler.ClusterAutoscalerNotNeeded,
+			clusterautoscaler.ClusterAutoscalerInProgress,
+			clusterautoscaler.ClusterAutoscalerNoActivity,
+			clusterautoscaler.ClusterAutoscalerBackoff,
 		} {
 			targetNodeGroupStatus := metrics.SchedulerTargetNodeGroupStatus.With(prometheus.Labels{
 				"node_group_name": targetNodeGroups[i].Name,
@@ -277,7 +288,7 @@ func (r *SchedulerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if down > 0 {
 		scaleDownAllowed := false
 		for i := range targetNodeGroups {
-			if targetNodeGroups[i].ScaleUp.Status != clusterautoscaler.ScaleUpBackoff {
+			if targetNodeGroups[i].ScaleUp.Status != clusterautoscaler.ClusterAutoscalerBackoff {
 				scaleDownAllowed = true
 				break
 			}
@@ -511,7 +522,7 @@ func getMatchedPolicy(m []matchedPolicy, p corev1alpha1.SchedulerPolicy) *matche
 // nodeGroupIntOrFieldValue returns the desired value matching IntOrField.
 // Field returns the NodeGroup Field value ans has priority over Int if a valid
 // Field is given.
-func nodeGroupIntOrFieldValue(ngs []clusterautoscaler.NodeGroup, iof corev1alpha1.IntOrField) int32 {
+func nodeGroupIntOrFieldValue(ngs []clusterautoscaler.NodeGroupStatus, iof corev1alpha1.IntOrField) int32 {
 	if iof.FieldVal == nil {
 		return iof.IntVal
 	}
@@ -520,31 +531,29 @@ func nodeGroupIntOrFieldValue(ngs []clusterautoscaler.NodeGroup, iof corev1alpha
 	switch *iof.FieldVal {
 	case corev1alpha1.FieldReady:
 		for i := range ngs {
-			val += ngs[i].Health.Ready
+			val += int32(ngs[i].Health.NodeCounts.Registered.Ready)
 		}
 	case corev1alpha1.FieldUnready:
 		for i := range ngs {
-			val += ngs[i].Health.Unready
+			val += int32(ngs[i].Health.NodeCounts.Registered.Unready.Total)
 		}
 	case corev1alpha1.FieldNotStarted:
 		for i := range ngs {
-			val += ngs[i].Health.NotStarted
+			val += int32(ngs[i].Health.NodeCounts.Registered.NotStarted)
 		}
 	case corev1alpha1.FieldLongNotStarted:
-		for i := range ngs {
-			val += ngs[i].Health.LongNotStarted
-		}
+		// Field deprecated, do nothing.
 	case corev1alpha1.FieldRegistered:
 		for i := range ngs {
-			val += ngs[i].Health.Registered
+			val += int32(ngs[i].Health.NodeCounts.Registered.Total)
 		}
 	case corev1alpha1.FieldLongUnregistered:
 		for i := range ngs {
-			val += ngs[i].Health.LongUnregistered
+			val += int32(ngs[i].Health.NodeCounts.LongUnregistered)
 		}
 	case corev1alpha1.FieldCloudProviderTarget:
 		for i := range ngs {
-			val += ngs[i].Health.CloudProviderTarget
+			val += int32(ngs[i].Health.CloudProviderTarget)
 		}
 	}
 
@@ -552,7 +561,7 @@ func nodeGroupIntOrFieldValue(ngs []clusterautoscaler.NodeGroup, iof corev1alpha
 }
 
 // matchPolicy returns if given NodeGroup match desired Scheduler policy.
-func matchPolicy(ngs []clusterautoscaler.NodeGroup, policy corev1alpha1.SchedulerPolicy) bool {
+func matchPolicy(ngs []clusterautoscaler.NodeGroupStatus, policy corev1alpha1.SchedulerPolicy) bool {
 	left := nodeGroupIntOrFieldValue(ngs, policy.LeftOperand)
 	right := nodeGroupIntOrFieldValue(ngs, policy.RightOperand)
 
@@ -576,7 +585,7 @@ func matchPolicy(ngs []clusterautoscaler.NodeGroup, policy corev1alpha1.Schedule
 }
 
 // replicas returns the number of required replicas.
-func nodeGroupReplicas(ngs []clusterautoscaler.NodeGroup, operation corev1alpha1.IntOrArithmeticOperation) int32 {
+func nodeGroupReplicas(ngs []clusterautoscaler.NodeGroupStatus, operation corev1alpha1.IntOrArithmeticOperation) int32 {
 	if operation.OperationVal == nil {
 		return operation.IntVal
 	}

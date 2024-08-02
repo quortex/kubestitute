@@ -161,7 +161,8 @@ type IntOrArithmeticOperation struct {
 // It is based on ASG health status.
 type Field string
 
-// All Field constants
+// All Field constants.
+// LongNotStarted is deprecated and will always be 0.
 const (
 	FieldReady               Field = "Ready"
 	FieldUnready             Field = "Unready"

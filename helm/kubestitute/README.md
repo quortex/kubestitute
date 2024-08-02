@@ -1,6 +1,6 @@
 # kubestitute
 
-![Version: 3.0.0](https://img.shields.io/badge/Version-3.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.2.0](https://img.shields.io/badge/AppVersion-2.2.0-informational?style=flat-square)
+![Version: 3.1.0-rc.0](https://img.shields.io/badge/Version-3.1.0--rc.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.3.0-rc.0](https://img.shields.io/badge/AppVersion-2.3.0--rc.0-informational?style=flat-square)
 
 Kubestitute is an event based instances lifecycle manager for Kubernetes.
 
@@ -72,6 +72,7 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | aws.secretAccessKey | string | `""` | The secret access key of a user with necessary permissions. |
 | manager.clusterAutoscaler.namespace | string | `"kube-system"` | The Cluster Autoscaler namespace. |
 | manager.clusterAutoscaler.name | string | `"cluster-autoscaler-status"` | The Cluster Autoscaler status configmap name. |
+| manager.clusterAutoscaler.legacyFormat | bool | `false` | Whether to parse the Cluster Autoscaler status configmap in legacy format, used by cluster-autoscaler up to version 1.29. |
 | manager.priorityExpander.enabled | bool | `false` |  |
 | manager.priorityExpander.name | string | `"priority-expander-default"` | Name of the Priority Expander object. |
 | manager.priorityExpander.namespace | string | `"kubestitute-system"` | Namespace of the Priority Expander object. |

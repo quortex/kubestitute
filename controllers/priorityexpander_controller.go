@@ -44,11 +44,12 @@ import (
 )
 
 type PriorityExpanderReconcilerConfiguration struct {
-	ClusterAutoscalerNamespace       string
-	ClusterAutoscalerStatusName      string
-	ClusterAutoscalerPEConfigMapName string
-	PriorityExpanderNamespace        string
-	PriorityExpanderName             string
+	ClusterAutoscalerNamespace          string
+	ClusterAutoscalerStatusName         string
+	ClusterAutoscalerStatusLegacyFormat bool
+	ClusterAutoscalerPEConfigMapName    string
+	PriorityExpanderNamespace           string
+	PriorityExpanderName                string
 }
 
 type PriorityExpanderReconciler struct {
@@ -125,20 +126,30 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// ... and parse it.
-	status := clusterautoscaler.ParseReadableString(readableStatus)
+	var status *clusterautoscaler.ClusterAutoscalerStatus
+	if !r.Configuration.ClusterAutoscalerStatusLegacyFormat {
+		s, err := clusterautoscaler.ParseYamlStatus(readableStatus)
+		if err != nil {
+			log.Error(err, "Unable to parse status configmap yaml content")
+			return ctrl.Result{}, fmt.Errorf("unable to parse status configmap yaml content: %w", err)
+		}
+		status = s
+	} else {
+		status = clusterautoscaler.ParseReadableStatus(readableStatus)
+	}
 
-	var oroot = map[string]map[string]int32{}
+	oroot := map[string]map[string]int32{}
 	for _, node := range status.NodeGroups {
 		oroot[node.Name] = make(map[string]int32)
-		oroot[node.Name]["CloudProviderTarget"] = node.Health.CloudProviderTarget
-		oroot[node.Name]["Ready"] = node.Health.Ready
-		oroot[node.Name]["Unready"] = node.Health.Unready
-		oroot[node.Name]["NotStarted"] = node.Health.NotStarted
-		oroot[node.Name]["LongNotStarted"] = node.Health.LongNotStarted
-		oroot[node.Name]["Registered"] = node.Health.Registered
-		oroot[node.Name]["LongUnregistered"] = node.Health.LongUnregistered
-		oroot[node.Name]["MinSize"] = node.Health.MinSize
-		oroot[node.Name]["MaxSize"] = node.Health.MaxSize
+		oroot[node.Name]["CloudProviderTarget"] = int32(node.Health.CloudProviderTarget)
+		oroot[node.Name]["Ready"] = int32(node.Health.NodeCounts.Registered.Ready)
+		oroot[node.Name]["Unready"] = int32(node.Health.NodeCounts.Registered.Unready.Total)
+		oroot[node.Name]["NotStarted"] = int32(node.Health.NodeCounts.Registered.NotStarted)
+		oroot[node.Name]["LongNotStarted"] = 0
+		oroot[node.Name]["Registered"] = int32(node.Health.NodeCounts.Registered.Total)
+		oroot[node.Name]["LongUnregistered"] = int32(node.Health.NodeCounts.LongUnregistered)
+		oroot[node.Name]["MinSize"] = int32(node.Health.MinSize)
+		oroot[node.Name]["MaxSize"] = int32(node.Health.MaxSize)
 	}
 
 	// Create new PriorityExpander template and parse it
@@ -169,7 +180,6 @@ func (r *PriorityExpanderReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	op, err := ctrl.CreateOrUpdate(ctx, r.Client, &pecm, func() error {
-
 		pecm.Data = map[string]string{
 			"priorities": buf.String(),
 		}
