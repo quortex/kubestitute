@@ -82,7 +82,7 @@ func main() {
 
 	flag.StringVar(&clusterAutoscalerNamespace, "clusterautoscaler-namespace", "kube-system", "The namespace the clusterautoscaler belongs to.")
 	flag.StringVar(&clusterAutoscalerStatusName, "clusterautoscaler-status-name", "cluster-autoscaler-status", "The name of the clusterautoscaler status configmap.")
-	flag.BoolVar(&clusterAutoscalerStatusLegacyFormat, "clusterautoscaler-status-legacy-format", false, "Whether the clusterautoscaler status configmap if formatted in the legacy readable format (for version older than 1.30.0).")
+	flag.BoolVar(&clusterAutoscalerStatusLegacyFormat, "clusterautoscaler-status-legacy-format", false, "Set if the clusterautoscaler status configmap is formatted the legacy readable format, used by cluster-autoscaler up to version 1.29.")
 	flag.StringVar(&clusterAutoscalerPEConfigMapName, "cluster-autoscaler-priority-expander-config-map", "cluster-autoscaler-priority-expander", "The name of the clusterautoscaler priority expander config map.")
 	flag.StringVar(&priorityExpanderNamespace, "priority-expander-namespace", "kubestitute-system", "The namespace the _unique_ priority expander object belongs to.")
 	flag.StringVar(&priorityExpanderName, "priority-expander-name", "priority-expander-default", "The only accepted name for the priority expander object.")

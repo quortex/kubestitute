@@ -56,22 +56,23 @@ Follow Kubestitute documentation for Helm deployment [here](./helm/kubestitute).
 ### <a id="Configuration_Optional_args"></a>Optional args
 
 The kubestitute container takes as argument the parameters below.
-| Key | Description | Default |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| clusterautoscaler-namespace | The namespace the clusterautoscaler belongs to. | kube-system |
-| clusterautoscaler-status-name | The names of the clusterautoscaler status configmap. | cluster-autoscaler-status |
-| cluster-autoscaler-priority-expander-config-map | The name of the clusterautoscaler priority expander config map. | cluster-autoscaler-priority-expander |
-| priority-expander-enabled | Is the PriorityExpander controller enabled. | `false` |
-| priority-expander-namespace | The namespace the _unique_ priority expander object belongs to. | kubestitute-system |
-| priority-expander-name | The only accepted name for the priority expander object. | priority-expander-default |
-| dev | Enable dev mode for logging. | `false` |
-| v | Logs verbosity. 0 => panic, 1 => error, 2 => warning, 3 => info, 4 => debug | 3 |
-| asg-poll-interval | AutoScaling Groups polling interval (used to generate custom metrics about ASGs). | 30 |
-| eviction-timeout | The timeout in seconds for pods eviction on Instance deletion. | 300 |
-| instances-max-concurrent-reconciles | The maximum number of concurrent Reconciles which can be run for Instances. | 10 |
-| metrics-bind-address | The address the metric endpoint binds to. | :8080 |
-| health-probe-bind-address | The address the probe endpoint binds to. | :8081 |
-| leader-elect | Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager. | `false` |
+| Key                                             | Description                                                                                                                           | Default                              |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| clusterautoscaler-namespace                     | The namespace the clusterautoscaler belongs to.                                                                                       | kube-system                          |
+| clusterautoscaler-status-name                   | The names of the clusterautoscaler status configmap.                                                                                  | cluster-autoscaler-status            |
+| cluster-autoscaler-priority-expander-config-map | The name of the clusterautoscaler priority expander config map.                                                                       | cluster-autoscaler-priority-expander |
+| clusterautoscaler-status-legacy-format          | Set if the clusterautoscaler status configmap is formatted the legacy readable format, used by cluster-autoscaler up to version 1.29. | `false`                              |
+| priority-expander-enabled                       | Is the PriorityExpander controller enabled.                                                                                           | `false`                              |
+| priority-expander-namespace                     | The namespace the _unique_ priority expander object belongs to.                                                                       | kubestitute-system                   |
+| priority-expander-name                          | The only accepted name for the priority expander object.                                                                              | priority-expander-default            |
+| dev                                             | Enable dev mode for logging.                                                                                                          | `false`                              |
+| v                                               | Logs verbosity. 0 => panic, 1 => error, 2 => warning, 3 => info, 4 => debug                                                           | 3                                    |
+| asg-poll-interval                               | AutoScaling Groups polling interval (used to generate custom metrics about ASGs).                                                     | 30                                   |
+| eviction-timeout                                | The timeout in seconds for pods eviction on Instance deletion.                                                                        | 300                                  |
+| instances-max-concurrent-reconciles             | The maximum number of concurrent Reconciles which can be run for Instances.                                                           | 10                                   |
+| metrics-bind-address                            | The address the metric endpoint binds to.                                                                                             | :8080                                |
+| health-probe-bind-address                       | The address the probe endpoint binds to.                                                                                              | :8081                                |
+| leader-elect                                    | Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.                 | `false`                              |
 
 ## CustomResourceDefinitions
 
