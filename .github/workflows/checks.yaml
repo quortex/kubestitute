@@ -1,16 +1,43 @@
-# Checks are executed on each push and pull_request
-
+# Checks are executed on each push
 name: Checks
 
 on: ["push"]
 
 jobs:
+  check-uncommitted-changes:
+    name: Check uncommitted changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Generate code
+        run: |
+          make all
+
+      # Fails if any generated files is different from what is committed
+      - name: Checks uncommitted changes to generated files
+        run: |
+          changes=$(git status --porcelain)
+          if [[ -z $changes ]];
+          then
+            echo "No uncommitted changes to generated files"
+          else
+            echo "Error : there are uncommitted changes to generated files :"
+            echo "$changes"
+            exit 1
+          fi
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      # This step uses Github's checkout-action: https://github.com/actions/checkout
-      - uses: actions/checkout@v4
+      - name: Check out code
+        uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
@@ -18,7 +45,7 @@ jobs:
 
       # Instead of using our own CI, we uses https://golangci-lint.run/
       # It combines 48 linters and execute them in parallel
-      - name: golangci-lint
+      - name: Lint with golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.59.1
@@ -28,27 +55,13 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      # This step uses Github's checkout-action: https://github.com/actions/checkout
-      - uses: actions/checkout@v4
+      - name: Check out code
+        uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
 
-      # Execute tests
       - name: Execute tests
         run: make test
         shell: bash
-
-      # Export coverage
-      - name: Export coverage
-        if: github.event == 'pull_request'
-        run: go tool cover -html=cover.out -o=coverage.html
-
-      # Upload artifacts
-      - name: Upload artifacts
-        if: github.event == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage.html
