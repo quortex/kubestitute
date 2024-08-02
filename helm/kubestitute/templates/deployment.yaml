@@ -42,6 +42,9 @@ spec:
             - --leader-elect
             - --clusterautoscaler-namespace={{ .clusterAutoscaler.namespace }}
             - --clusterautoscaler-status-name={{ .clusterAutoscaler.name }}
+            {{- if .clusterAutoscaler.legacyFormat }}
+            - --clusterautoscaler-status-legacy-format
+            {{- end }}
             {{- if .priorityExpander.enabled }}
             - --priority-expander-namespace={{ .priorityExpander.namespace }}
             - --priority-expander-name={{ .priorityExpander.name }}

@@ -16,6 +16,8 @@ manager:
     namespace: kube-system
     # -- The Cluster Autoscaler status configmap name.
     name: cluster-autoscaler-status
+    # -- Whether to parse the Cluster Autoscaler status configmap in legacy format, used by cluster-autoscaler up to version 1.29.
+    legacyFormat: false
 
   priorityExpander:
     enabled: false
