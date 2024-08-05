@@ -6,8 +6,7 @@ on:
   push:
     # Sequence of patterns matched against refs/heads
     branches:
-      - develop
-      - master
+      - main
     tags:
       - "*"
 
@@ -23,7 +22,6 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # This step uses action-hub docker action: https://github.com/actions-hub/docker
       - name: Login to docker hub
         if: success()
         uses: docker/login-action@v3
@@ -31,8 +29,19 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Build docker image
-      - name: Build docker image
+      - name: Deduce image tag
+        run: |
+          if [[ -z "${IMAGE_TAG}" ]]; then \
+            IMAGE_TAG=${GITHUB_REF#*/}; \
+            IMAGE_TAG=${IMAGE_TAG#*/}; \
+            IMAGE_TAG=$(echo $IMAGE_TAG | sed -e "s#^v##"); \
+            if [[ "$IMAGE_TAG" == "master" || "$IMAGE_TAG" == "main" ]]; then \
+              IMAGE_TAG=latest; \
+            fi \
+          fi && \
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Build and push docker image
         if: success()
         shell: bash
         env:
