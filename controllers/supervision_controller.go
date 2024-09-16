@@ -40,8 +40,8 @@ type SupervisionReconciler struct {
 //+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=schedulers,verbs=get;list;watch
 //+kubebuilder:rbac:groups=core.kubestitute.quortex.io,resources=instances,verbs=get;list;watch
 
-func (r *SupervisionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := ctrllog.FromContext(ctx, "supervision", req.NamespacedName, "reconciliationID", uuid.New().String())
+func (r *SupervisionReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result, error) {
+	log := ctrllog.FromContext(ctx, "reconciliationID", uuid.New().String())
 
 	log.V(1).Info("Supervision reconciliation started")
 	defer log.V(1).Info("Supervision reconciliation done")
@@ -87,7 +87,8 @@ func (r *SupervisionReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 // SetupWithManager sets up the controller with the Manager.
 func (r *SupervisionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&corev1alpha1.Instance{}).
+		Named("supervision").
+		Watches(&corev1alpha1.Instance{}, &handler.EnqueueRequestForObject{}).
 		Watches(&corev1alpha1.Scheduler{}, &handler.EnqueueRequestForObject{}).
 		Complete(r)
 }
