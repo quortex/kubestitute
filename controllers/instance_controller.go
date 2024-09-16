@@ -635,7 +635,8 @@ func deleteTimeout(pods []kcore_v1.Pod) time.Duration {
 // waitForDelete poll pods to check their deletion.
 // This code is largely inspired by kubectl cli source code.
 func (r *InstanceReconciler) waitForDelete(ctx context.Context, pods []kcore_v1.Pod) ([]kcore_v1.Pod, error) {
-	err := wait.PollUntilContextTimeout(ctx, pollInterval, deleteTimeout(pods), true, func(ctx context.Context) (done bool, err error) {
+	//nolint:staticcheck
+	err := wait.PollImmediate(pollInterval, deleteTimeout(pods), func() (bool, error) {
 		pendingPods := []kcore_v1.Pod{}
 		for i, pod := range pods {
 			p := &kcore_v1.Pod{}
