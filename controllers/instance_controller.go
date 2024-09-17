@@ -618,11 +618,11 @@ func CheckEvictionSupport(clientset kubernetes.Interface) (string, error) {
 
 // deleteTimeout compute the delete timeout from given pods.
 func deleteTimeout(pods []kcore_v1.Pod) time.Duration {
-	// We return the max DeletionGracePeriodSeconds from pods with
+	// We return the max TerminationGracePeriodSeconds from pods with
 	// a 30sec overhead.
 	maxGrace := int64(30)
 	for _, e := range pods {
-		if grace := e.DeletionGracePeriodSeconds; grace != nil {
+		if grace := e.Spec.TerminationGracePeriodSeconds; grace != nil {
 			if *grace > maxGrace {
 				maxGrace = *grace
 			}
