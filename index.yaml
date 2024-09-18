@@ -2,6 +2,22 @@ apiVersion: v1
 entries:
   kubestitute:
   - apiVersion: v2
+    appVersion: 2.3.0
+    created: "2024-09-18T09:37:51.811343947Z"
+    description: Kubestitute is an event based instances lifecycle manager for Kubernetes.
+    digest: 045a63172bb32427ad14b3e0f634d2d1a2b663342a8791977a5ffe68b732ca5a
+    home: https://github.com/quortex/kubestitute
+    maintainers:
+    - name: vincentmrg
+      url: https://github.com/vincentmrg
+    name: kubestitute
+    sources:
+    - https://github.com/quortex/kubestitute/helm
+    type: application
+    urls:
+    - https://github.com/quortex/kubestitute/releases/download/kubestitute-chart-3.1.0/kubestitute-3.1.0.tgz
+    version: 3.1.0
+  - apiVersion: v2
     appVersion: 2.3.0-rc.2
     created: "2024-09-17T15:19:10.743303344Z"
     description: Kubestitute is an event based instances lifecycle manager for Kubernetes.
@@ -289,4 +305,4 @@ entries:
     urls:
     - https://github.com/quortex/kubestitute/releases/download/kubestitute-0.1.0/kubestitute-0.1.0.tgz
     version: 0.1.0
-generated: "2024-09-17T15:19:10.743457593Z"
+generated: "2024-09-18T09:37:51.811510358Z"
