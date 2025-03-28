@@ -1,0 +1,39 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ include "kubestitute.fullname" . }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "kubestitute.selectorLabels" . | nindent 6 }}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+    - ports:
+      - protocol: TCP
+        port: 9443
+    {{- with .Values.networkPolicy.extraIngress }}
+      {{- tpl (toYaml .) $ | nindent 4 }}
+    {{- end }}
+  egress:
+    - ports:
+      - protocol: UDP
+        port: 53
+      - protocol: TCP
+        port: 53
+      to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: kube-system
+        podSelector:
+          matchLabels:
+            k8s-app: kube-dns
+    - ports:
+      - protocol: TCP
+        port: 443
+    {{- with .Values.networkPolicy.extraEgress }}
+      {{- tpl (toYaml .) $ | nindent 4 }}
+    {{- end }}
+{{- end }}

@@ -153,3 +153,23 @@ serviceMonitor:
 
 # -- Extra objects to deploy (value evaluated as a template).
 extraObjects: []
+
+# -- Network policy configuration.
+networkPolicy:
+  # Whether to enable kubestatic network policy.
+  enabled: false
+  # -- Ingress rules to add to the network policy
+  extraIngress: []
+#    - ports:
+#        - protocol: TCP
+#          port: 8443
+#      from:
+#        - namespaceSelector:
+#            matchLabels:
+#              kubernetes.io/metadata.name: monitoring
+#          podSelector:
+#            matchLabels:
+#              app.kubernetes.io/name: prometheus
+#              operator.prometheus.io/name: prometheus-kube-prometheus-prometheus
+# -- Egress rules to add to the network policy
+extraEgress: []
