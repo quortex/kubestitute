@@ -171,5 +171,5 @@ networkPolicy:
 #            matchLabels:
 #              app.kubernetes.io/name: prometheus
 #              operator.prometheus.io/name: prometheus-kube-prometheus-prometheus
-# -- Egress rules to add to the network policy
+# -- Egress rules to add to the network policy.
 extraEgress: []
