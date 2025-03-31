@@ -154,9 +154,9 @@ serviceMonitor:
 # -- Extra objects to deploy (value evaluated as a template).
 extraObjects: []
 
-# -- Network policy configuration.
+# Network policy configuration.
 networkPolicy:
-  # Whether to enable kubestatic network policy.
+  # -- Whether to enable kubestatic network policy.
   enabled: false
   # -- Ingress rules to add to the network policy
   extraIngress: []
