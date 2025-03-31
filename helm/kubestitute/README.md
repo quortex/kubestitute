@@ -119,6 +119,9 @@ helm install kubestitute kubestitute/kubestitute -n kubestitute-system
 | serviceMonitor.scrapeTimeout | string | `""` | Override prometheus operator scrapping timeout. |
 | serviceMonitor.relabelings | list | `[]` | Relabellings to apply to samples before scraping. |
 | extraObjects | list | `[]` | Extra objects to deploy (value evaluated as a template). |
+| networkPolicy.enabled | bool | `false` | Whether to enable kubestatic network policy. |
+| networkPolicy.extraIngress | list | `[]` | Ingress rules to add to the network policy. |
+| extraEgress | list | `[]` | Egress rules to add to the network policy. |
 
 ## Maintainers
 
