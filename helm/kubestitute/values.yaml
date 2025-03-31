@@ -158,7 +158,7 @@ extraObjects: []
 networkPolicy:
   # -- Whether to enable kubestatic network policy.
   enabled: false
-  # -- Ingress rules to add to the network policy
+  # -- Ingress rules to add to the network policy.
   extraIngress: []
 #    - ports:
 #        - protocol: TCP
